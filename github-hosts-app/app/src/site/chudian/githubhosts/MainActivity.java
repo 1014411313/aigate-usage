@@ -171,6 +171,17 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
+        public void installUpdate(String url) {
+            final String u = url;
+            runAsync("install", new Callable<String>() {
+                @Override
+                public String call() {
+                    return Mirror.downloadAndInstall(MainActivity.this, u);
+                }
+            });
+        }
+
+        @JavascriptInterface
         public void probe(String url) {
             final String u = url;
             runAsync("probe", new Callable<String>() {

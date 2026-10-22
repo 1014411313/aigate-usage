@@ -59,6 +59,7 @@ pre{background:#0b0d11;border:1px solid #21252f;border-radius:9px;padding:10px;m
     <button id="btnRestore" class="ghost">撤销挂载</button>
   </div>
   <div class="muted" id="out">自动更新：每 12 小时一次（需授予 root）</div>
+  <div id="updateBox"></div>
 </div>
 
 <div class="card">
@@ -147,9 +148,8 @@ window.__onResult = function (kind, text) {
       try {
         var u = JSON.parse(text);
         if (u.hasNew) {
-          setOut('发现新版本 ' + u.latest + '（当前 ' + u.current + '），已把下载链接填到下面「GitHub 下载加速」');
-          $('dlUrl').value = u.apk || u.page || '';
-          if ($('dlUrl').value) { $('dlUrl').scrollIntoView({ block: 'center' }); }
+          setOut('发现新版本 ' + u.latest + '（当前 ' + u.current + '）');
+          showInstallButton(u.apk || u.page || '');
         } else {
           setOut('已是最新版本 ' + u.current);
         }
@@ -157,6 +157,9 @@ window.__onResult = function (kind, text) {
         setOut('检查结果解析失败');
       }
     }
+  } else if (kind === 'install') {
+    setOut(text);
+    refreshLog();
   } else if (kind === 'sourcespeed') {
     try {
       var arr = JSON.parse(text || '[]');
@@ -218,6 +221,23 @@ function renderMirrors(list) {
 }
 
 /* ---- 渲染 ---- */
+function showInstallButton(apkUrl) {
+  var box = $('updateBox');
+  box.textContent = '';
+  if (!apkUrl) { return; }
+  var btn = document.createElement('button');
+  btn.textContent = '下载并安装新版本';
+  btn.style.marginTop = '10px';
+  btn.style.width = '100%';
+  btn.addEventListener('click', function () {
+    if (busy) { return; }
+    setBusy(true);
+    setOut('正在下载新版本…');
+    A.installUpdate(apkUrl);
+  });
+  box.append(btn);
+}
+
 function renderSources() {
   var list = loadSources();
   var disabled = loadDisabled();

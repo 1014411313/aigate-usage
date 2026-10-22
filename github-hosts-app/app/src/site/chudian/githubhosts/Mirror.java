@@ -2,6 +2,7 @@ package site.chudian.githubhosts;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
@@ -36,6 +37,13 @@ public final class Mirror {
             "https://gh-proxy.com/", "https://ghfast.top/", "https://ghproxy.net/"
     };
 
+    /** jsDelivr 各节点，任一不通可以换其它的 */
+    private static final String[] JSDELIVR_HOSTS = {
+            "fastly.jsdelivr.net", "gcore.jsdelivr.net", "cdn.jsdelivr.net", "testingcf.jsdelivr.net"
+    };
+
+    private static final String APK_MIME = "application/vnd.android.package-archive";
+
     private static final int PROBE_LIMIT = 256 * 1024;
     private static final int PROBE_TIMEOUT_MS = 4000;
 
@@ -47,9 +55,13 @@ public final class Mirror {
         List<String[]> list = new ArrayList<String[]>();
         list.add(new String[]{"直连", url});
 
-        if (url.contains("cdn.jsdelivr.net")) {
-            list.add(new String[]{"jsDelivr fastly", url.replace("cdn.jsdelivr.net", "fastly.jsdelivr.net")});
-            list.add(new String[]{"jsDelivr gcore", url.replace("cdn.jsdelivr.net", "gcore.jsdelivr.net")});
+        if (url.contains("jsdelivr.net")) {
+            for (String h : JSDELIVR_HOSTS) {
+                String u = url.replaceAll("https://[a-z0-9.-]*jsdelivr\\.net/", "https://" + h + "/");
+                if (!u.equals(url)) {
+                    list.add(new String[]{h.replace(".jsdelivr.net", ""), u});
+                }
+            }
         }
 
         Matcher m = RAW_PATTERN.matcher(url);
@@ -235,6 +247,79 @@ public final class Mirror {
     static long speedOf(String url) {
         long[] r = probe(url);
         return r[0] > 0 && r[2] > 0 ? r[0] * 1000 / r[2] : 0;
+    }
+
+    /** 下载 APK 并拉起系统安装界面 */
+    static String downloadAndInstall(Context ctx, String url) {
+        for (String[] c : candidates(url)) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                Uri uri = fetchToDownloads(ctx, c[1], "github-hosts-update.apk", APK_MIME);
+                if (uri == null) {
+                    continue;
+                }
+                try {
+                    Intent i = new Intent(Intent.ACTION_VIEW);
+                    i.setDataAndType(uri, APK_MIME);
+                    i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+                    ctx.startActivity(i);
+                } catch (Exception e) {
+                    return "FAIL: 已下载但无法拉起安装界面（" + e.getMessage() + "）";
+                }
+                Updater.appendLog(ctx, "已下载新版本（来源 " + c[0] + "）");
+                return "OK: 已下载，正在打开安装程序（来源 " + c[0] + "）";
+            } else {
+                String r = download(ctx, c[1]);
+                if (r.startsWith("OK")) {
+                    return r + "，请手动点击安装";
+                }
+            }
+        }
+        return "FAIL: 所有下载地址都失败";
+    }
+
+    /** 下载到系统「下载」目录，返回它的 content URI */
+    private static Uri fetchToDownloads(Context ctx, String url, String name, String mime) {
+        HttpURLConnection c = null;
+        InputStream in = null;
+        OutputStream out = null;
+        try {
+            c = (HttpURLConnection) new URL(url).openConnection();
+            c.setConnectTimeout(8000);
+            c.setReadTimeout(60000);
+            c.setInstanceFollowRedirects(true);
+            c.setRequestProperty("User-Agent", "github-hosts/1.2");
+            if (c.getResponseCode() / 100 != 2) {
+                return null;
+            }
+            in = c.getInputStream();
+
+            ContentValues cv = new ContentValues();
+            cv.put(MediaStore.Downloads.DISPLAY_NAME, name);
+            cv.put(MediaStore.Downloads.MIME_TYPE, mime);
+            Uri uri = ctx.getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, cv);
+            if (uri == null) {
+                return null;
+            }
+            out = ctx.getContentResolver().openOutputStream(uri);
+            if (out == null) {
+                return null;
+            }
+            byte[] buf = new byte[32768];
+            int n;
+            while ((n = in.read(buf)) > 0) {
+                out.write(buf, 0, n);
+            }
+            out.flush();
+            return uri;
+        } catch (Exception e) {
+            return null;
+        } finally {
+            close(in);
+            close(out);
+            if (c != null) {
+                c.disconnect();
+            }
+        }
     }
 
     private static long measure(String url) {
