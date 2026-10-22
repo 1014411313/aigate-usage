@@ -33,10 +33,10 @@ import java.nio.charset.StandardCharsets;
 
 public class MainActivity extends Activity {
 
-    /** 仓库里的版本清单；国内访问 raw 不稳优先 jsDelivr，但它的 CDN 缓存可能滞后，所以两份都取、取版本更高的 */
+    /** 仓库里的版本清单；项目移入子目录后路径同步调整，顶层 dist/latest.json 留给旧版兼容 */
     private static final String[] UPDATE_MANIFESTS = {
-            "https://cdn.jsdelivr.net/gh/1014411313/aigate-usage@main/dist/latest.json?t={t}",
-            "https://raw.githubusercontent.com/1014411313/aigate-usage/main/dist/latest.json?t={t}",
+            "https://cdn.jsdelivr.net/gh/1014411313/aigate-usage@main/aigate-usage/dist/latest.json?t={t}",
+            "https://raw.githubusercontent.com/1014411313/aigate-usage/main/aigate-usage/dist/latest.json?t={t}",
     };
 
     private WebView webView;
@@ -148,47 +148,21 @@ public class MainActivity extends Activity {
             }
         }
 
-        /** 比对仓库清单与本地版本，返回 JSON；出错时带 error 字段，不影响其它功能 */
+        /** 异步检查更新：网络在后台线程跑，结果经 window.__onUpdate 回给页面，不阻塞渲染 */
         @JavascriptInterface
-        public String checkUpdate() {
-            JSONObject result = new JSONObject();
-            try {
-                PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
-                result.put("currentName", info.versionName);
-                result.put("currentCode", info.versionCode);
-                JSONObject latest = null;
-                Exception lastError = null;
-                boolean anyReachable = false;
-                String stamp = String.valueOf(System.currentTimeMillis() / 60000);
-                for (String template : UPDATE_MANIFESTS) {
-                    try {
-                        JSONObject candidate = fetchJson(template.replace("{t}", stamp));
-                        anyReachable = true;
-                        if (latest == null || candidate.optLong("versionCode") > latest.optLong("versionCode")) {
-                            latest = candidate;
+        public void checkUpdateAsync() {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    final String payload = buildUpdateInfo();
+                    webView.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            webView.evaluateJavascript("window.__onUpdate && window.__onUpdate(" + JSONObject.quote(payload) + ")", null);
                         }
-                    } catch (Exception e) {
-                        lastError = e;
-                    }
+                    });
                 }
-                if (!anyReachable || latest == null) {
-                    throw lastError != null ? lastError : new IllegalStateException("无法获取版本清单");
-                }
-                result.put("latestName", latest.optString("versionName"));
-                result.put("latestCode", latest.optLong("versionCode"));
-                result.put("apk", latest.optString("apk"));
-                result.put("apkRaw", latest.optString("apkRaw"));
-                result.put("notes", latest.optString("notes"));
-                result.put("hasUpdate", latest.optLong("versionCode") > info.versionCode);
-            } catch (Exception e) {
-                result.remove("error");
-                try {
-                    result.put("error", String.valueOf(e.getMessage()));
-                } catch (Exception ignored) {
-                    // JSONObject 不可能在这里失败
-                }
-            }
-            return result.toString();
+            }).start();
         }
 
         /** 交给系统下载器；主地址入队失败时换备用地址 */
@@ -214,6 +188,47 @@ public class MainActivity extends Activity {
         }
     }
 
+    /** 在后台线程调用：拉版本清单并与本机版本比对，返回给页面的 JSON 字符串 */
+    private String buildUpdateInfo() {
+        JSONObject result = new JSONObject();
+        try {
+            PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
+            result.put("currentName", info.versionName);
+            result.put("currentCode", info.versionCode);
+            JSONObject latest = null;
+            Exception lastError = null;
+            boolean anyReachable = false;
+            String stamp = String.valueOf(System.currentTimeMillis() / 60000);
+            for (String template : UPDATE_MANIFESTS) {
+                try {
+                    JSONObject candidate = fetchJson(template.replace("{t}", stamp));
+                    anyReachable = true;
+                    if (latest == null || candidate.optLong("versionCode") > latest.optLong("versionCode")) {
+                        latest = candidate;
+                    }
+                } catch (Exception e) {
+                    lastError = e;
+                }
+            }
+            if (!anyReachable || latest == null) {
+                throw lastError != null ? lastError : new IllegalStateException("无法获取版本清单");
+            }
+            result.put("latestName", latest.optString("versionName"));
+            result.put("latestCode", latest.optLong("versionCode"));
+            result.put("apk", latest.optString("apk"));
+            result.put("apkRaw", latest.optString("apkRaw"));
+            result.put("notes", latest.optString("notes"));
+            result.put("hasUpdate", latest.optLong("versionCode") > info.versionCode);
+        } catch (Exception e) {
+            try {
+                result.put("error", String.valueOf(e.getMessage()));
+            } catch (Exception ignored) {
+                // JSONObject 不会在这里失败
+            }
+        }
+        return result.toString();
+    }
+
     /** 返回 null 表示已成功入队，否则返回错误信息 */
     private String enqueueDownload(String url, String fileName) {
         if (url == null || url.isEmpty()) return "下载地址为空";
@@ -235,8 +250,8 @@ public class MainActivity extends Activity {
     private JSONObject fetchJson(String url) throws Exception {
         HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
         try {
-            conn.setConnectTimeout(10000);
-            conn.setReadTimeout(10000);
+            conn.setConnectTimeout(6000);
+            conn.setReadTimeout(6000);
             int code = conn.getResponseCode();
             if (code >= 400) throw new IllegalStateException("HTTP " + code);
             StringBuilder sb = new StringBuilder();

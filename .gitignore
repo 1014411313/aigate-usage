@@ -3,9 +3,9 @@ build/
 node_modules/
 
 # aigate-usage：由 index.html / tools/MakeIcon.java 生成
-/app/assets/
-/app/res/mipmap-*/
-/app/icon-1024.png
+/aigate-usage/app/assets/
+/aigate-usage/app/res/mipmap-*/
+/aigate-usage/app/icon-1024.png
 
 # 以下项目尚未纳入仓库，补齐各自的忽略规则后再加入
 .aicode/

@@ -125,6 +125,11 @@
   </div>
 
   <section id="changelog" class="card log hidden">
+    <h3>1.12</h3>
+    <ul>
+      <li>修复打开后长时间白屏：更新检查改到后台线程异步执行，不再阻塞页面渲染（1.10/1.11 有此问题）</li>
+      <li>仓库结构调整：项目移入 aigate-usage/ 子目录，顶层保留旧路径的版本清单兼容老版本更新</li>
+    </ul>
     <h3>1.11</h3>
     <ul>
       <li>「本月使用」改为「本月消耗」，「本月已花」也改按消耗计算，与「今日消耗」同为平台的 Token 消耗口径</li>
@@ -666,9 +671,29 @@ async function copyKey() {
 
 /* ---------- 版本与更新 ---------- */
 const bridge = () => window.AndroidHost || null;
-const updateSupported = () => { const b = bridge(); return !!(b && typeof b.checkUpdate === 'function'); };
+const updateSupported = () => { const b = bridge(); return !!(b && typeof b.checkUpdateAsync === 'function'); };
 
 let updateInfo = null;
+let updateManual = false;
+
+// 原生在后台线程查完版本后回调这里；不阻塞页面渲染
+window.__onUpdate = raw => {
+  let info = null;
+  try {
+    info = typeof raw === 'string' ? JSON.parse(raw) : raw;
+  } catch (e) {
+    info = { error: '返回值解析失败' };
+  }
+  updateInfo = info || { error: '返回值解析失败' };
+  const manual = updateManual;
+  updateManual = false;
+  if (updateInfo.error) {
+    if (manual) showMsg('检查更新失败：' + updateInfo.error + '（不影响其它功能）', 'err');
+    return;
+  }
+  renderUpdate();
+  if (manual) showMsg(updateInfo.hasUpdate ? ('发现新版本 v' + updateInfo.latestName) : ('已是最新版本 v' + updateInfo.currentName), 'ok');
+};
 
 function renderVersion() {
   const b = bridge();
@@ -688,17 +713,13 @@ function checkUpdate(manual) {
     if (manual) showMsg('检查更新只在 App 内可用（浏览器打开时不涉及安装包）。', 'err');
     return;
   }
+  updateManual = !!manual;
+  if (manual) showMsg('正在检查更新…', 'ok');
   try {
-    updateInfo = JSON.parse(bridge().checkUpdate());
+    bridge().checkUpdateAsync();
   } catch (e) {
-    updateInfo = { error: '返回值解析失败' };
+    if (manual) showMsg('检查更新失败：' + e, 'err');
   }
-  if (updateInfo.error) {
-    if (manual) showMsg('检查更新失败：' + updateInfo.error + '（不影响其它功能）', 'err');
-    return;
-  }
-  renderUpdate();
-  if (manual) showMsg(updateInfo.hasUpdate ? ('发现新版本 v' + updateInfo.latestName) : ('已是最新版本 v' + updateInfo.currentName), 'ok');
 }
 
 function downloadUpdate() {
@@ -754,7 +775,7 @@ updateAutoStatus();
 renderOverview();
 refreshOverlayBtn();
 renderVersion();
-checkUpdate(false);
+setTimeout(() => checkUpdate(false), 2000);
 const remembered = loadKey();
 if (remembered) {
   $('apiKey').value = remembered;
