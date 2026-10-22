@@ -233,6 +233,7 @@ function renderSources() {
 
     var grow = document.createElement('div');
     grow.className = 'grow';
+    var key = srcKey(src);
     var name = document.createElement('div');
     name.className = 'name';
     name.textContent = src.name || '未命名';
@@ -265,7 +266,6 @@ function renderSources() {
     sw.className = 'sw';
     var cb = document.createElement('input');
     cb.type = 'checkbox';
-    var key = srcKey(src);
     cb.checked = !disabled.has(key);
     cb.addEventListener('change', function () {
       var d = loadDisabled();
