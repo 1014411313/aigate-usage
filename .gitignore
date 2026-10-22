@@ -5,3 +5,10 @@ build/
 app/assets/
 app/res/mipmap-*/
 app/icon-1024.png
+
+# 与本项目无关的其它目录
+.aicode/
+charger/
+mcp-client/
+orig/
+perf-tuner/
