@@ -258,6 +258,52 @@ public final class Updater {
             }
         }
     }
+    /** 查仓库里的 version.json，返回 JSON 文本 */
+    static String checkUpdate(Context ctx) {
+        String current = "";
+        try {
+            current = ctx.getPackageManager()
+                    .getPackageInfo(ctx.getPackageName(), 0).versionName;
+        } catch (Exception ignored) {
+        }
+
+        String base = "1014411313/aigate-usage@main/github-hosts-app/version.json";
+        String[] urls = {
+                "https://fastly.jsdelivr.net/gh/" + base,
+                "https://gcore.jsdelivr.net/gh/" + base,
+                "https://gh-proxy.com/https://raw.githubusercontent.com/1014411313/aigate-usage/main/github-hosts-app/version.json"
+        };
+
+        String body = null;
+        for (String u : urls) {
+            String b = fetchOne(u);
+            if (b != null && b.indexOf("version") >= 0) {
+                body = b;
+                break;
+            }
+        }
+        if (body == null) {
+            return "FAIL: 无法获取版本信息";
+        }
+
+        JSONObject out = new JSONObject();
+        try {
+            JSONObject o = new JSONObject(body);
+            String latest = o.optString("version", "");
+            if (latest.isEmpty()) {
+                return "FAIL: 版本信息格式错误";
+            }
+            out.put("current", current);
+            out.put("latest", latest);
+            out.put("hasNew", !latest.equals(current));
+            out.put("page", o.optString("page", ""));
+            out.put("apk", o.optString("apk", ""));
+        } catch (Exception e) {
+            return "FAIL: " + e.getMessage();
+        }
+        return out.toString();
+    }
+
     static List<String> extractUrls(String json) {
         List<String> list = new ArrayList<String>();
         Matcher m = URL_PATTERN.matcher(json == null ? "" : json);

@@ -151,6 +151,16 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
+        public void checkUpdate() {
+            runAsync("checkup", new Callable<String>() {
+                @Override
+                public String call() {
+                    return Updater.checkUpdate(MainActivity.this);
+                }
+            });
+        }
+
+        @JavascriptInterface
         public void probe(String url) {
             final String u = url;
             runAsync("probe", new Callable<String>() {

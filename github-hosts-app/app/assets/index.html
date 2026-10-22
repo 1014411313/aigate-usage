@@ -55,6 +55,7 @@ pre{background:#0b0d11;border:1px solid #21252f;border-radius:9px;padding:10px;m
     <button id="btnUpdate">立即更新</button>
     <button id="btnApply" class="ghost">应用到系统</button>
     <button id="btnTest" class="ghost">测试连通性</button>
+    <button id="btnCheck" class="ghost">检查更新</button>
     <button id="btnRestore" class="ghost">撤销挂载</button>
   </div>
   <div class="muted" id="out">自动更新：每 12 小时一次（需授予 root）</div>
@@ -101,6 +102,7 @@ function setBusy(on) {
   $('btnUpdate').disabled = on;
   $('btnApply').disabled = on;
   $('btnTest').disabled = on;
+  $('btnCheck').disabled = on;
   $('btnProbe').disabled = on;
 }
 
@@ -134,6 +136,23 @@ window.__onResult = function (kind, text) {
     $('stNet').innerHTML = text === 'OK'
       ? '<span class="tag ok">可达</span>'
       : '<span class="tag bad">不可达</span>';
+  } else if (kind === 'checkup') {
+    if (text.indexOf('FAIL') === 0) {
+      setOut(text);
+    } else {
+      try {
+        var u = JSON.parse(text);
+        if (u.hasNew) {
+          setOut('发现新版本 ' + u.latest + '（当前 ' + u.current + '），已把下载链接填到下面「GitHub 下载加速」');
+          $('dlUrl').value = u.apk || u.page || '';
+          if ($('dlUrl').value) { $('dlUrl').scrollIntoView({ block: 'center' }); }
+        } else {
+          setOut('已是最新版本 ' + u.current);
+        }
+      } catch (e) {
+        setOut('检查结果解析失败');
+      }
+    }
   } else if (kind === 'probe') {
     var list = [];
     try { list = JSON.parse(text || '[]'); } catch (e) { list = []; }
@@ -300,6 +319,13 @@ $('btnAdd').addEventListener('click', function () {
   $('newUrl').value = '';
   renderSources();
   setOut('已添加，点「立即更新」生效');
+});
+
+$('btnCheck').addEventListener('click', function () {
+  if (busy) return;
+  setBusy(true);
+  setOut('检查更新中…');
+  A.checkUpdate();
 });
 
 $('btnReloadLog').addEventListener('click', refreshLog);
