@@ -351,6 +351,7 @@ public class OverlayService extends Service {
         double leftTokens = full.optDouble("remaining", 0) + creditQuota.optDouble("remaining", 0) * ratio;
 
         long todayTokens = 0;
+        double todayCost = 0;
         String todayKey = new SimpleDateFormat("yyyy-MM-dd", Locale.CHINA).format(new Date());
         JSONArray daily = monthly.optJSONArray("daily");
         if (daily != null) {
@@ -358,13 +359,14 @@ public class OverlayService extends Service {
                 JSONObject row = daily.optJSONObject(i);
                 if (row != null && todayKey.equals(row.optString("date"))) {
                     todayTokens = row.optLong("total_tokens", 0);
+                    todayCost = row.optDouble("quota_cost", 0);
                     break;
                 }
             }
         }
 
         setLine("token", "剩余 " + compactTokens(remaining));
-        setLine("today", "今日 " + compactTokens(todayTokens));
+        setLine("today", "今日消耗 " + compactTokens(todayCost));
         setLine("month", "本月 " + compactTokens(summary.optDouble("total_tokens", 0)));
         setLine("monthMoney", "本月已花 " + yuan(summary.optDouble("total_tokens", 0) * perToken));
         setLine("spent", "总共已花 " + yuan(usedTokens * perToken + moneyQuota.optDouble("used", 0)));

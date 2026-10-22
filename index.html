@@ -111,6 +111,11 @@
   </div>
 
   <section id="changelog" class="card log hidden">
+    <h3>1.9</h3>
+    <ul>
+      <li>「今日使用」改为「今日消耗」：按平台 Token 消耗（含按量计费折扣与缓存）显示，小字保留原始 token 数</li>
+      <li>悬浮窗「今日」同步改为消耗口径</li>
+    </ul>
     <h3>1.8</h3>
     <ul>
       <li>概览、账户、月度改成紧凑面板：标签在左、数值在右，长数字不再溢出卡片</li>
@@ -201,7 +206,7 @@
       <div id="overlaySettings" class="hidden" style="margin-top:9px">
         <div class="chips" id="overlayItems">
           <label class="chip"><input type="checkbox" class="ovitem" data-key="token" checked> 剩余 Token</label>
-          <label class="chip"><input type="checkbox" class="ovitem" data-key="today" checked> 今日使用</label>
+          <label class="chip"><input type="checkbox" class="ovitem" data-key="today" checked> 今日消耗</label>
           <label class="chip"><input type="checkbox" class="ovitem" data-key="month" checked> 本月使用</label>
           <label class="chip"><input type="checkbox" class="ovitem" data-key="monthMoney" checked> 本月已花</label>
           <label class="chip"><input type="checkbox" class="ovitem" data-key="spent" checked> 总共已花</label>
@@ -221,7 +226,7 @@
     <h2>概览</h2>
     <div class="panel">
       <div class="kv"><span class="k">剩余 Token</span><span class="v" id="tokenBalance">-</span></div>
-      <div class="kv"><span class="k">今日使用</span><span class="v" id="todayTokens">-</span></div>
+      <div class="kv"><span class="k">今日消耗<em id="todayBasis"></em></span><span class="v" id="todayTokens">-</span></div>
       <div class="kv"><span class="k">本月使用</span><span class="v" id="monthTokensView">-</span></div>
       <div class="kv"><span class="k">本月已花</span><span class="v accent" id="monthMoney">-</span></div>
       <div class="kv"><span class="k">总共已花<em id="spentBasis"></em></span><span class="v accent" id="spentMoney">-</span></div>
@@ -386,13 +391,15 @@ async function apiPost(path, body) {
 
 /* ---------- 金额与用量汇总 ---------- */
 let totals = null;      // /pay/credit-usage 返回的聚合余额
-let monthTokens = 0;    // 当前选中月份的消耗
-let todayTokens = 0;    // 今天的消耗
+let monthTokens = 0;    // 当前选中月份的原始 token
+let todayTokens = 0;    // 今天的原始 token
+let todayCost = 0;      // 今天的 Token 消耗（平台 quota_cost，含折扣）
 
 function renderOverview() {
   const price = pricePerToken();
   $('monthTokensView').textContent = int0(monthTokens);
-  $('todayTokens').textContent = int0(todayTokens);
+  $('todayTokens').textContent = int0(todayCost);
+  $('todayBasis').textContent = '原始 ' + int0(todayTokens) + ' token';
   $('monthMoney').textContent = yuan2(monthTokens * price);
   if (totals) {
     const ratio = Number(totals.credit_to_token_ratio) || 0; // 1 积分折算多少 token
@@ -505,6 +512,7 @@ async function loadMonthly() {
   const todayKey = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
   const todayRow = daily.find(x => x.date === todayKey);
   todayTokens = todayRow ? (Number(todayRow.total_tokens) || 0) : 0;
+  todayCost = todayRow ? (Number(todayRow.quota_cost) || 0) : 0;
   renderOverview();
   renderChart(daily);
   renderModels(d.models || []);
