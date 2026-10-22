@@ -190,17 +190,13 @@ public final class Mirror {
         }
     }
 
-    /** 下载前 N KB 测一下速度，返回字节/秒；失败返回 0 */
-    static long speedOf(String url) {
-        long t0 = System.currentTimeMillis();
-        long bytes = measure(url);
-        long ms = Math.max(1, System.currentTimeMillis() - t0);
-        return bytes > 0 ? bytes * 1000 / ms : 0;
-    }
-
-    private static long measure(String url) {
+    /** 探测一个地址，返回 {字节数, 首字节耗时ms, 总耗时ms} */
+    static long[] probe(String url) {
         HttpURLConnection c = null;
         InputStream in = null;
+        long t0 = System.currentTimeMillis();
+        long firstByte = 0;
+        long total = 0;
         try {
             c = (HttpURLConnection) new URL(url).openConnection();
             c.setConnectTimeout(PROBE_TIMEOUT_MS);
@@ -209,28 +205,40 @@ public final class Mirror {
             c.setRequestProperty("User-Agent", "github-hosts/1.1");
             c.setRequestProperty("Range", "bytes=0-" + (PROBE_LIMIT - 1));
             if (c.getResponseCode() / 100 != 2) {
-                return 0;
+                return new long[]{0, 0, System.currentTimeMillis() - t0};
             }
             in = c.getInputStream();
             byte[] buf = new byte[16384];
-            long total = 0;
             long deadline = System.currentTimeMillis() + PROBE_TIMEOUT_MS;
             int n;
             while ((n = in.read(buf)) > 0) {
+                if (firstByte == 0) {
+                    firstByte = System.currentTimeMillis() - t0;
+                }
                 total += n;
                 if (total >= PROBE_LIMIT || System.currentTimeMillis() > deadline) {
                     break;
                 }
             }
-            return total;
         } catch (Exception e) {
-            return 0;
+            // 失败时保持 0
         } finally {
             close(in);
             if (c != null) {
                 c.disconnect();
             }
         }
+        return new long[]{total, firstByte, System.currentTimeMillis() - t0};
+    }
+
+    /** 返回字节/秒；失败返回 0 */
+    static long speedOf(String url) {
+        long[] r = probe(url);
+        return r[0] > 0 && r[2] > 0 ? r[0] * 1000 / r[2] : 0;
+    }
+
+    private static long measure(String url) {
+        return probe(url)[0];
     }
 
     private static String hostName(String proxy) {

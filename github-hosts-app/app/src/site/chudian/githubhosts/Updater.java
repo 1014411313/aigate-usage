@@ -21,9 +21,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
@@ -48,8 +50,8 @@ public final class Updater {
     private static final int MIN_LINES = 5;
     private static final int MAX_LOG_LINES = 400;
     private static final String HEADER = "# GitHub Hosts 自动生成于 ";
-    /** assets/sources.json 的版本号；每次新增内置源就 +1，旧数据会自动合并 */
-    private static final int SOURCES_VERSION = 2;
+    /** assets/sources.json 的版本号；每次内置源或合并规则变化就 +1，旧数据会自动对齐 */
+    private static final int SOURCES_VERSION = 3;
     private static final Pattern URL_PATTERN = Pattern.compile("\"url\"\\s*:\\s*\"([^\"]+)\"");
     private static final Pattern RAW_PATTERN =
             Pattern.compile("^https://raw\\.githubusercontent\\.com/([^/]+)/([^/]+)/([^/]+)/(.+)$");
@@ -89,25 +91,56 @@ public final class Updater {
     private static void mergeAssetSources(Context ctx, File dst) {
         try {
             JSONArray builtin = new JSONArray(readAsset(ctx, FILE_SOURCES));
-            JSONArray user = new JSONArray(readText(dst));
+            JSONArray raw = new JSONArray(readText(dst));
 
-            Set<String> keys = new HashSet<String>();
+            // 先去掉同名重复项（保留第一条）
+            JSONArray user = new JSONArray();
+            Map<String, Boolean> seen = new HashMap<String, Boolean>();
+            boolean changed = false;
+            for (int i = 0; i < raw.length(); i++) {
+                JSONObject o = raw.optJSONObject(i);
+                if (o == null) {
+                    continue;
+                }
+                String n = o.optString("name", "");
+                if (!n.isEmpty() && seen.containsKey(n)) {
+                    changed = true;
+                    continue;
+                }
+                if (!n.isEmpty()) {
+                    seen.put(n, Boolean.TRUE);
+                }
+                user.put(o);
+            }
+
+            // 再按名称对齐：同名的保持原位置，只把地址/过滤更新成内置源的值
+            Map<String, Integer> byName = new HashMap<String, Integer>();
             for (int i = 0; i < user.length(); i++) {
                 JSONObject o = user.optJSONObject(i);
                 if (o != null) {
-                    keys.add(keyOf(o));
+                    byName.put(o.optString("name", ""), Integer.valueOf(i));
                 }
             }
 
-            boolean changed = false;
             for (int i = 0; i < builtin.length(); i++) {
                 JSONObject o = builtin.optJSONObject(i);
                 if (o == null) {
                     continue;
                 }
-                if (!keys.contains(keyOf(o))) {
+                String name = o.optString("name", "");
+                Integer idx = byName.get(name);
+                if (idx == null) {
                     user.put(o);
+                    byName.put(name, Integer.valueOf(user.length() - 1));
                     changed = true;
+                } else {
+                    JSONObject exist = user.optJSONObject(idx.intValue());
+                    if (exist != null && !keyOf(exist).equals(keyOf(o))) {
+                        exist.put("url", o.optString("url", ""));
+                        exist.put("filter", o.optString("filter", ""));
+                        exist.put("desc", o.optString("desc", exist.optString("desc", "")));
+                        changed = true;
+                    }
                 }
             }
 
@@ -440,16 +473,17 @@ public final class Updater {
             }
         }
 
-        final LinkedHashMap<String, Long> speed = new LinkedHashMap<String, Long>();
+        final LinkedHashMap<String, long[]> stats = new LinkedHashMap<String, long[]>();
         ExecutorService pool = Executors.newFixedThreadPool(Math.max(1, Math.min(4, urls.size())));
         List<Future<?>> tasks = new ArrayList<Future<?>>();
         for (final String u : urls) {
             tasks.add(pool.submit(new Runnable() {
                 @Override
                 public void run() {
-                    long v = Mirror.speedOf(u);
-                    synchronized (speed) {
-                        speed.put(u, Long.valueOf(v));
+                    long[] p = Mirror.probe(u);
+                    long speed = p[0] > 0 && p[2] > 0 ? p[0] * 1000 / p[2] : 0;
+                    synchronized (stats) {
+                        stats.put(u, new long[]{speed, p[1]});
                     }
                 }
             }));
@@ -467,8 +501,9 @@ public final class Updater {
             JSONObject o = new JSONObject();
             try {
                 o.put("key", s.key());
-                Long v = speed.get(s.url);
-                o.put("speed", v == null ? 0 : v.longValue());
+                long[] v = stats.get(s.url);
+                o.put("speed", v == null ? 0 : v[0]);
+                o.put("ms", v == null ? 0 : v[1]);
             } catch (Exception ignored) {
             }
             arr.put(o);

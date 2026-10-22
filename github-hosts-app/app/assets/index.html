@@ -62,8 +62,9 @@ pre{background:#0b0d11;border:1px solid #21252f;border-radius:9px;padding:10px;m
 </div>
 
 <div class="card">
-  <h2>源（多源合并，按域名去重） <button id="btnSpeed" class="ghost" style="float:right;padding:3px 10px;font-size:12px;font-weight:500">全部测速</button></h2>
+  <h2>源（多源合并，按域名去重）</h2>
   <div id="srcList"></div>
+  <button id="btnSpeed" class="ghost" style="margin-top:10px;width:100%">全部测速</button>
 </div>
 
 <div class="card">
@@ -95,7 +96,7 @@ var A = window.Android;
 var $ = function (id) { return document.getElementById(id); };
 var busy = false;
 
-var sourceSpeeds = {};
+var sourceStats = {};
 
 function setOut(text) { $('out').textContent = text; }
 
@@ -159,8 +160,8 @@ window.__onResult = function (kind, text) {
   } else if (kind === 'sourcespeed') {
     try {
       var arr = JSON.parse(text || '[]');
-      sourceSpeeds = {};
-      arr.forEach(function (x) { sourceSpeeds[x.key] = x.speed; });
+      sourceStats = {};
+      arr.forEach(function (x) { sourceStats[x.key] = x; });
       renderSources();
       setOut('源测速完成');
     } catch (e) {
@@ -246,12 +247,17 @@ function renderSources() {
       grow.append(desc);
     }
 
-    if (sourceSpeeds[key] !== undefined) {
-      var sp = sourceSpeeds[key];
+    if (sourceStats[key] !== undefined) {
+      var st = sourceStats[key];
       var line = document.createElement('div');
       line.className = 'desc';
-      line.style.color = sp > 0 ? '#4ec97e' : '#e0605e';
-      line.textContent = sp > 0 ? ('测速 ' + Math.round(sp / 1024) + ' KB/s') : '测速 不可用';
+      if (st.speed > 0) {
+        line.style.color = '#4ec97e';
+        line.textContent = '延迟 ' + st.ms + ' ms · 速度 ' + Math.round(st.speed / 1024) + ' KB/s';
+      } else {
+        line.style.color = '#e0605e';
+        line.textContent = '连接失败';
+      }
       grow.append(line);
     }
 
