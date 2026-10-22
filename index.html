@@ -701,7 +701,7 @@ function downloadUpdate() {
   if (!updateInfo || !updateInfo.apk) { showMsg('没有可下载的安装包地址。', 'err'); return; }
   if (!b || typeof b.downloadUpdate !== 'function') { showMsg('当前环境不支持下载安装包。', 'err'); return; }
   const name = updateInfo.apk.split('/').pop() || 'aigate-usage.apk';
-  const result = b.downloadUpdate(updateInfo.apk, name);
+  const result = b.downloadUpdate(updateInfo.apk, updateInfo.apkRaw || '', name);
   showMsg(result === 'ok' ? ('已开始下载 ' + name + '，完成后点通知里的安装即可。') : ('下载失败：' + result), result === 'ok' ? 'ok' : 'err');
 }
 

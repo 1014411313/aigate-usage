@@ -33,9 +33,11 @@ import java.nio.charset.StandardCharsets;
 
 public class MainActivity extends Activity {
 
-    /** 仓库里的版本清单，推新版时一并更新 */
-    private static final String UPDATE_MANIFEST =
-            "https://raw.githubusercontent.com/1014411313/aigate-usage/main/dist/latest.json";
+    /** 仓库里的版本清单；国内访问 raw 不稳优先 jsDelivr，但它的 CDN 缓存可能滞后，所以两份都取、取版本更高的 */
+    private static final String[] UPDATE_MANIFESTS = {
+            "https://cdn.jsdelivr.net/gh/1014411313/aigate-usage@main/dist/latest.json?t={t}",
+            "https://raw.githubusercontent.com/1014411313/aigate-usage/main/dist/latest.json?t={t}",
+    };
 
     private WebView webView;
     private WebView relay;
@@ -154,10 +156,28 @@ public class MainActivity extends Activity {
                 PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
                 result.put("currentName", info.versionName);
                 result.put("currentCode", info.versionCode);
-                JSONObject latest = fetchJson(UPDATE_MANIFEST);
+                JSONObject latest = null;
+                Exception lastError = null;
+                boolean anyReachable = false;
+                String stamp = String.valueOf(System.currentTimeMillis() / 60000);
+                for (String template : UPDATE_MANIFESTS) {
+                    try {
+                        JSONObject candidate = fetchJson(template.replace("{t}", stamp));
+                        anyReachable = true;
+                        if (latest == null || candidate.optLong("versionCode") > latest.optLong("versionCode")) {
+                            latest = candidate;
+                        }
+                    } catch (Exception e) {
+                        lastError = e;
+                    }
+                }
+                if (!anyReachable || latest == null) {
+                    throw lastError != null ? lastError : new IllegalStateException("无法获取版本清单");
+                }
                 result.put("latestName", latest.optString("versionName"));
                 result.put("latestCode", latest.optLong("versionCode"));
                 result.put("apk", latest.optString("apk"));
+                result.put("apkRaw", latest.optString("apkRaw"));
                 result.put("notes", latest.optString("notes"));
                 result.put("hasUpdate", latest.optLong("versionCode") > info.versionCode);
             } catch (Exception e) {
@@ -171,22 +191,17 @@ public class MainActivity extends Activity {
             return result.toString();
         }
 
-        /** 交给系统下载器下载安装包，完成后用户在通知里点安装 */
+        /** 交给系统下载器；主地址入队失败时换备用地址 */
         @JavascriptInterface
-        public String downloadUpdate(String url, String fileName) {
-            try {
-                DownloadManager manager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
-                DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
-                request.setTitle("AIGate 用量 " + fileName);
-                request.setDescription("下载完成后点通知安装");
-                request.setMimeType("application/vnd.android.package-archive");
-                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-                request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName);
-                manager.enqueue(request);
-                return "ok";
-            } catch (Exception e) {
-                return "error: " + e.getMessage();
+        public String downloadUpdate(String url, String fallbackUrl, String fileName) {
+            String error = enqueueDownload(url, fileName);
+            if (error == null) return "ok";
+            if (fallbackUrl != null && !fallbackUrl.isEmpty()) {
+                String fallbackError = enqueueDownload(fallbackUrl, fileName);
+                if (fallbackError == null) return "ok";
+                error = fallbackError;
             }
+            return "error: " + error;
         }
     }
 
@@ -196,6 +211,24 @@ public class MainActivity extends Activity {
             webView.goBack();
         } else {
             super.onBackPressed();
+        }
+    }
+
+    /** 返回 null 表示已成功入队，否则返回错误信息 */
+    private String enqueueDownload(String url, String fileName) {
+        if (url == null || url.isEmpty()) return "下载地址为空";
+        try {
+            DownloadManager manager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+            request.setTitle("AIGate 用量 " + fileName);
+            request.setDescription("下载完成后点通知安装");
+            request.setMimeType("application/vnd.android.package-archive");
+            request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName);
+            manager.enqueue(request);
+            return null;
+        } catch (Exception e) {
+            return String.valueOf(e.getMessage());
         }
     }
 

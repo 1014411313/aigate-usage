@@ -1,6 +1,7 @@
 {
   "versionName": "1.10",
   "versionCode": 11,
-  "apk": "https://raw.githubusercontent.com/1014411313/aigate-usage/main/dist/aigate-usage-1.10.apk",
+  "apk": "https://cdn.jsdelivr.net/gh/1014411313/aigate-usage@main/dist/aigate-usage-1.10.apk",
+  "apkRaw": "https://raw.githubusercontent.com/1014411313/aigate-usage/main/dist/aigate-usage-1.10.apk",
   "notes": "项目地址入口 · 自动检查更新"
 }
