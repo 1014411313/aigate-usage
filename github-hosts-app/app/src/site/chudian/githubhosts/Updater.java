@@ -51,7 +51,13 @@ public final class Updater {
     private static final int MAX_LOG_LINES = 400;
     private static final String HEADER = "# GitHub Hosts 自动生成于 ";
     /** assets/sources.json 的版本号；每次内置源或合并规则变化就 +1，旧数据会自动对齐 */
-    private static final int SOURCES_VERSION = 3;
+    private static final int SOURCES_VERSION = 4;
+
+    /** 曾经内置过的源名：不在当前 assets 里的会被从用户数据中清掉 */
+    private static final String[] LEGACY_BUILTIN = {
+            "GitHub520", "ineo6/hosts", "ittuann/GitHub-IP-hosts", "Fetch GitHub Hosts",
+            "ittuann 精简版", "ineo6 DNS 方案", "Telegram", "Google"
+    };
     private static final Pattern URL_PATTERN = Pattern.compile("\"url\"\\s*:\\s*\"([^\"]+)\"");
     private static final Pattern RAW_PATTERN =
             Pattern.compile("^https://raw\\.githubusercontent\\.com/([^/]+)/([^/]+)/([^/]+)/(.+)$");
@@ -93,7 +99,15 @@ public final class Updater {
             JSONArray builtin = new JSONArray(readAsset(ctx, FILE_SOURCES));
             JSONArray raw = new JSONArray(readText(dst));
 
-            // 先去掉同名重复项（保留第一条）
+            Set<String> builtinNames = new HashSet<String>();
+            for (int i = 0; i < builtin.length(); i++) {
+                JSONObject o = builtin.optJSONObject(i);
+                if (o != null) {
+                    builtinNames.add(o.optString("name", ""));
+                }
+            }
+
+            // 去掉同名重复项，以及已下线的内置源（如 Google）
             JSONArray user = new JSONArray();
             Map<String, Boolean> seen = new HashMap<String, Boolean>();
             boolean changed = false;
@@ -103,13 +117,19 @@ public final class Updater {
                     continue;
                 }
                 String n = o.optString("name", "");
-                if (!n.isEmpty() && seen.containsKey(n)) {
+                if (n.isEmpty()) {
+                    user.put(o);
+                    continue;
+                }
+                if (seen.containsKey(n)) {
                     changed = true;
                     continue;
                 }
-                if (!n.isEmpty()) {
-                    seen.put(n, Boolean.TRUE);
+                if (isRemovedBuiltin(n) && !builtinNames.contains(n)) {
+                    changed = true;
+                    continue;
                 }
+                seen.put(n, Boolean.TRUE);
                 user.put(o);
             }
 
@@ -149,6 +169,15 @@ public final class Updater {
             }
         } catch (Exception ignored) {
         }
+    }
+
+    private static boolean isRemovedBuiltin(String name) {
+        for (String s : LEGACY_BUILTIN) {
+            if (s.equals(name)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static String keyOf(JSONObject o) {
@@ -381,11 +410,13 @@ public final class Updater {
         } catch (Exception ignored) {
         }
 
-        String base = "1014411313/aigate-usage@main/github-hosts-app/version.json";
+        // jsDelivr 对分支的 CDN 缓存长达 12 小时，所以优先走 raw（带时间戳绕过缓存）
+        String stamp = String.valueOf(System.currentTimeMillis() / 60000);
+        String raw = "https://raw.githubusercontent.com/1014411313/aigate-usage/main/github-hosts-app/version.json?t=" + stamp;
         String[] urls = {
-                "https://fastly.jsdelivr.net/gh/" + base,
-                "https://gcore.jsdelivr.net/gh/" + base,
-                "https://gh-proxy.com/https://raw.githubusercontent.com/1014411313/aigate-usage/main/github-hosts-app/version.json"
+                "https://gh-proxy.com/" + raw,
+                raw,
+                "https://fastly.jsdelivr.net/gh/1014411313/aigate-usage@main/github-hosts-app/version.json?t=" + stamp
         };
 
         String body = null;
@@ -409,13 +440,45 @@ public final class Updater {
             }
             out.put("current", current);
             out.put("latest", latest);
-            out.put("hasNew", !latest.equals(current));
+            out.put("hasNew", compareVersion(latest, current) > 0);
             out.put("page", o.optString("page", ""));
             out.put("apk", o.optString("apk", ""));
         } catch (Exception e) {
             return "FAIL: " + e.getMessage();
         }
         return out.toString();
+    }
+
+    /** a.b.c 形式的数字比较：a > b 返回正数 */
+    private static int compareVersion(String a, String b) {
+        String[] pa = a.split("\\.");
+        String[] pb = b.split("\\.");
+        int n = Math.max(pa.length, pb.length);
+        for (int i = 0; i < n; i++) {
+            int va = i < pa.length ? leadingInt(pa[i]) : 0;
+            int vb = i < pb.length ? leadingInt(pb[i]) : 0;
+            if (va != vb) {
+                return va - vb;
+            }
+        }
+        return 0;
+    }
+
+    private static int leadingInt(String s) {
+        int v = 0;
+        int digits = 0;
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c < '0' || c > '9') {
+                break;
+            }
+            v = v * 10 + (c - '0');
+            digits++;
+            if (digits > 6) {
+                break;
+            }
+        }
+        return v;
     }
 
     static List<String> extractUrls(String json) {
