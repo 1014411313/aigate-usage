@@ -48,6 +48,8 @@ public final class Updater {
     private static final int MIN_LINES = 5;
     private static final int MAX_LOG_LINES = 400;
     private static final String HEADER = "# GitHub Hosts 自动生成于 ";
+    /** assets/sources.json 的版本号；每次新增内置源就 +1，旧数据会自动合并 */
+    private static final int SOURCES_VERSION = 2;
     private static final Pattern URL_PATTERN = Pattern.compile("\"url\"\\s*:\\s*\"([^\"]+)\"");
     private static final Pattern RAW_PATTERN =
             Pattern.compile("^https://raw\\.githubusercontent\\.com/([^/]+)/([^/]+)/([^/]+)/(.+)$");
@@ -64,15 +66,94 @@ public final class Updater {
             return;
         }
         File src = new File(dir, FILE_SOURCES);
+        File ver = new File(dir, "sources.version");
+
         if (!src.exists()) {
             copyAsset(ctx, FILE_SOURCES, src);
+            writeInt(ver, SOURCES_VERSION);
+        } else if (readInt(ver, 1) < SOURCES_VERSION) {
+            // 升级时把新增的内置源合并进来，已存在的（按 url|filter）不重复
+            mergeAssetSources(ctx, src);
+            writeInt(ver, SOURCES_VERSION);
         }
+
         File dis = new File(dir, FILE_DISABLED);
         if (!dis.exists()) {
             try {
                 writeText(dis, "");
             } catch (IOException ignored) {
             }
+        }
+    }
+
+    private static void mergeAssetSources(Context ctx, File dst) {
+        try {
+            JSONArray builtin = new JSONArray(readAsset(ctx, FILE_SOURCES));
+            JSONArray user = new JSONArray(readText(dst));
+
+            Set<String> keys = new HashSet<String>();
+            for (int i = 0; i < user.length(); i++) {
+                JSONObject o = user.optJSONObject(i);
+                if (o != null) {
+                    keys.add(keyOf(o));
+                }
+            }
+
+            boolean changed = false;
+            for (int i = 0; i < builtin.length(); i++) {
+                JSONObject o = builtin.optJSONObject(i);
+                if (o == null) {
+                    continue;
+                }
+                if (!keys.contains(keyOf(o))) {
+                    user.put(o);
+                    changed = true;
+                }
+            }
+
+            if (changed) {
+                writeText(dst, user.toString(2) + "\n");
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
+    private static String keyOf(JSONObject o) {
+        String url = o.optString("url", "");
+        String filter = o.optString("filter", "");
+        return filter.isEmpty() ? url : url + "|" + filter;
+    }
+
+    private static String readAsset(Context ctx, String name) {
+        InputStream in = null;
+        try {
+            in = ctx.getAssets().open(name);
+            ByteArrayOutputStream bo = new ByteArrayOutputStream();
+            byte[] buf = new byte[8192];
+            int n;
+            while ((n = in.read(buf)) > 0) {
+                bo.write(buf, 0, n);
+            }
+            return new String(bo.toByteArray(), "UTF-8");
+        } catch (Exception e) {
+            return "";
+        } finally {
+            close(in);
+        }
+    }
+
+    private static void writeInt(File f, int v) {
+        try {
+            writeText(f, String.valueOf(v));
+        } catch (IOException ignored) {
+        }
+    }
+
+    private static int readInt(File f, int def) {
+        try {
+            return Integer.parseInt(readText(f).trim());
+        } catch (Exception e) {
+            return def;
         }
     }
 
@@ -345,6 +426,54 @@ public final class Updater {
             }
             return false;
         }
+    }
+
+    /** 对所有源测速，返回 JSON [{key, speed}] */
+    static String probeSources(Context ctx) {
+        ensureDefaults(ctx);
+        List<Source> sources = parseSources(loadSources(ctx));
+
+        final List<String> urls = new ArrayList<String>();
+        for (Source s : sources) {
+            if (!urls.contains(s.url)) {
+                urls.add(s.url);
+            }
+        }
+
+        final LinkedHashMap<String, Long> speed = new LinkedHashMap<String, Long>();
+        ExecutorService pool = Executors.newFixedThreadPool(Math.max(1, Math.min(4, urls.size())));
+        List<Future<?>> tasks = new ArrayList<Future<?>>();
+        for (final String u : urls) {
+            tasks.add(pool.submit(new Runnable() {
+                @Override
+                public void run() {
+                    long v = Mirror.speedOf(u);
+                    synchronized (speed) {
+                        speed.put(u, Long.valueOf(v));
+                    }
+                }
+            }));
+        }
+        pool.shutdown();
+        for (Future<?> f : tasks) {
+            try {
+                f.get(30, TimeUnit.SECONDS);
+            } catch (Exception ignored) {
+            }
+        }
+
+        JSONArray arr = new JSONArray();
+        for (Source s : sources) {
+            JSONObject o = new JSONObject();
+            try {
+                o.put("key", s.key());
+                Long v = speed.get(s.url);
+                o.put("speed", v == null ? 0 : v.longValue());
+            } catch (Exception ignored) {
+            }
+            arr.put(o);
+        }
+        return arr.toString();
     }
 
     static List<Source> parseSources(String json) {

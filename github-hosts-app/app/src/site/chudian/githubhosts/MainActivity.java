@@ -161,6 +161,16 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
+        public void testSources() {
+            runAsync("sourcespeed", new Callable<String>() {
+                @Override
+                public String call() {
+                    return Updater.probeSources(MainActivity.this);
+                }
+            });
+        }
+
+        @JavascriptInterface
         public void probe(String url) {
             final String u = url;
             runAsync("probe", new Callable<String>() {

@@ -190,6 +190,14 @@ public final class Mirror {
         }
     }
 
+    /** 下载前 N KB 测一下速度，返回字节/秒；失败返回 0 */
+    static long speedOf(String url) {
+        long t0 = System.currentTimeMillis();
+        long bytes = measure(url);
+        long ms = Math.max(1, System.currentTimeMillis() - t0);
+        return bytes > 0 ? bytes * 1000 / ms : 0;
+    }
+
     private static long measure(String url) {
         HttpURLConnection c = null;
         InputStream in = null;
