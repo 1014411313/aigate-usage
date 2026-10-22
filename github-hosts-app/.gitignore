@@ -1,0 +1,6 @@
+build/
+preview.png
+preview-*.png
+app/res/mipmap-*/
+app/icon-1024.png
+.DS_Store

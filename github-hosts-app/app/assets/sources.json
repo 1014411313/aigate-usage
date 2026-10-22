@@ -1,0 +1,10 @@
+[
+  { "name": "GitHub520", "url": "https://raw.hellogithub.com/hosts", "home": "https://github.com/521xueweihan/GitHub520", "desc": "最主流，CDN 直连，无需访问 GitHub 即可更新" },
+  { "name": "ineo6/hosts", "url": "https://gitlab.com/ineo6/hosts/-/raw/master/hosts", "home": "https://github.com/ineo6/hosts", "desc": "GitLab 镜像，图片与网页加速" },
+  { "name": "ittuann/GitHub-IP-hosts", "url": "https://fastly.jsdelivr.net/gh/ittuann/GitHub-IP-hosts@main/hosts", "home": "https://github.com/ittuann/GitHub-IP-hosts", "desc": "每周 Actions 更新，返回响应最快的 IP" },
+  { "name": "Fetch GitHub Hosts", "url": "https://hosts.gitcdn.top/hosts.txt", "home": "https://hosts.gitcdn.top/", "desc": "服务器自行测速，含 JSON 版本" },
+  { "name": "ittuann 精简版", "url": "https://fastly.jsdelivr.net/gh/ittuann/GitHub-IP-hosts@main/hosts_single", "home": "https://github.com/ittuann/GitHub-IP-hosts", "desc": "每个域名只保留单一 IP，条目更少" },
+  { "name": "ineo6 DNS 方案", "url": "https://gitlab.com/ineo6/hosts/-/raw/master/next-hosts", "home": "https://github.com/ineo6/hosts", "desc": "基于 DNS 解析获取的新方案" },
+  { "name": "Telegram", "url": "https://fastly.jsdelivr.net/gh/googlehosts/hosts@master/hosts-files/hosts", "filter": "telegram,=t.me,telegra.ph,tdesktop", "home": "https://github.com/googlehosts/hosts", "desc": "Telegram 主要域名指向官方 IP，只取 telegram 相关条目" },
+  { "name": "Google", "url": "https://fastly.jsdelivr.net/gh/googlehosts/hosts@master/hosts-files/hosts", "filter": "google.com,gstatic.com,googleapis.com,youtube.com,ytimg.com,ggpht.com,googlevideo.com", "home": "https://github.com/googlehosts/hosts", "desc": "Google 主要域名，注意 SNI 阻断下 hosts 可能无效" }
+]
