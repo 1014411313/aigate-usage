@@ -1,8 +1,8 @@
 {
   "_comment": "旧路径兼容清单：1.11 及更早版本从这个地址检查更新，新版项目已移到 aigate-usage/ 子目录。",
-  "versionName": "1.12",
-  "versionCode": 13,
-  "apk": "https://cdn.jsdelivr.net/gh/1014411313/aigate-usage@main/aigate-usage/dist/aigate-usage-1.12.apk",
-  "apkRaw": "https://raw.githubusercontent.com/1014411313/aigate-usage/main/aigate-usage/dist/aigate-usage-1.12.apk",
-  "notes": "修复白屏 · 项目移入子目录"
+  "versionName": "1.13",
+  "versionCode": 14,
+  "apk": "https://cdn.jsdelivr.net/gh/1014411313/aigate-usage@main/aigate-usage/dist/aigate-usage-1.13.apk",
+  "apkRaw": "https://raw.githubusercontent.com/1014411313/aigate-usage/main/aigate-usage/dist/aigate-usage-1.13.apk",
+  "notes": "修复白屏 · 更新检查三源"
 }

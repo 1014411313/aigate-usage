@@ -33,8 +33,9 @@ import java.nio.charset.StandardCharsets;
 
 public class MainActivity extends Activity {
 
-    /** 仓库里的版本清单；项目移入子目录后路径同步调整，顶层 dist/latest.json 留给旧版兼容 */
+    /** 版本清单的三个源：api.github.com 不经过 CDN 最准，jsDelivr 国内可达但分支缓存可能滞后，raw 常被墙 */
     private static final String[] UPDATE_MANIFESTS = {
+            "https://api.github.com/repos/1014411313/aigate-usage/contents/aigate-usage/dist/latest.json?ref=main&t={t}",
             "https://cdn.jsdelivr.net/gh/1014411313/aigate-usage@main/aigate-usage/dist/latest.json?t={t}",
             "https://raw.githubusercontent.com/1014411313/aigate-usage/main/aigate-usage/dist/latest.json?t={t}",
     };
@@ -252,6 +253,10 @@ public class MainActivity extends Activity {
         try {
             conn.setConnectTimeout(6000);
             conn.setReadTimeout(6000);
+            // api.github.com 默认返回 base64 包着的 JSON，要原始内容
+            if (url.contains("api.github.com")) {
+                conn.setRequestProperty("Accept", "application/vnd.github.raw");
+            }
             int code = conn.getResponseCode();
             if (code >= 400) throw new IllegalStateException("HTTP " + code);
             StringBuilder sb = new StringBuilder();
