@@ -367,8 +367,8 @@ public class OverlayService extends Service {
 
         setLine("token", "剩余 " + compactTokens(remaining));
         setLine("today", "今日消耗 " + compactTokens(todayCost));
-        setLine("month", "本月 " + compactTokens(summary.optDouble("total_tokens", 0)));
-        setLine("monthMoney", "本月已花 " + yuan(summary.optDouble("total_tokens", 0) * perToken));
+        setLine("month", "本月消耗 " + compactTokens(summary.optDouble("total_cost", 0)));
+        setLine("monthMoney", "本月已花 " + yuan(summary.optDouble("total_cost", 0) * perToken));
         setLine("spent", "总共已花 " + yuan(usedTokens * perToken + moneyQuota.optDouble("used", 0)));
         setLine("leftMoney", "剩余金额 " + yuan(leftTokens * perToken + moneyQuota.optDouble("remaining", 0)));
         renderCountdown();
