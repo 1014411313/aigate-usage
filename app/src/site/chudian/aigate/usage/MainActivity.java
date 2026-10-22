@@ -1,13 +1,16 @@
 package site.chudian.aigate.usage;
 
 import android.app.Activity;
+import android.app.DownloadManager;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Message;
 import android.provider.Settings;
 import android.webkit.JavascriptInterface;
@@ -18,11 +21,21 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
 
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
 public class MainActivity extends Activity {
+
+    /** 仓库里的版本清单，推新版时一并更新 */
+    private static final String UPDATE_MANIFEST =
+            "https://raw.githubusercontent.com/1014411313/aigate-usage/main/dist/latest.json";
 
     private WebView webView;
     private WebView relay;
@@ -123,6 +136,58 @@ public class MainActivity extends Activity {
         public void updateOverlay(String key, String priceYi, String seconds, String items) {
             OverlayService.setCredentials(key, priceYi, seconds, items);
         }
+
+        @JavascriptInterface
+        public String appVersion() {
+            try {
+                return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+            } catch (Exception e) {
+                return "unknown";
+            }
+        }
+
+        /** 比对仓库清单与本地版本，返回 JSON；出错时带 error 字段，不影响其它功能 */
+        @JavascriptInterface
+        public String checkUpdate() {
+            JSONObject result = new JSONObject();
+            try {
+                PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
+                result.put("currentName", info.versionName);
+                result.put("currentCode", info.versionCode);
+                JSONObject latest = fetchJson(UPDATE_MANIFEST);
+                result.put("latestName", latest.optString("versionName"));
+                result.put("latestCode", latest.optLong("versionCode"));
+                result.put("apk", latest.optString("apk"));
+                result.put("notes", latest.optString("notes"));
+                result.put("hasUpdate", latest.optLong("versionCode") > info.versionCode);
+            } catch (Exception e) {
+                result.remove("error");
+                try {
+                    result.put("error", String.valueOf(e.getMessage()));
+                } catch (Exception ignored) {
+                    // JSONObject 不可能在这里失败
+                }
+            }
+            return result.toString();
+        }
+
+        /** 交给系统下载器下载安装包，完成后用户在通知里点安装 */
+        @JavascriptInterface
+        public String downloadUpdate(String url, String fileName) {
+            try {
+                DownloadManager manager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+                DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+                request.setTitle("AIGate 用量 " + fileName);
+                request.setDescription("下载完成后点通知安装");
+                request.setMimeType("application/vnd.android.package-archive");
+                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName);
+                manager.enqueue(request);
+                return "ok";
+            } catch (Exception e) {
+                return "error: " + e.getMessage();
+            }
+        }
     }
 
     @Override
@@ -131,6 +196,24 @@ public class MainActivity extends Activity {
             webView.goBack();
         } else {
             super.onBackPressed();
+        }
+    }
+
+    private JSONObject fetchJson(String url) throws Exception {
+        HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+        try {
+            conn.setConnectTimeout(10000);
+            conn.setReadTimeout(10000);
+            int code = conn.getResponseCode();
+            if (code >= 400) throw new IllegalStateException("HTTP " + code);
+            StringBuilder sb = new StringBuilder();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) sb.append(line);
+            }
+            return new JSONObject(sb.toString());
+        } finally {
+            conn.disconnect();
         }
     }
 

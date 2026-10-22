@@ -98,19 +98,39 @@
   <div class="top">
     <div>
       <h1>AIGate 用量</h1>
-      <p class="sub">余额、消耗与金额</p>
+      <p class="sub"><span id="appVersion"></span>余额、消耗与金额</p>
     </div>
-    <button class="btn sm" id="settingsBtn">设置</button>
+    <div class="row">
+      <button class="btn sm" id="checkUpdateBtn">检查更新</button>
+      <button class="btn sm" id="settingsBtn">设置</button>
+    </div>
   </div>
 
   <div class="actions">
     <a class="btn primary" id="buyBtn" href="https://aigate.chudian.site/recharge" target="_blank" rel="noopener">购买 Token</a>
     <a class="btn" href="https://aigate.chudian.site/models" target="_blank" rel="noopener">模型文档</a>
     <button class="btn" id="overlayBtn">实时悬浮窗</button>
+    <a class="btn" id="repoBtn" href="https://github.com/1014411313/aigate-usage" target="_blank" rel="noopener">项目地址</a>
     <button class="btn plain" id="changelogBtn">更新日志</button>
   </div>
 
+  <div id="updateBox" class="card hidden" style="background:#eef2ff;border-color:#c7d2fe">
+    <div class="row" style="justify-content:space-between">
+      <div style="min-width:0">
+        <b>发现新版本 <span id="updateName">-</span></b>
+        <div class="hint" id="updateNotes"></div>
+      </div>
+      <button class="btn primary sm" id="updateBtn">下载更新</button>
+    </div>
+  </div>
+
   <section id="changelog" class="card log hidden">
+    <h3>1.10</h3>
+    <ul>
+      <li>新增「项目地址」入口，在应用内打开源码仓库</li>
+      <li>新增自动检查更新：启动时比对仓库里的版本清单，有新版本就在顶部提示，可一键下载，完成后点通知安装</li>
+      <li>标题栏显示当前版本号，旁边增加「检查更新」按钮</li>
+    </ul>
     <h3>1.9</h3>
     <ul>
       <li>「今日使用」改为「今日消耗」：按平台 Token 消耗（含按量计费折扣与缓存）显示，小字保留原始 token 数</li>
@@ -639,6 +659,52 @@ async function copyKey() {
   showMsg(ok ? 'Key 已复制到剪贴板，去购买页直接粘贴即可。' : '复制失败，请手动选中 Key 复制。', ok ? 'ok' : 'err');
 }
 
+/* ---------- 版本与更新 ---------- */
+const bridge = () => window.AndroidHost || null;
+const updateSupported = () => { const b = bridge(); return !!(b && typeof b.checkUpdate === 'function'); };
+
+let updateInfo = null;
+
+function renderVersion() {
+  const b = bridge();
+  if (!b || typeof b.appVersion !== 'function') return;
+  try { $('appVersion').textContent = 'v' + b.appVersion() + ' · '; } catch (e) { /* 取不到就不显示 */ }
+}
+
+function renderUpdate() {
+  if (!updateInfo || !updateInfo.hasUpdate) { $('updateBox').classList.add('hidden'); return; }
+  $('updateName').textContent = 'v' + updateInfo.latestName;
+  $('updateNotes').textContent = (updateInfo.notes ? updateInfo.notes + ' · ' : '') + '当前 v' + updateInfo.currentName;
+  $('updateBox').classList.remove('hidden');
+}
+
+function checkUpdate(manual) {
+  if (!updateSupported()) {
+    if (manual) showMsg('检查更新只在 App 内可用（浏览器打开时不涉及安装包）。', 'err');
+    return;
+  }
+  try {
+    updateInfo = JSON.parse(bridge().checkUpdate());
+  } catch (e) {
+    updateInfo = { error: '返回值解析失败' };
+  }
+  if (updateInfo.error) {
+    if (manual) showMsg('检查更新失败：' + updateInfo.error + '（不影响其它功能）', 'err');
+    return;
+  }
+  renderUpdate();
+  if (manual) showMsg(updateInfo.hasUpdate ? ('发现新版本 v' + updateInfo.latestName) : ('已是最新版本 v' + updateInfo.currentName), 'ok');
+}
+
+function downloadUpdate() {
+  const b = bridge();
+  if (!updateInfo || !updateInfo.apk) { showMsg('没有可下载的安装包地址。', 'err'); return; }
+  if (!b || typeof b.downloadUpdate !== 'function') { showMsg('当前环境不支持下载安装包。', 'err'); return; }
+  const name = updateInfo.apk.split('/').pop() || 'aigate-usage.apk';
+  const result = b.downloadUpdate(updateInfo.apk, name);
+  showMsg(result === 'ok' ? ('已开始下载 ' + name + '，完成后点通知里的安装即可。') : ('下载失败：' + result), result === 'ok' ? 'ok' : 'err');
+}
+
 /* ---------- 交互绑定 ---------- */
 $('month').value = new Date().toISOString().slice(0, 7);
 $('loadBtn').addEventListener('click', () => loadAll());
@@ -664,6 +730,8 @@ $('changelogBtn').addEventListener('click', () => {
   const hidden = $('changelog').classList.toggle('hidden');
   $('changelogBtn').textContent = hidden ? '更新日志' : '收起日志';
 });
+$('checkUpdateBtn').addEventListener('click', () => checkUpdate(true));
+$('updateBtn').addEventListener('click', downloadUpdate);
 $('settingsBtn').addEventListener('click', () => {
   const hidden = $('settings').classList.toggle('hidden');
   $('settingsBtn').textContent = hidden ? '设置' : '收起设置';
@@ -680,6 +748,8 @@ loadOverlayItems();
 updateAutoStatus();
 renderOverview();
 refreshOverlayBtn();
+renderVersion();
+checkUpdate(false);
 const remembered = loadKey();
 if (remembered) {
   $('apiKey').value = remembered;
