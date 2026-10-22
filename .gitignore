@@ -1,0 +1,7 @@
+# 构建产物
+build/
+
+# 由 index.html / tools/MakeIcon.java 生成
+app/assets/
+app/res/mipmap-*/
+app/icon-1024.png

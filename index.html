@@ -1,0 +1,686 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIGate 用量</title>
+<style>
+  :root {
+    --bg:#f5f6fa; --card:#fff; --line:#e9edf5; --soft:#f7f9fc;
+    --text:#1f2937; --muted:#6b7280; --faint:#9ca3af;
+    --primary:#4f46e5; --primary-soft:#eef2ff;
+    --ok:#15803d; --warn:#b45309; --danger:#be123c;
+    --shadow:0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.03);
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:14px 12px 26px; background:var(--bg); color:var(--text);
+         font-family: system-ui, -apple-system, "Noto Sans CJK SC", sans-serif; font-size:13.5px; line-height:1.45;
+         -webkit-text-size-adjust:100%; }
+  .wrap { max-width:760px; margin:0 auto; }
+  h1 { font-size:17px; font-weight:650; margin:0; }
+  .sub { color:var(--muted); font-size:11.5px; margin:2px 0 0; }
+  h2 { font-size:12px; font-weight:600; color:var(--muted); letter-spacing:.3px;
+       margin:18px 0 8px; display:flex; align-items:center; gap:8px; }
+  h2::after { content:""; flex:1; height:1px; background:var(--line); }
+  .top { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; }
+
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px 13px; box-shadow:var(--shadow); }
+  .card + .card { margin-top:10px; }
+  .panel { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:2px 13px; box-shadow:var(--shadow); }
+  .kv { display:flex; align-items:baseline; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px solid var(--soft); }
+  .kv:last-child { border-bottom:0; }
+  .kv .k { color:var(--muted); font-size:12.5px; flex:0 1 auto; min-width:0; overflow-wrap:anywhere; }
+  .kv .k em { display:block; font-style:normal; color:var(--faint); font-size:10.5px; }
+  .kv .v { font-size:14.5px; font-weight:600; font-variant-numeric:tabular-nums; text-align:right;
+           flex:0 1 auto; min-width:0; overflow-wrap:anywhere; }
+  .kv .v.accent { color:var(--primary); }
+
+  .actions { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+  .btn { display:inline-flex; align-items:center; justify-content:center; padding:8px 12px; border:1px solid transparent;
+         border-radius:9px; background:var(--soft); color:#374151; font-size:12.5px; font-family:inherit;
+         text-decoration:none; cursor:pointer; white-space:nowrap; }
+  .btn.primary { background:var(--primary); color:#fff; }
+  .btn.sm { padding:6px 10px; font-size:12.5px; }
+  .btn.plain { background:transparent; color:var(--muted); padding:8px 4px; }
+  button { border:0; font-family:inherit; cursor:pointer; }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+
+  .field + .field { margin-top:12px; padding-top:12px; border-top:1px solid var(--line); }
+  .lbl { display:block; font-size:11.5px; color:var(--muted); margin-bottom:6px; }
+  input[type=password], input[type=text], input[type=number], input[type=month], select {
+    padding:8px 10px; border:1px solid #dfe3ec; border-radius:9px; font-size:13.5px; font-family:inherit;
+    color:inherit; background:#fff; min-width:0; }
+  input:focus, select:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-soft); }
+  .row { display:flex; gap:7px; align-items:center; flex-wrap:wrap; }
+  .chk { display:inline-flex; align-items:center; gap:5px; color:#374151; font-size:12.5px; }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; }
+  .chip { display:inline-flex; align-items:center; gap:5px; padding:6px 10px; border:1px solid var(--line);
+          border-radius:999px; background:var(--soft); font-size:12.5px; color:#4b5563; }
+  .chip:has(input:checked) { background:var(--primary-soft); border-color:#c7d2fe; color:#3730a3; }
+  .hint { color:var(--faint); font-size:11.5px; margin:8px 0 0; }
+  .grouphead { display:flex; align-items:center; justify-content:space-between; width:100%;
+               background:transparent; padding:2px 0; color:var(--text); font-size:12.5px; font-weight:600; }
+  .grouphead .chev { color:var(--primary); font-weight:500; font-size:11.5px; }
+
+  .scroll { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:12.5px; }
+  th, td { text-align:left; padding:8px 7px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  th { color:var(--muted); font-weight:500; font-size:11.5px; background:var(--soft); }
+  tbody tr:nth-child(even) { background:#fcfdff; }
+  tbody tr:last-child td { border-bottom:0; }
+  .num { font-variant-numeric:tabular-nums; text-align:right; }
+  .tag { display:inline-block; padding:1px 7px; border-radius:999px; font-size:10.5px; background:var(--primary-soft); color:#3730a3; }
+  .tag.money { background:#dcfce7; color:var(--ok); }
+
+  .charts { display:flex; align-items:flex-end; gap:3px; height:120px; padding:4px 0; }
+  .bar { flex:1 0 9px; min-width:9px; background:var(--primary); opacity:.7; border-radius:3px 3px 0 0; }
+  .barlabel { display:flex; gap:3px; font-size:9.5px; color:var(--faint); padding-bottom:3px; }
+  .barlabel span { flex:1 0 9px; min-width:9px; text-align:center; overflow:hidden; }
+  .barwrap { overflow-x:auto; }
+  .barwrap .inner { min-width:100%; }
+  .barwrap .labelrow { display:flex; justify-content:space-between; color:var(--faint); font-size:11px; margin-top:6px; }
+  .pctwrap { height:5px; background:var(--primary-soft); border-radius:999px; overflow:hidden; min-width:70px; }
+  .pctbar { height:100%; background:var(--primary); }
+
+  .msg { padding:9px 11px; border-radius:10px; margin:10px 0; display:none; font-size:12.5px; }
+  .msg.err { display:block; background:#fef2f2; border:1px solid #fee2e2; color:var(--danger); }
+  .msg.ok { display:block; background:#f0fdf4; border:1px solid #dcfce7; color:var(--ok); }
+  .log h3 { font-size:12.5px; margin:12px 0 5px; }
+  .log h3:first-child { margin-top:0; }
+  .log ul { margin:0; padding-left:16px; color:#4b5563; font-size:12.5px; }
+  .log li { margin:2px 0; }
+  .hidden { display:none; }
+  .muted { color:var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>AIGate 用量</h1>
+      <p class="sub">余额、消耗与金额</p>
+    </div>
+    <button class="btn sm" id="settingsBtn">设置</button>
+  </div>
+
+  <div class="actions">
+    <a class="btn primary" id="buyBtn" href="https://aigate.chudian.site/recharge" target="_blank" rel="noopener">购买 Token</a>
+    <a class="btn" href="https://aigate.chudian.site/models" target="_blank" rel="noopener">模型文档</a>
+    <button class="btn" id="overlayBtn">实时悬浮窗</button>
+    <button class="btn plain" id="changelogBtn">更新日志</button>
+  </div>
+
+  <section id="changelog" class="card log hidden">
+    <h3>1.8</h3>
+    <ul>
+      <li>概览、账户、月度改成紧凑面板：标签在左、数值在右，长数字不再溢出卡片</li>
+      <li>token 数字统一取整显示（原接口会带小数），金额保留两位小数</li>
+      <li>「悬浮窗显示项」独立成一组、可单独收起展开；整体间距与字号收紧</li>
+      <li>悬浮窗内 token 用万 / 亿缩写，窗口更窄，一行放得下</li>
+    </ul>
+    <h3>1.7</h3>
+    <ul>
+      <li>排版重做：设置收进可折叠面板；悬浮窗改版为 6 项数据 + 自动更新倒计时，每项可单独开关</li>
+      <li>改 Key / 单价 / 间隔 / 显示项后自动同步给正在运行的悬浮窗，无需关掉重开</li>
+    </ul>
+    <h3>1.6</h3>
+    <ul>
+      <li>页面里改完 Key 或单价后自动同步给正在运行的悬浮窗并立即刷新，不必关掉重开</li>
+    </ul>
+    <h3>1.5</h3>
+    <ul>
+      <li>新增「实时悬浮窗」：在桌面或其他应用上层显示用量，可拖动、点一下立即刷新、右上角 ✕ 关闭</li>
+      <li>首次开启需授予「显示在其他应用上层」权限；运行期间会有一条常驻通知（前台服务要求）</li>
+      <li>失败提示更明确：Key 无效、网络不通分开提示，悬浮窗也直接显示服务端返回的原因</li>
+    </ul>
+    <h3>1.4</h3>
+    <ul>
+      <li>「模型文档」与「购买 Token」改为应用内打开，不再跳出到浏览器；左上角返回即回到用量页</li>
+      <li>支付宝 / 微信这类自定义协议的链接仍交给对应 App，WebView 处理不了</li>
+    </ul>
+    <h3>1.3</h3>
+    <ul>
+      <li>点「购买 Token」时自动把当前 Key 复制到剪贴板，购买页直接粘贴；未填 Key 会先提示</li>
+    </ul>
+    <h3>1.2</h3>
+    <ul>
+      <li>新增「更新日志」入口，点击在页面内展开/收起各版本改动</li>
+    </ul>
+    <h3>1.1</h3>
+    <ul>
+      <li>Key 不再内置：首次填入后勾选「记住 Key」存到本机，下次打开自动带出，取消勾选即清除</li>
+      <li>新增 Token 单价设置（默认 29 元 / 亿 Token，可自定义，同样存本机），改动即时重算金额</li>
+      <li>新增「购买 Token」与「模型文档」入口</li>
+    </ul>
+    <h3>1.0</h3>
+    <ul>
+      <li>余额、额度包（含剩余比例与分页）、月度统计、每日用量柱状图、按模型分布</li>
+      <li>自动刷新：30 秒 / 1 分钟 / 5 分钟 / 15 分钟，带倒计时与上次更新时间</li>
+      <li>打包为 Android 应用：内置页面，应用名「AIGate 用量」，minSdk 24</li>
+    </ul>
+  </section>
+
+  <section id="settings" class="card hidden">
+    <div class="field" style="margin-top:0">
+      <label class="lbl" for="apiKey">API Key</label>
+      <input type="password" id="apiKey" placeholder="sk-ag-..." style="width:100%">
+      <div class="row" style="margin-top:7px">
+        <button class="btn primary sm" id="loadBtn">查询</button>
+        <button class="btn sm" id="toggleKey">显示</button>
+        <label class="chk"><input type="checkbox" id="rememberKey" checked> 记住 Key</label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="lbl" for="priceYi">Token 单价</label>
+      <div class="row">
+        <input type="number" id="priceYi" min="0" step="0.01" style="flex:0 1 110px">
+        <span class="muted">元 / 亿 Token</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="lbl">自动刷新（页面与悬浮窗共用）</label>
+      <div class="row">
+        <label class="chk"><input type="checkbox" id="autoRefresh" checked> 自动刷新</label>
+        <select id="autoInterval" style="flex:0 1 120px">
+          <option value="30">每 30 秒</option>
+          <option value="60" selected>每 1 分钟</option>
+          <option value="300">每 5 分钟</option>
+          <option value="900">每 15 分钟</option>
+        </select>
+      </div>
+      <p class="hint" id="autoStatus"></p>
+    </div>
+
+    <div class="field">
+      <button class="grouphead" id="overlaySettingsBtn" type="button">
+        <span>悬浮窗显示项</span>
+        <span class="chev" id="overlayChev">展开</span>
+      </button>
+      <div id="overlaySettings" class="hidden" style="margin-top:9px">
+        <div class="chips" id="overlayItems">
+          <label class="chip"><input type="checkbox" class="ovitem" data-key="token" checked> 剩余 Token</label>
+          <label class="chip"><input type="checkbox" class="ovitem" data-key="today" checked> 今日使用</label>
+          <label class="chip"><input type="checkbox" class="ovitem" data-key="month" checked> 本月使用</label>
+          <label class="chip"><input type="checkbox" class="ovitem" data-key="monthMoney" checked> 本月已花</label>
+          <label class="chip"><input type="checkbox" class="ovitem" data-key="spent" checked> 总共已花</label>
+          <label class="chip"><input type="checkbox" class="ovitem" data-key="leftMoney" checked> 剩余金额</label>
+          <label class="chip"><input type="checkbox" class="ovitem" data-key="countdown" checked> 更新倒计时</label>
+        </div>
+        <p class="hint">勾选的项目显示在悬浮窗上，改动即时生效。</p>
+      </div>
+    </div>
+
+    <p class="hint">Key、单价与显示项都只存在本机；取消勾选「记住 Key」即清除 Key。查询受速率限制，间隔别设太短。</p>
+  </section>
+
+  <div class="msg" id="msg"></div>
+
+  <div id="content" class="hidden">
+    <h2>概览</h2>
+    <div class="panel">
+      <div class="kv"><span class="k">剩余 Token</span><span class="v" id="tokenBalance">-</span></div>
+      <div class="kv"><span class="k">今日使用</span><span class="v" id="todayTokens">-</span></div>
+      <div class="kv"><span class="k">本月使用</span><span class="v" id="monthTokensView">-</span></div>
+      <div class="kv"><span class="k">本月已花</span><span class="v accent" id="monthMoney">-</span></div>
+      <div class="kv"><span class="k">总共已花<em id="spentBasis"></em></span><span class="v accent" id="spentMoney">-</span></div>
+      <div class="kv"><span class="k">剩余金额<em id="leftBasis"></em></span><span class="v" id="leftMoney">-</span></div>
+    </div>
+
+    <h2>账户</h2>
+    <div class="panel">
+      <div class="kv"><span class="k">人民币余额</span><span class="v" id="moneyBalance">-</span></div>
+      <div class="kv"><span class="k">积分余额</span><span class="v" id="creditBalance">-</span></div>
+      <div class="kv"><span class="k">速率限制</span><span class="v" id="rateLimit">-</span></div>
+    </div>
+
+    <h2>额度包</h2>
+    <div class="card" style="padding:0">
+      <div class="scroll">
+        <table>
+          <thead><tr><th>类型</th><th>计费方案</th><th class="num">总额度</th><th class="num">已用</th><th class="num">剩余</th><th>剩余比例</th><th>有效期</th><th>备注</th></tr></thead>
+          <tbody id="quotaRows"></tbody>
+        </table>
+      </div>
+      <div class="row" style="justify-content:space-between;padding:10px 13px">
+        <span class="muted" id="quotaPageInfo">第 1 / 1 页</span>
+        <span class="row">
+          <button class="btn sm" id="quotaPrev">上一页</button>
+          <button class="btn sm" id="quotaNext">下一页</button>
+        </span>
+      </div>
+    </div>
+
+    <h2>月度明细</h2>
+    <div class="card">
+      <div class="row" style="margin-bottom:9px">
+        <input type="month" id="month" style="flex:0 1 160px">
+        <button class="btn sm" id="refresh">刷新</button>
+      </div>
+      <div class="panel" style="border:0;box-shadow:none;padding:0">
+        <div class="kv"><span class="k">总 Token</span><span class="v" id="totalTokens">-</span></div>
+        <div class="kv"><span class="k">请求数</span><span class="v" id="totalRequests">-</span></div>
+        <div class="kv"><span class="k">Token 消耗</span><span class="v" id="totalCost">-</span></div>
+        <div class="kv"><span class="k">平台金额消耗</span><span class="v" id="totalMoneyCost">-</span></div>
+      </div>
+    </div>
+
+    <h2>每日用量</h2>
+    <div class="card">
+      <div class="barwrap">
+        <div class="inner" id="dailyChart"></div>
+      </div>
+    </div>
+
+    <h2>按模型分布</h2>
+    <div class="card scroll" style="padding:0">
+      <table>
+        <thead><tr><th>模型</th><th class="num">请求数</th><th class="num">Token 数</th><th class="num">Token 消耗</th><th class="num">金额消耗</th><th>占比</th></tr></thead>
+        <tbody id="modelRows"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const ORIGIN = 'https://aigate.chudian.site';
+const STORAGE_KEY = 'aigate.apiKey';
+const PRICE_KEY = 'aigate.pricePerYi';
+const ITEMS_KEY = 'aigate.overlayItems';
+const OVERLAY_ITEM_KEYS = ['token', 'today', 'month', 'monthMoney', 'spent', 'leftMoney', 'countdown'];
+const QUOTA_TYPE_LABELS = { token: '通用 Token', credit: '积分', money: '人民币', model_token: '模型 Token' };
+const BILLING_SCHEME_LABELS = { legacy_flat: '固定 1 倍率', legacy_model_multiplier: '模型倍率', value_weighted: '新按量计费' };
+const $ = id => document.getElementById(id);
+
+// token 数一律取整显示：接口给的余额与消耗会带小数，长小数会把卡片撑破
+const int0 = n => {
+  const v = Number(n);
+  return isFinite(v) ? Math.round(v).toLocaleString('zh-CN') : '-';
+};
+const money = n => '¥ ' + (Number(n) || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 6 });
+const yuan2 = n => '¥ ' + (Number(n) || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const clockTime = () => new Date().toLocaleTimeString('zh-CN', { hour12: false });
+
+function showMsg(text, kind) {
+  const el = $('msg');
+  el.textContent = text || '';
+  el.className = 'msg' + (text ? ' ' + kind : '');
+}
+
+/* ---------- 本机存储 ---------- */
+function saveKey() {
+  try {
+    const key = $('apiKey').value.trim();
+    if ($('rememberKey').checked && key) localStorage.setItem(STORAGE_KEY, key);
+    else localStorage.removeItem(STORAGE_KEY);
+  } catch (e) { /* 存储不可用时 Key 仅本次生效 */ }
+  syncOverlay();
+}
+
+function loadKey() {
+  try { return localStorage.getItem(STORAGE_KEY) || ''; } catch (e) { return ''; }
+}
+
+function loadPrice() {
+  try {
+    const v = Number(localStorage.getItem(PRICE_KEY));
+    if (isFinite(v) && v > 0) return v;
+  } catch (e) { /* 用默认价 */ }
+  return 29;
+}
+
+function savePrice() {
+  try { localStorage.setItem(PRICE_KEY, String($('priceYi').value)); } catch (e) { /* 仅本次生效 */ }
+}
+
+const pricePerToken = () => {
+  const v = Number($('priceYi').value);
+  return isFinite(v) && v > 0 ? v / 1e8 : 0;
+};
+
+function overlayItemBoxes() { return Array.prototype.slice.call(document.querySelectorAll('.ovitem')); }
+
+function loadOverlayItems() {
+  let saved = null;
+  try { saved = localStorage.getItem(ITEMS_KEY); } catch (e) { /* 用默认全开 */ }
+  const keys = saved ? saved.split(',').filter(k => OVERLAY_ITEM_KEYS.indexOf(k) >= 0) : OVERLAY_ITEM_KEYS;
+  overlayItemBoxes().forEach(box => { box.checked = keys.indexOf(box.dataset.key) >= 0; });
+}
+
+const overlayItems = () => overlayItemBoxes().filter(b => b.checked).map(b => b.dataset.key);
+
+function saveOverlayItems() {
+  try { localStorage.setItem(ITEMS_KEY, overlayItems().join(',')); } catch (e) { /* 仅本次生效 */ }
+  syncOverlay();
+}
+
+/* ---------- 接口 ---------- */
+async function apiGet(path) {
+  let res;
+  try {
+    res = await fetch(ORIGIN + path, { headers: { Authorization: 'Bearer ' + $('apiKey').value.trim() } });
+  } catch (e) {
+    throw new Error('请求发不出去：网络不通，或 Key 无效（Key 无效时服务端不返回跨域头，浏览器会报跨域）');
+  }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.error?.message || data?.message || ('请求失败 (HTTP ' + res.status + ')'));
+  return data;
+}
+
+async function apiPost(path, body) {
+  let res;
+  try {
+    res = await fetch(ORIGIN + path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch (e) {
+    throw new Error('请求发不出去：网络不通，或 Key 无效（Key 无效时服务端不返回跨域头，浏览器会报跨域）');
+  }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || data?.error) throw new Error(data?.error?.message || data?.error_message || data?.message || (typeof data?.error === 'string' ? data.error : ('请求失败 (HTTP ' + res.status + ')')));
+  return data;
+}
+
+/* ---------- 金额与用量汇总 ---------- */
+let totals = null;      // /pay/credit-usage 返回的聚合余额
+let monthTokens = 0;    // 当前选中月份的消耗
+let todayTokens = 0;    // 今天的消耗
+
+function renderOverview() {
+  const price = pricePerToken();
+  $('monthTokensView').textContent = int0(monthTokens);
+  $('todayTokens').textContent = int0(todayTokens);
+  $('monthMoney').textContent = yuan2(monthTokens * price);
+  if (totals) {
+    const ratio = Number(totals.credit_to_token_ratio) || 0; // 1 积分折算多少 token
+    const t = totals.balance?.token || {}, c = totals.balance?.credit || {}, m = totals.balance?.money || {};
+    const usedTokens = (Number(t.used) || 0) + (Number(c.used) || 0) * ratio;
+    const leftTokens = (Number(t.remaining) || 0) + (Number(c.remaining) || 0) * ratio;
+    $('spentMoney').textContent = yuan2(usedTokens * price + (Number(m.used) || 0));
+    $('leftMoney').textContent = yuan2(leftTokens * price + (Number(m.remaining) || 0));
+    $('spentBasis').textContent = '折合 ' + int0(usedTokens) + ' token';
+    $('leftBasis').textContent = '折合 ' + int0(leftTokens) + ' token';
+  }
+}
+
+/* ---------- 查询 ---------- */
+async function loadBalance() {
+  const d = (await apiGet('/user/balance')).data || {};
+  $('moneyBalance').textContent = money(d.money_balance);
+  $('tokenBalance').textContent = int0(d.token_balance);
+  $('creditBalance').textContent = int0(d.credit_balance) + ' 积分';
+  $('rateLimit').textContent = (d.rate_limit ?? '-') + ' RPM';
+}
+
+async function loadCreditBalance() {
+  const month = $('month').value || new Date().toISOString().slice(0, 7);
+  const r = await apiPost('/pay/credit-usage', { api_key: $('apiKey').value.trim(), month, per_page: 1 });
+  totals = r.data || {};
+  renderOverview();
+}
+
+const quotaState = p => {
+  const now = Date.now();
+  const parse = s => new Date(String(s).replace(' ', 'T')).getTime();
+  if (Number(p.remaining) <= 0) return '<span class="muted">已用完</span>';
+  if (p.effective_at && parse(p.effective_at) > now) return '<span style="color:var(--warn)">待生效</span>';
+  if (p.expires_at && parse(p.expires_at) <= now) return '<span style="color:var(--danger)">已过期</span>';
+  return '<span style="color:var(--ok)">可用</span>';
+};
+
+let quotaPage = 1, quotaTotalPages = 1;
+
+async function loadQuotas(page = 1) {
+  const d = (await apiGet('/user/quotas?page=' + page + '&per_page=5')).data || {};
+  const packages = d.packages || [];
+  const meta = d.meta || {};
+  $('quotaRows').innerHTML = packages.length ? packages.map(p => {
+    const ratio = Number(p.total_quota) > 0 ? Math.max(0, Math.min(100, Number(p.remaining) / Number(p.total_quota) * 100)) : 0;
+    const amount = f => p.quota_type === 'money' ? money(p[f]) : int0(p[f]);
+    return '<tr>' +
+      '<td><span class="tag' + (p.quota_type === 'money' ? ' money' : '') + '">' + (QUOTA_TYPE_LABELS[p.quota_type] || p.quota_type) + '</span>' +
+      '<div style="font-size:11px">' + quotaState(p) + '</div></td>' +
+      '<td>' + (BILLING_SCHEME_LABELS[p.billing_scheme] || p.billing_scheme || '-') + '</td>' +
+      '<td class="num">' + amount('total_quota') + '</td>' +
+      '<td class="num">' + amount('used_quota') + '</td>' +
+      '<td class="num"><b>' + amount('remaining') + '</b></td>' +
+      '<td><div class="pctwrap"><div class="pctbar" style="width:' + ratio.toFixed(1) + '%"></div></div>' +
+      '<span class="muted" style="font-size:10.5px">' + ratio.toFixed(1) + '%</span></td>' +
+      '<td>' + (p.expires_at || '永久') + '</td>' +
+      '<td class="muted">' + (p.remark || '-') + '</td></tr>';
+  }).join('') : '<tr><td colspan="8" class="muted" style="padding:18px;text-align:center">暂无额度包</td></tr>';
+
+  quotaPage = Number(meta.page) || 1;
+  quotaTotalPages = Math.max(1, Number(meta.total_pages) || 1);
+  $('quotaPageInfo').textContent = '第 ' + quotaPage + ' / ' + quotaTotalPages + ' 页，共 ' + int0(meta.total || 0) + ' 个';
+  $('quotaPrev').disabled = quotaPage <= 1;
+  $('quotaNext').disabled = quotaPage >= quotaTotalPages;
+}
+
+function renderChart(daily) {
+  if (!daily.length) { $('dailyChart').innerHTML = '<p class="muted">本月暂无数据</p>'; return; }
+  const max = Math.max.apply(null, daily.map(d => Number(d.total_tokens) || 0)) || 1;
+  const bars = daily.map(d => {
+    const v = Number(d.total_tokens) || 0;
+    const h = v > 0 ? Math.max(2, Math.round(v / max * 112)) : 1;
+    return '<div class="bar" style="height:' + h + 'px" title="' + d.date + '：' + int0(v) + ' token / ' + int0(d.requests) + ' 次"></div>';
+  }).join('');
+  const labels = daily.map(d => '<span>' + String(d.date).slice(8) + '</span>').join('');
+  $('dailyChart').innerHTML =
+    '<div class="barlabel">' + labels + '</div>' +
+    '<div class="charts">' + bars + '</div>' +
+    '<div class="labelrow"><span>峰值 ' + int0(max) + '</span><span>' + daily[0].date + ' ~ ' + daily[daily.length - 1].date + '</span></div>';
+}
+
+function renderModels(models) {
+  const total = models.reduce((s, m) => s + (Number(m.total_tokens) || 0), 0);
+  $('modelRows').innerHTML = models.length ? models.map(m => {
+    const tokens = Number(m.total_tokens) || 0;
+    const pct = total > 0 ? tokens / total * 100 : 0;
+    return '<tr>' +
+      '<td><b>' + m.model + '</b></td>' +
+      '<td class="num">' + int0(m.requests) + '</td>' +
+      '<td class="num">' + int0(tokens) + '</td>' +
+      '<td class="num">' + int0(m.quota_cost) + '</td>' +
+      '<td class="num">' + (Number(m.money_cost) ? money(m.money_cost) : '-') + '</td>' +
+      '<td><div class="pctwrap"><div class="pctbar" style="width:' + pct.toFixed(1) + '%"></div></div>' +
+      '<span class="muted" style="font-size:10.5px">' + pct.toFixed(1) + '%</span></td></tr>';
+  }).join('') : '<tr><td colspan="6" class="muted" style="padding:18px;text-align:center">本月暂无数据</td></tr>';
+}
+
+async function loadMonthly() {
+  const month = $('month').value || new Date().toISOString().slice(0, 7);
+  const d = (await apiGet('/user/usage/monthly?month=' + month)).data || {};
+  const s = d.summary || {};
+  const daily = d.daily || [];
+  $('totalTokens').textContent = int0(s.total_tokens);
+  $('totalRequests').textContent = int0(s.total_requests);
+  $('totalCost').textContent = int0(s.total_cost);
+  $('totalMoneyCost').textContent = money(s.total_money_cost);
+  monthTokens = Number(s.total_tokens) || 0;
+  const today = new Date();
+  const todayKey = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+  const todayRow = daily.find(x => x.date === todayKey);
+  todayTokens = todayRow ? (Number(todayRow.total_tokens) || 0) : 0;
+  renderOverview();
+  renderChart(daily);
+  renderModels(d.models || []);
+}
+
+/* ---------- 自动刷新 ---------- */
+let lastUpdatedAt = 0, nextTickAt = 0, refreshing = false;
+
+const intervalSeconds = () => Number($('autoInterval').value) || 60;
+const scheduleNext = () => { nextTickAt = Date.now() + intervalSeconds() * 1000; };
+
+function updateAutoStatus() {
+  if (!$('autoRefresh').checked) { $('autoStatus').textContent = '自动刷新已关闭'; return; }
+  const left = Math.max(0, Math.ceil((nextTickAt - Date.now()) / 1000));
+  const last = lastUpdatedAt ? new Date(lastUpdatedAt).toLocaleTimeString('zh-CN', { hour12: false }) : '- -';
+  $('autoStatus').textContent = '上次更新 ' + last + '，' + left + ' 秒后刷新';
+}
+
+async function loadAll(silent = false) {
+  if (refreshing) return;
+  const key = $('apiKey').value.trim();
+  if (!key) { showMsg('请先填写 API Key', 'err'); return; }
+  saveKey();
+  refreshing = true;
+  $('loadBtn').disabled = true;
+  if (!silent) showMsg('正在查询...', 'ok');
+  try {
+    await Promise.all([loadBalance(), loadQuotas(silent ? quotaPage : 1), loadCreditBalance()]);
+    await loadMonthly();
+    $('content').classList.remove('hidden');
+    lastUpdatedAt = Date.now();
+    showMsg(silent ? '已自动刷新 ' + clockTime() : '查询完成', 'ok');
+  } catch (e) {
+    showMsg('查询失败：' + e.message, 'err');
+  } finally {
+    $('loadBtn').disabled = false;
+    refreshing = false;
+    scheduleNext();
+    updateAutoStatus();
+  }
+}
+
+setInterval(() => {
+  if ($('autoRefresh').checked && !refreshing && Date.now() >= nextTickAt) {
+    scheduleNext();
+    loadAll(true);
+  }
+  updateAutoStatus();
+}, 1000);
+
+/* ---------- 悬浮窗 ---------- */
+const overlaySupported = () => !!(window.AndroidHost && typeof AndroidHost.startOverlay === 'function');
+
+function refreshOverlayBtn() {
+  const btn = $('overlayBtn');
+  if (!overlaySupported()) {
+    btn.textContent = '实时悬浮窗（仅 App）';
+    return;
+  }
+  btn.textContent = AndroidHost.isOverlayRunning() === true ? '关闭悬浮窗' : '实时悬浮窗';
+}
+
+function overlayArgs() {
+  return [$('apiKey').value.trim(), String($('priceYi').value || '29'), String(intervalSeconds()), overlayItems().join(',')];
+}
+
+function toggleOverlay() {
+  if (!overlaySupported()) {
+    showMsg('悬浮窗只在 App 内可用；浏览器里用「自动刷新」看实时数据。', 'err');
+    return;
+  }
+  if (AndroidHost.isOverlayRunning() === true) {
+    AndroidHost.stopOverlay();
+    showMsg('悬浮窗已关闭。', 'ok');
+  } else {
+    const args = overlayArgs();
+    if (!args[0]) { showMsg('先填入 Key 再开启悬浮窗。', 'err'); return; }
+    const result = AndroidHost.startOverlay(args[0], args[1], args[2], args[3]);
+    if (result === 'ok') showMsg('悬浮窗已开启：可拖动，点一下立即刷新，右上角 ✕ 关闭。', 'ok');
+    else if (result === 'need_permission') showMsg('请先在系统设置里允许「显示在其他应用上层」，授权后回来再点一次。', 'err');
+    else showMsg('悬浮窗开启失败。', 'err');
+  }
+  setTimeout(refreshOverlayBtn, 500);
+}
+
+// 改 Key / 单价 / 间隔 / 显示项后推给正在运行的悬浮窗
+function syncOverlay() {
+  if (!overlaySupported() || AndroidHost.isOverlayRunning() !== true) return;
+  const args = overlayArgs();
+  if (!args[0]) return;
+  AndroidHost.updateOverlay(args[0], args[1], args[2], args[3]);
+}
+
+/* ---------- 剪贴板 ---------- */
+function hostCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.setAttribute('readonly', '');
+  ta.style.position = 'fixed';
+  ta.style.top = '-1000px';
+  document.body.appendChild(ta);
+  ta.select();
+  const ok = document.execCommand('copy');
+  ta.remove();
+  return ok;
+}
+
+async function copyKey() {
+  const key = $('apiKey').value.trim();
+  if (!key) { showMsg('还没填 Key，先打开「设置」填入后再点购买。', 'err'); return; }
+  let ok = false;
+  // 装成 App 时优先用原生剪贴板，不依赖页面手势与权限
+  try {
+    if (window.AndroidHost && typeof AndroidHost.copy === 'function') ok = AndroidHost.copy(key) === true;
+  } catch (e) { ok = false; }
+  if (!ok) {
+    try {
+      await navigator.clipboard.writeText(key);
+      ok = true;
+    } catch (e) {
+      try { ok = hostCopy(key); } catch (e2) { ok = false; }
+    }
+  }
+  showMsg(ok ? 'Key 已复制到剪贴板，去购买页直接粘贴即可。' : '复制失败，请手动选中 Key 复制。', ok ? 'ok' : 'err');
+}
+
+/* ---------- 交互绑定 ---------- */
+$('month').value = new Date().toISOString().slice(0, 7);
+$('loadBtn').addEventListener('click', () => loadAll());
+$('apiKey').addEventListener('keydown', e => { if (e.key === 'Enter') loadAll(); });
+$('autoRefresh').addEventListener('change', () => { scheduleNext(); updateAutoStatus(); });
+$('autoInterval').addEventListener('change', () => { scheduleNext(); updateAutoStatus(); syncOverlay(); });
+$('toggleKey').addEventListener('click', () => {
+  const el = $('apiKey');
+  const hidden = el.type === 'password';
+  el.type = hidden ? 'text' : 'password';
+  $('toggleKey').textContent = hidden ? '隐藏' : '显示';
+});
+$('buyBtn').addEventListener('click', copyKey);
+$('overlayBtn').addEventListener('click', toggleOverlay);
+$('rememberKey').addEventListener('change', saveKey);
+$('priceYi').addEventListener('input', () => { savePrice(); renderOverview(); syncOverlay(); });
+overlayItemBoxes().forEach(box => box.addEventListener('change', saveOverlayItems));
+$('refresh').addEventListener('click', () => loadMonthly().catch(e => showMsg('刷新失败：' + e.message, 'err')));
+$('month').addEventListener('change', () => $('refresh').click());
+$('quotaPrev').addEventListener('click', () => loadQuotas(quotaPage - 1).catch(e => showMsg(e.message, 'err')));
+$('quotaNext').addEventListener('click', () => loadQuotas(quotaPage + 1).catch(e => showMsg(e.message, 'err')));
+$('changelogBtn').addEventListener('click', () => {
+  const hidden = $('changelog').classList.toggle('hidden');
+  $('changelogBtn').textContent = hidden ? '更新日志' : '收起日志';
+});
+$('settingsBtn').addEventListener('click', () => {
+  const hidden = $('settings').classList.toggle('hidden');
+  $('settingsBtn').textContent = hidden ? '设置' : '收起设置';
+});
+$('overlaySettingsBtn').addEventListener('click', () => {
+  const hidden = $('overlaySettings').classList.toggle('hidden');
+  $('overlayChev').textContent = hidden ? '展开' : '收起';
+});
+
+/* ---------- 初始化 ---------- */
+scheduleNext();
+$('priceYi').value = loadPrice();
+loadOverlayItems();
+updateAutoStatus();
+renderOverview();
+refreshOverlayBtn();
+const remembered = loadKey();
+if (remembered) {
+  $('apiKey').value = remembered;
+  loadAll();
+} else {
+  $('settings').classList.remove('hidden');
+  $('settingsBtn').textContent = '收起设置';
+  showMsg('首次使用：在「设置」里填入 API Key，勾选「记住 Key」即可存到本机，下次免输入。', 'ok');
+}
+</script>
+</body>
+</html>
