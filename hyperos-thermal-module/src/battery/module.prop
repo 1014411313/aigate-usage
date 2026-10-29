@@ -1,0 +1,6 @@
+id=battery_tune
+name=电池解容 / 公版 PPS
+version=v3.9.6
+versionCode=495
+author=Dimples1337
+description=初始化中：解容状态就绪后自动更新

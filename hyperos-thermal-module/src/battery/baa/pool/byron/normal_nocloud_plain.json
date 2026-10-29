@@ -1,0 +1,2358 @@
+{
+  "strategy": {
+    "supported_strategy_index": [
+      1,
+      2,
+      3
+    ],
+    "smart_fv": {
+      "path": "/sys/class/xm_power/charger/smart_charge/smart_fv",
+      "decrease_mv_max": 0
+    },
+    "version_info": {
+      "version": 1.0,
+      "description": "battery params cloud ota version1.0 (byron unlock + full15-58 + cc-range x100) + cloud-off"
+    },
+    "support_cloud_push": false
+  },
+  "LowSoh-FvDown": {
+    "enable_by_default": false,
+    "use_smart_fv": true,
+    "sysfs_node": {
+      "cyclecount": {
+        "path": "/sys/class/xm_power/fg_master/cyclecount",
+        "range_min": 200,
+        "range_max": 800
+      },
+      "soh": {
+        "path": "/sys/class/xm_power/fg_master/soh",
+        "threshold": 85
+      },
+      "smart_batt": {
+        "path": "/sys/class/qcom-battery/smart_batt",
+        "value": 0
+      },
+      "smart_fv": {
+        "value": 0
+      }
+    }
+  },
+  "FreqChg-FvDown": {
+    "enable_by_default": false,
+    "use_smart_fv": true,
+    "number_of_period_to_take_effect": 3,
+    "threshold": {
+      "heavy_use": {
+        "soc_entry": 180,
+        "soc_exit": 140
+      },
+      "high_soc_use": {
+        "start_soc": 70,
+        "delta_soc": 20,
+        "cnt_one_day": 3
+      }
+    },
+    "sysfs_node": {
+      "soc": {
+        "path": "/sys/class/power_supply/battery/capacity"
+      },
+      "smart_batt": {
+        "path": "/sys/class/qcom-battery/smart_batt",
+        "value": 0
+      },
+      "smart_fv": {
+        "value": 0
+      }
+    }
+  },
+  "BasedOnCC-VolDown": {
+    "enable_by_default": true,
+    "support_charger_mode": true,
+    "send_data_with_ioctl": true,
+    "write_batt_spec_to_file": {
+      "enable": true,
+      "file_path": "/data/vendor/batteryantiaging/BAA_battSpec.csv"
+    },
+    "sysfs_node": {
+      "cyclecount": {
+        "path": "/sys/class/xm_power/fg_master/cyclecount"
+      },
+      "temp": {
+        "path": "/sys/class/power_supply/battery/temp"
+      },
+      "fcc_down": {
+        "path": "/sys/class/qcom-battery/fv_down",
+        "value": 0
+      },
+      "fg_vendor": {
+        "path": "/sys/class/xm_power/fg_master/pack_vendor"
+      },
+      "smart_charge_cdev": {
+        "path": "/dev/smart_charge_cdev"
+      }
+    },
+    "vendor_id_3": {
+      "batt_type_get_by_property": {
+        "1": {
+          "type": "sysfsnode",
+          "/sys/class/xm_power/fg_master/device_name": [
+            "BM8C"
+          ],
+          "batt_type_name": "CN-battery"
+        }
+      },
+      "CN-battery": {
+        "cyclecount_index_map": [
+          {
+            "idx": 1,
+            "min": 1,
+            "max": 100
+          },
+          {
+            "idx": 2,
+            "min": 101,
+            "max": 300
+          },
+          {
+            "idx": 3,
+            "min": 301,
+            "max": 800
+          },
+          {
+            "idx": 4,
+            "min": 801,
+            "max": 2147483647
+          }
+        ],
+        "cyclecount": [
+          {
+            "cyclecount_index": 1,
+            "jeita-term-para": {
+              "FFC": [
+                {
+                  "idx": 0,
+                  "temp-min": 15,
+                  "temp-max": 20,
+                  "vterm": 4550,
+                  "iterm": 922
+                },
+                {
+                  "idx": 1,
+                  "temp-min": 20,
+                  "temp-max": 25,
+                  "vterm": 4550,
+                  "iterm": 1092
+                },
+                {
+                  "idx": 2,
+                  "temp-min": 25,
+                  "temp-max": 35,
+                  "vterm": 4550,
+                  "iterm": 1092
+                },
+                {
+                  "idx": 3,
+                  "temp-min": 35,
+                  "temp-max": 40,
+                  "vterm": 4550,
+                  "iterm": 1696
+                },
+                {
+                  "idx": 4,
+                  "temp-min": 40,
+                  "temp-max": 58,
+                  "vterm": 4550,
+                  "iterm": 2439
+                }
+              ],
+              "normal": [
+                {
+                  "idx": 7,
+                  "temp-min": 15,
+                  "temp-max": 20,
+                  "vterm": 4550,
+                  "iterm": 382
+                },
+                {
+                  "idx": 8,
+                  "temp-min": 20,
+                  "temp-max": 35,
+                  "vterm": 4550,
+                  "iterm": 382
+                },
+                {
+                  "idx": 9,
+                  "temp-min": 35,
+                  "temp-max": 40,
+                  "vterm": 4550,
+                  "iterm": 382
+                },
+                {
+                  "idx": 10,
+                  "temp-min": 40,
+                  "temp-max": 48,
+                  "vterm": 4550,
+                  "iterm": 382
+                }
+              ]
+            },
+            "wire": {
+              "FFC": [
+                {
+                  "temp": {
+                    "min": 15,
+                    "max": 20,
+                    "idx": 2
+                  },
+                  "step": [
+                    {
+                      "mV": 3900,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4000,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4150,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4580,
+                      "mA_h": 3058,
+                      "mA_l": 922
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 20,
+                    "max": 25,
+                    "idx": 3
+                  },
+                  "step": [
+                    {
+                      "mV": 4240,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4340,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4400,
+                      "mA_h": 18400,
+                      "mA_l": 6116
+                    },
+                    {
+                      "mV": 4580,
+                      "mA_h": 6116,
+                      "mA_l": 1092
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 25,
+                    "max": 35,
+                    "idx": 4
+                  },
+                  "step": [
+                    {
+                      "mV": 4240,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4340,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4500,
+                      "mA_h": 18400,
+                      "mA_l": 9174
+                    },
+                    {
+                      "mV": 4580,
+                      "mA_h": 18400,
+                      "mA_l": 1092
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 35,
+                    "max": 40,
+                    "idx": 5
+                  },
+                  "step": [
+                    {
+                      "mV": 4240,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4340,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4500,
+                      "mA_h": 18400,
+                      "mA_l": 9174
+                    },
+                    {
+                      "mV": 4580,
+                      "mA_h": 18400,
+                      "mA_l": 1696
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 40,
+                    "max": 48,
+                    "idx": 6
+                  },
+                  "step": [
+                    {
+                      "mV": 4240,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4340,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4500,
+                      "mA_h": 18400,
+                      "mA_l": 9174
+                    },
+                    {
+                      "mV": 4580,
+                      "mA_h": 18400,
+                      "mA_l": 2439
+                    }
+                  ]
+                }
+              ],
+              "normal": [
+                {
+                  "temp": {
+                    "min": 15,
+                    "max": 20,
+                    "idx": 2
+                  },
+                  "step": [
+                    {
+                      "mV": 3900,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4530,
+                      "mA_h": 3058,
+                      "mA_l": 382
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 20,
+                    "max": 25,
+                    "idx": 3
+                  },
+                  "step": [
+                    {
+                      "mV": 4240,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4530,
+                      "mA_h": 6116,
+                      "mA_l": 382
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 25,
+                    "max": 35,
+                    "idx": 4
+                  },
+                  "step": [
+                    {
+                      "mV": 4240,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4530,
+                      "mA_h": 6116,
+                      "mA_l": 382
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 35,
+                    "max": 40,
+                    "idx": 4
+                  },
+                  "step": [
+                    {
+                      "mV": 4240,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4520,
+                      "mA_h": 6116,
+                      "mA_l": 382
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 40,
+                    "max": 48,
+                    "idx": 5
+                  },
+                  "step": [
+                    {
+                      "mV": 4240,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4510,
+                      "mA_h": 6116,
+                      "mA_l": 382
+                    }
+                  ]
+                }
+              ]
+            },
+            "wireless": {
+              "FFC": [
+                {
+                  "temp": {
+                    "min": 15,
+                    "max": 20,
+                    "idx": 2
+                  },
+                  "step": [
+                    {
+                      "mV": 3900,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4000,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4150,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4520,
+                      "mA_h": 3058,
+                      "mA_l": 800
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 20,
+                    "max": 25,
+                    "idx": 3
+                  },
+                  "step": [
+                    {
+                      "mV": 4240,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4340,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4400,
+                      "mA_h": 18400,
+                      "mA_l": 6116
+                    },
+                    {
+                      "mV": 4520,
+                      "mA_h": 6116,
+                      "mA_l": 800
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 25,
+                    "max": 35,
+                    "idx": 4
+                  },
+                  "step": [
+                    {
+                      "mV": 4240,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4340,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4500,
+                      "mA_h": 18400,
+                      "mA_l": 9174
+                    },
+                    {
+                      "mV": 4520,
+                      "mA_h": 18400,
+                      "mA_l": 800
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 35,
+                    "max": 40,
+                    "idx": 5
+                  },
+                  "step": [
+                    {
+                      "mV": 4240,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4340,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4500,
+                      "mA_h": 18400,
+                      "mA_l": 9174
+                    },
+                    {
+                      "mV": 4510,
+                      "mA_h": 18400,
+                      "mA_l": 800
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 40,
+                    "max": 48,
+                    "idx": 6
+                  },
+                  "step": [
+                    {
+                      "mV": 4240,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4340,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4500,
+                      "mA_h": 18400,
+                      "mA_l": 800
+                    }
+                  ]
+                }
+              ],
+              "normal": [
+                {
+                  "temp": {
+                    "min": 15,
+                    "max": 20,
+                    "idx": 2
+                  },
+                  "step": [
+                    {
+                      "mV": 3900,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4520,
+                      "mA_h": 3058,
+                      "mA_l": 800
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 20,
+                    "max": 25,
+                    "idx": 3
+                  },
+                  "step": [
+                    {
+                      "mV": 4240,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4520,
+                      "mA_h": 6116,
+                      "mA_l": 800
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 25,
+                    "max": 35,
+                    "idx": 4
+                  },
+                  "step": [
+                    {
+                      "mV": 4240,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4520,
+                      "mA_h": 6116,
+                      "mA_l": 800
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 35,
+                    "max": 40,
+                    "idx": 4
+                  },
+                  "step": [
+                    {
+                      "mV": 4240,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4510,
+                      "mA_h": 6116,
+                      "mA_l": 800
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 40,
+                    "max": 48,
+                    "idx": 5
+                  },
+                  "step": [
+                    {
+                      "mV": 4240,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4500,
+                      "mA_h": 6116,
+                      "mA_l": 800
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "cyclecount_index": 2,
+            "jeita-term-para": {
+              "FFC": [
+                {
+                  "idx": 0,
+                  "temp-min": 15,
+                  "temp-max": 20,
+                  "vterm": 4550,
+                  "iterm": 922
+                },
+                {
+                  "idx": 1,
+                  "temp-min": 20,
+                  "temp-max": 25,
+                  "vterm": 4550,
+                  "iterm": 1092
+                },
+                {
+                  "idx": 2,
+                  "temp-min": 25,
+                  "temp-max": 35,
+                  "vterm": 4550,
+                  "iterm": 1092
+                },
+                {
+                  "idx": 3,
+                  "temp-min": 35,
+                  "temp-max": 40,
+                  "vterm": 4550,
+                  "iterm": 1696
+                },
+                {
+                  "idx": 4,
+                  "temp-min": 40,
+                  "temp-max": 58,
+                  "vterm": 4550,
+                  "iterm": 2439
+                }
+              ],
+              "normal": [
+                {
+                  "idx": 7,
+                  "temp-min": 15,
+                  "temp-max": 20,
+                  "vterm": 4550,
+                  "iterm": 382
+                },
+                {
+                  "idx": 8,
+                  "temp-min": 20,
+                  "temp-max": 35,
+                  "vterm": 4550,
+                  "iterm": 382
+                },
+                {
+                  "idx": 9,
+                  "temp-min": 35,
+                  "temp-max": 40,
+                  "vterm": 4550,
+                  "iterm": 382
+                },
+                {
+                  "idx": 10,
+                  "temp-min": 40,
+                  "temp-max": 48,
+                  "vterm": 4550,
+                  "iterm": 382
+                }
+              ]
+            },
+            "wire": {
+              "FFC": [
+                {
+                  "temp": {
+                    "min": 15,
+                    "max": 20,
+                    "idx": 2
+                  },
+                  "step": [
+                    {
+                      "mV": 3900,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4000,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4150,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4560,
+                      "mA_h": 3058,
+                      "mA_l": 922
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 20,
+                    "max": 25,
+                    "idx": 3
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4310,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4400,
+                      "mA_h": 18400,
+                      "mA_l": 6116
+                    },
+                    {
+                      "mV": 4560,
+                      "mA_h": 6116,
+                      "mA_l": 1092
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 25,
+                    "max": 35,
+                    "idx": 4
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4310,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4500,
+                      "mA_h": 18400,
+                      "mA_l": 9174
+                    },
+                    {
+                      "mV": 4560,
+                      "mA_h": 18400,
+                      "mA_l": 1092
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 35,
+                    "max": 40,
+                    "idx": 5
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4310,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4500,
+                      "mA_h": 18400,
+                      "mA_l": 9174
+                    },
+                    {
+                      "mV": 4560,
+                      "mA_h": 18400,
+                      "mA_l": 1696
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 40,
+                    "max": 48,
+                    "idx": 6
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4310,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4500,
+                      "mA_h": 18400,
+                      "mA_l": 9174
+                    },
+                    {
+                      "mV": 4560,
+                      "mA_h": 18400,
+                      "mA_l": 2439
+                    }
+                  ]
+                }
+              ],
+              "normal": [
+                {
+                  "temp": {
+                    "min": 15,
+                    "max": 20,
+                    "idx": 2
+                  },
+                  "step": [
+                    {
+                      "mV": 3900,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4520,
+                      "mA_h": 3058,
+                      "mA_l": 382
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 20,
+                    "max": 25,
+                    "idx": 3
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4520,
+                      "mA_h": 6116,
+                      "mA_l": 382
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 25,
+                    "max": 35,
+                    "idx": 4
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4520,
+                      "mA_h": 6116,
+                      "mA_l": 382
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 35,
+                    "max": 40,
+                    "idx": 4
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4510,
+                      "mA_h": 6116,
+                      "mA_l": 382
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 40,
+                    "max": 48,
+                    "idx": 5
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4500,
+                      "mA_h": 6116,
+                      "mA_l": 382
+                    }
+                  ]
+                }
+              ]
+            },
+            "wireless": {
+              "FFC": [
+                {
+                  "temp": {
+                    "min": 15,
+                    "max": 20,
+                    "idx": 2
+                  },
+                  "step": [
+                    {
+                      "mV": 3900,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4000,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4150,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4510,
+                      "mA_h": 3058,
+                      "mA_l": 800
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 20,
+                    "max": 25,
+                    "idx": 3
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4310,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4400,
+                      "mA_h": 18400,
+                      "mA_l": 6116
+                    },
+                    {
+                      "mV": 4510,
+                      "mA_h": 6116,
+                      "mA_l": 800
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 25,
+                    "max": 35,
+                    "idx": 4
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4310,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4500,
+                      "mA_h": 18400,
+                      "mA_l": 9174
+                    },
+                    {
+                      "mV": 4510,
+                      "mA_h": 18400,
+                      "mA_l": 800
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 35,
+                    "max": 40,
+                    "idx": 5
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4310,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4500,
+                      "mA_h": 18400,
+                      "mA_l": 800
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 40,
+                    "max": 48,
+                    "idx": 6
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4310,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4490,
+                      "mA_h": 18400,
+                      "mA_l": 800
+                    }
+                  ]
+                }
+              ],
+              "normal": [
+                {
+                  "temp": {
+                    "min": 15,
+                    "max": 20,
+                    "idx": 2
+                  },
+                  "step": [
+                    {
+                      "mV": 3900,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4510,
+                      "mA_h": 3058,
+                      "mA_l": 800
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 20,
+                    "max": 25,
+                    "idx": 3
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4510,
+                      "mA_h": 6116,
+                      "mA_l": 800
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 25,
+                    "max": 35,
+                    "idx": 4
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4510,
+                      "mA_h": 6116,
+                      "mA_l": 800
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 35,
+                    "max": 40,
+                    "idx": 4
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4500,
+                      "mA_h": 6116,
+                      "mA_l": 800
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 40,
+                    "max": 48,
+                    "idx": 5
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4490,
+                      "mA_h": 6116,
+                      "mA_l": 800
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "cyclecount_index": 3,
+            "jeita-term-para": {
+              "FFC": [
+                {
+                  "idx": 0,
+                  "temp-min": 15,
+                  "temp-max": 20,
+                  "vterm": 4550,
+                  "iterm": 922
+                },
+                {
+                  "idx": 1,
+                  "temp-min": 20,
+                  "temp-max": 25,
+                  "vterm": 4550,
+                  "iterm": 1092
+                },
+                {
+                  "idx": 2,
+                  "temp-min": 25,
+                  "temp-max": 35,
+                  "vterm": 4550,
+                  "iterm": 1092
+                },
+                {
+                  "idx": 3,
+                  "temp-min": 35,
+                  "temp-max": 40,
+                  "vterm": 4550,
+                  "iterm": 1696
+                },
+                {
+                  "idx": 4,
+                  "temp-min": 40,
+                  "temp-max": 58,
+                  "vterm": 4550,
+                  "iterm": 2439
+                }
+              ],
+              "normal": [
+                {
+                  "idx": 7,
+                  "temp-min": 15,
+                  "temp-max": 20,
+                  "vterm": 4550,
+                  "iterm": 382
+                },
+                {
+                  "idx": 8,
+                  "temp-min": 20,
+                  "temp-max": 35,
+                  "vterm": 4550,
+                  "iterm": 382
+                },
+                {
+                  "idx": 9,
+                  "temp-min": 35,
+                  "temp-max": 40,
+                  "vterm": 4550,
+                  "iterm": 382
+                },
+                {
+                  "idx": 10,
+                  "temp-min": 40,
+                  "temp-max": 48,
+                  "vterm": 4550,
+                  "iterm": 382
+                }
+              ]
+            },
+            "wire": {
+              "FFC": [
+                {
+                  "temp": {
+                    "min": 15,
+                    "max": 20,
+                    "idx": 2
+                  },
+                  "step": [
+                    {
+                      "mV": 3900,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4000,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4150,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4560,
+                      "mA_h": 3058,
+                      "mA_l": 922
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 20,
+                    "max": 25,
+                    "idx": 3
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4310,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4400,
+                      "mA_h": 18400,
+                      "mA_l": 6116
+                    },
+                    {
+                      "mV": 4550,
+                      "mA_h": 6116,
+                      "mA_l": 1092
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 25,
+                    "max": 35,
+                    "idx": 4
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4310,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4500,
+                      "mA_h": 18400,
+                      "mA_l": 9174
+                    },
+                    {
+                      "mV": 4550,
+                      "mA_h": 18400,
+                      "mA_l": 1092
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 35,
+                    "max": 40,
+                    "idx": 5
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4310,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4500,
+                      "mA_h": 18400,
+                      "mA_l": 9174
+                    },
+                    {
+                      "mV": 4550,
+                      "mA_h": 18400,
+                      "mA_l": 1696
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 40,
+                    "max": 48,
+                    "idx": 6
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4310,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4500,
+                      "mA_h": 18400,
+                      "mA_l": 9174
+                    },
+                    {
+                      "mV": 4550,
+                      "mA_h": 18400,
+                      "mA_l": 2439
+                    }
+                  ]
+                }
+              ],
+              "normal": [
+                {
+                  "temp": {
+                    "min": 15,
+                    "max": 20,
+                    "idx": 2
+                  },
+                  "step": [
+                    {
+                      "mV": 3900,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4510,
+                      "mA_h": 3058,
+                      "mA_l": 382
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 20,
+                    "max": 25,
+                    "idx": 3
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4510,
+                      "mA_h": 6116,
+                      "mA_l": 382
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 25,
+                    "max": 35,
+                    "idx": 4
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4510,
+                      "mA_h": 6116,
+                      "mA_l": 382
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 35,
+                    "max": 40,
+                    "idx": 4
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4500,
+                      "mA_h": 6116,
+                      "mA_l": 382
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 40,
+                    "max": 48,
+                    "idx": 5
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4490,
+                      "mA_h": 6116,
+                      "mA_l": 382
+                    }
+                  ]
+                }
+              ]
+            },
+            "wireless": {
+              "FFC": [
+                {
+                  "temp": {
+                    "min": 15,
+                    "max": 20,
+                    "idx": 2
+                  },
+                  "step": [
+                    {
+                      "mV": 3895,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 3995,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4145,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4500,
+                      "mA_h": 3058,
+                      "mA_l": 800
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 20,
+                    "max": 25,
+                    "idx": 3
+                  },
+                  "step": [
+                    {
+                      "mV": 4185,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4305,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4395,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4500,
+                      "mA_h": 6116,
+                      "mA_l": 800
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 25,
+                    "max": 35,
+                    "idx": 4
+                  },
+                  "step": [
+                    {
+                      "mV": 4185,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4305,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4500,
+                      "mA_h": 18400,
+                      "mA_l": 800
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 35,
+                    "max": 40,
+                    "idx": 5
+                  },
+                  "step": [
+                    {
+                      "mV": 4185,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4305,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4490,
+                      "mA_h": 18400,
+                      "mA_l": 800
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 40,
+                    "max": 48,
+                    "idx": 6
+                  },
+                  "step": [
+                    {
+                      "mV": 4185,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4305,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4480,
+                      "mA_h": 18400,
+                      "mA_l": 800
+                    }
+                  ]
+                }
+              ],
+              "normal": [
+                {
+                  "temp": {
+                    "min": 15,
+                    "max": 20,
+                    "idx": 2
+                  },
+                  "step": [
+                    {
+                      "mV": 3900,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4500,
+                      "mA_h": 3058,
+                      "mA_l": 800
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 20,
+                    "max": 25,
+                    "idx": 3
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4500,
+                      "mA_h": 6116,
+                      "mA_l": 800
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 25,
+                    "max": 35,
+                    "idx": 4
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4500,
+                      "mA_h": 6116,
+                      "mA_l": 800
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 35,
+                    "max": 40,
+                    "idx": 4
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4490,
+                      "mA_h": 6116,
+                      "mA_l": 800
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 40,
+                    "max": 48,
+                    "idx": 5
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4480,
+                      "mA_h": 6116,
+                      "mA_l": 382
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "cyclecount_index": 4,
+            "jeita-term-para": {
+              "FFC": [
+                {
+                  "idx": 0,
+                  "temp-min": 15,
+                  "temp-max": 20,
+                  "vterm": 4550,
+                  "iterm": 922
+                },
+                {
+                  "idx": 1,
+                  "temp-min": 20,
+                  "temp-max": 25,
+                  "vterm": 4550,
+                  "iterm": 1092
+                },
+                {
+                  "idx": 2,
+                  "temp-min": 25,
+                  "temp-max": 35,
+                  "vterm": 4550,
+                  "iterm": 1092
+                },
+                {
+                  "idx": 3,
+                  "temp-min": 35,
+                  "temp-max": 40,
+                  "vterm": 4550,
+                  "iterm": 1696
+                },
+                {
+                  "idx": 4,
+                  "temp-min": 40,
+                  "temp-max": 58,
+                  "vterm": 4550,
+                  "iterm": 2439
+                }
+              ],
+              "normal": [
+                {
+                  "idx": 7,
+                  "temp-min": 15,
+                  "temp-max": 20,
+                  "vterm": 4550,
+                  "iterm": 382
+                },
+                {
+                  "idx": 8,
+                  "temp-min": 20,
+                  "temp-max": 35,
+                  "vterm": 4550,
+                  "iterm": 382
+                },
+                {
+                  "idx": 9,
+                  "temp-min": 35,
+                  "temp-max": 40,
+                  "vterm": 4550,
+                  "iterm": 382
+                },
+                {
+                  "idx": 10,
+                  "temp-min": 40,
+                  "temp-max": 48,
+                  "vterm": 4550,
+                  "iterm": 382
+                }
+              ]
+            },
+            "wire": {
+              "FFC": [
+                {
+                  "temp": {
+                    "min": 15,
+                    "max": 20,
+                    "idx": 2
+                  },
+                  "step": [
+                    {
+                      "mV": 3900,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4000,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4150,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4540,
+                      "mA_h": 2446,
+                      "mA_l": 922
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 20,
+                    "max": 25,
+                    "idx": 3
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4310,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4400,
+                      "mA_h": 7339,
+                      "mA_l": 4893
+                    },
+                    {
+                      "mV": 4530,
+                      "mA_h": 4893,
+                      "mA_l": 1092
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 25,
+                    "max": 35,
+                    "idx": 4
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4310,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4480,
+                      "mA_h": 18400,
+                      "mA_l": 7339
+                    },
+                    {
+                      "mV": 4530,
+                      "mA_h": 7339,
+                      "mA_l": 1092
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 35,
+                    "max": 40,
+                    "idx": 5
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4310,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4480,
+                      "mA_h": 18400,
+                      "mA_l": 7339
+                    },
+                    {
+                      "mV": 4530,
+                      "mA_h": 7339,
+                      "mA_l": 1696
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 40,
+                    "max": 48,
+                    "idx": 6
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4310,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4480,
+                      "mA_h": 18400,
+                      "mA_l": 7339
+                    },
+                    {
+                      "mV": 4530,
+                      "mA_h": 7339,
+                      "mA_l": 2439
+                    }
+                  ]
+                }
+              ],
+              "normal": [
+                {
+                  "temp": {
+                    "min": 15,
+                    "max": 20,
+                    "idx": 2
+                  },
+                  "step": [
+                    {
+                      "mV": 3900,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4490,
+                      "mA_h": 3058,
+                      "mA_l": 382
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 20,
+                    "max": 25,
+                    "idx": 3
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4490,
+                      "mA_h": 6116,
+                      "mA_l": 382
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 25,
+                    "max": 35,
+                    "idx": 4
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4490,
+                      "mA_h": 6116,
+                      "mA_l": 382
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 35,
+                    "max": 40,
+                    "idx": 4
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4480,
+                      "mA_h": 6116,
+                      "mA_l": 382
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 40,
+                    "max": 48,
+                    "idx": 5
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4470,
+                      "mA_h": 6116,
+                      "mA_l": 382
+                    }
+                  ]
+                }
+              ]
+            },
+            "wireless": {
+              "FFC": [
+                {
+                  "temp": {
+                    "min": 15,
+                    "max": 20,
+                    "idx": 2
+                  },
+                  "step": [
+                    {
+                      "mV": 3895,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4995,
+                      "mA_h": 6728,
+                      "mA_l": 4893
+                    },
+                    {
+                      "mV": 4145,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4480,
+                      "mA_h": 2446,
+                      "mA_l": 800
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 20,
+                    "max": 25,
+                    "idx": 3
+                  },
+                  "step": [
+                    {
+                      "mV": 4185,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4305,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4395,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4480,
+                      "mA_h": 4893,
+                      "mA_l": 800
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 25,
+                    "max": 35,
+                    "idx": 4
+                  },
+                  "step": [
+                    {
+                      "mV": 4185,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4305,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4475,
+                      "mA_h": 18400,
+                      "mA_l": 7339
+                    },
+                    {
+                      "mV": 4480,
+                      "mA_h": 7339,
+                      "mA_l": 800
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 35,
+                    "max": 40,
+                    "idx": 5
+                  },
+                  "step": [
+                    {
+                      "mV": 4185,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4305,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4475,
+                      "mA_h": 18400,
+                      "mA_l": 7339
+                    },
+                    {
+                      "mV": 4470,
+                      "mA_h": 7339,
+                      "mA_l": 800
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 40,
+                    "max": 48,
+                    "idx": 6
+                  },
+                  "step": [
+                    {
+                      "mV": 4185,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4305,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4475,
+                      "mA_h": 18400,
+                      "mA_l": 7339
+                    },
+                    {
+                      "mV": 4460,
+                      "mA_h": 7339,
+                      "mA_l": 800
+                    }
+                  ]
+                }
+              ],
+              "normal": [
+                {
+                  "temp": {
+                    "min": 15,
+                    "max": 20,
+                    "idx": 2
+                  },
+                  "step": [
+                    {
+                      "mV": 3900,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4480,
+                      "mA_h": 3058,
+                      "mA_l": 800
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 20,
+                    "max": 25,
+                    "idx": 3
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4480,
+                      "mA_h": 6116,
+                      "mA_l": 800
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 25,
+                    "max": 35,
+                    "idx": 4
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4480,
+                      "mA_h": 6116,
+                      "mA_l": 800
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 35,
+                    "max": 40,
+                    "idx": 4
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4470,
+                      "mA_h": 6116,
+                      "mA_l": 800
+                    }
+                  ]
+                },
+                {
+                  "temp": {
+                    "min": 40,
+                    "max": 48,
+                    "idx": 5
+                  },
+                  "step": [
+                    {
+                      "mV": 4190,
+                      "mA_h": 18400,
+                      "mA_l": 18400
+                    },
+                    {
+                      "mV": 4460,
+                      "mA_h": 6116,
+                      "mA_l": 800
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  }
+}

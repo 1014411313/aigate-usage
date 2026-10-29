@@ -1,0 +1,2615 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta name="color-scheme" content="dark light">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0">
+<title>电池解容工具箱</title>
+<script>(function(){try{var t=localStorage.getItem('bt-theme');document.documentElement.setAttribute('data-theme',t==='light'?'light':'dark');}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
+<style>
+/* ============================================================
+   电池解容工具箱 WebUI — v3.3.8（黑紫 / 雾光双主题 · 液态玻璃 · 自适应特效）
+   ------------------------------------------------------------
+   设计概念：黑紫 Obsidian Violet（深色）+ 雾光 Mist（浅色）
+     · 中性石墨底色（不再是蓝黑），表面用中性白透明度堆层次
+     · 单一强调色（蓝）+ 青色做数据点缀，彻底移除紫色
+     · 背景光斑大幅收敛，只做氛围不抢内容
+     · 靠字重/字距/留白/发丝线/微动效建立高级感
+     · 所有数字等宽，所有可点元素有 active + focus 态
+   ============================================================ */
+
+/* ============ 令牌 ============ */
+:root{
+  --spring:cubic-bezier(.34,1.46,.5,1);
+  --spring-soft:cubic-bezier(.25,1.2,.4,1);
+  --ease:cubic-bezier(.32,.72,.3,1);
+  --ease-out:cubic-bezier(.16,1,.3,1);
+  --r-xl:28px;--r-lg:20px;--r-md:15px;--r-sm:12px;--r-pill:999px;
+  --gap:13px;
+  --pad:16px;
+  --blur:24px;
+  /* 统一字号阶梯 */
+  --t-cap:10.5px;--t-xs:11px;--t-sm:12px;--t-md:13px;--t-lg:15px;--t-xl:21px;--t-hero:50px;
+}
+
+/* ---------- 深色：黑紫 Obsidian Violet ---------- */
+/* 单色系紫（不再混蓝），靠中性底色 + 克制的紫强调建立高级感 */
+:root[data-theme="dark"]{
+  --bg:#07060e;
+  --bg-2:#0b0916;
+  --fg:#f7f5fc;
+  --fg2:#c0b9d0;
+  --muted:#9488a5;
+  /* 中性表面：带极轻紫调，避免死灰 */
+  --s1:rgba(24,20,34,.74);
+  --s2:rgba(33,28,46,.78);
+  --s3:rgba(43,37,59,.84);
+  --s4:rgba(55,48,75,.88);
+  --glass:var(--s1);--glass2:var(--s2);--glass3:var(--s3);
+  --stroke:rgba(255,255,255,.068);
+  --stroke2:rgba(255,255,255,.12);
+  --track:rgba(255,255,255,.08);
+  --hi:rgba(255,255,255,.10);
+  /* 强调：紫罗兰单色系 */
+  --accent:#8b5cf6;
+  --accent2:#a78bfa;
+  --accent3:#d8b4fe;
+  --accent-deep:#6d28d9;
+  --accent-soft:rgba(139,92,246,.16);
+  --accent-line:rgba(139,92,246,.34);
+  /* 能量色（充电态专用，与紫形成克制对比） */
+  --energy:#a78bfa;
+  --energy-soft:rgba(167,139,250,.10);
+  --ok:#34d399;
+  --warn:#fbbf24;
+  --bad:#fb7185;
+  --shadow:0 22px 48px -24px rgba(0,0,0,.94),0 1px 3px rgba(0,0,0,.6);
+  --shadow-sm:0 6px 18px -10px rgba(0,0,0,.72);
+  --shadow-lift:0 32px 68px -28px rgba(0,0,0,.96),0 2px 6px rgba(0,0,0,.62);
+  --code-bg:rgba(6,5,12,.42);
+  --glow:rgba(139,92,246,.26);
+  /* 流动光斑：紫 / 品红 / 靛 */
+  --g1:rgba(124,58,237,.19);
+  --g2:rgba(192,38,211,.12);
+  --g3:rgba(79,70,229,.14);
+  /* v3.4.0：图表 tooltip（Chart.js 默认背景是 rgba(0,0,0,.8)，
+     两套主题下点按都会弹出一块黑底 —— 用户反馈"点按背景变黑"就是它） */
+  --tip-bg:rgba(30,25,44,.97);
+  --tip-fg:#f7f5fc;
+  --tip-border:rgba(255,255,255,.13);
+  /* v3.4.0：图表系列色改为跟主题走（原来硬编码，切主题后线条颜色不变） */
+  --ch-soc:#a78bfa;   /* 电量：紫罗兰，与黑紫主题同族 */
+  --ch-cur:#f0b93a;   /* 电流：琥珀，暖色对照 */
+  --ch-vol:#6366f1;   /* 电压：靛（图表未用，留档） */
+  --ch-pow:#38bdf8;   /* 功率：天蓝，紫色上的"电"感 */
+  --ch-tmp:#fb7185;   /* 温度：玫红 */
+}
+/* ---------- 浅色：雾光 Mist ---------- */
+/* 仍然不用紫色。氛围色 = 冷蓝(左上) + 暖桃(右下)，经典「晨光」双色；
+   卡片是真正的磨砂玻璃（白 .62~.94），背后有颜色可模糊 → 浮起来。
+   主操作色用深石板（比纯黑柔和，不压色）。 */
+:root[data-theme="light"]{
+  --bg:#eaeff8;
+  --bg-2:#f8f3ee;
+  --fg:#101725;
+  --fg2:#414a5e;
+  --muted:#656f7e;
+  /* 磨砂玻璃：透明度更低，让背景氛围透上来 */
+  --s1:rgba(255,255,255,.62);
+  --s2:rgba(255,255,255,.74);
+  --s3:rgba(255,255,255,.86);
+  --s4:rgba(255,255,255,.94);
+  --glass:var(--s1);--glass2:var(--s2);--glass3:var(--s3);
+  --stroke:rgba(28,44,78,.082);
+  --stroke2:rgba(28,44,78,.14);
+  --track:rgba(28,44,78,.085);
+  --hi:rgba(255,255,255,.98);
+  /* 主操作色：深石板（柔和的黑） */
+  --accent:#1e293b;
+  --accent2:#3b4a63;
+  --accent3:#64748b;
+  --accent-deep:#0b1220;
+  --accent-soft:rgba(30,41,59,.06);
+  --accent-line:rgba(30,41,59,.17);
+  /* 能量色：深青，只用于「充电中」 */
+  --energy:#0d9488;
+  --energy-soft:rgba(13,148,136,.13);
+  --ok:#0f9d63;
+  --warn:#b45309;
+  --bad:#dc2626;
+  /* 投影加厚：卡片必须"浮"起来，不能像印上去的 */
+  --shadow:0 24px 48px -26px rgba(30,45,80,.34),0 2px 6px -2px rgba(30,45,80,.10);
+  --shadow-sm:0 8px 22px -12px rgba(30,45,80,.28);
+  --shadow-lift:0 34px 68px -30px rgba(30,45,80,.40),0 3px 8px rgba(30,45,80,.10);
+  --code-bg:rgba(255,255,255,.58);
+  --glow:rgba(30,41,59,.07);
+  /* 氛围光斑：冷蓝 + 暖桃 + 淡青 */
+  --g1:rgba(96,165,250,.34);
+  --g2:rgba(253,186,116,.28);
+  --g3:rgba(125,211,252,.24);
+  --tip-bg:rgba(255,255,255,.985);
+  --tip-fg:#101725;
+  --tip-border:rgba(28,44,78,.16);
+  /* 浅色：不用紫，走蓝 / 琥珀 / 深青（与 --energy 同色）/ 红 */
+  --ch-soc:#3b6fd4;
+  --ch-cur:#b8760a;
+  --ch-vol:#6d5bd0;
+  --ch-pow:#0d8fa8;
+  --ch-tmp:#d33a3a;
+}
+
+/* ============ 基础 ============ */
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+html,body{margin:0;padding:0}
+body{
+  color:var(--fg);
+  font-family:system-ui,-apple-system,"SF Pro SC","PingFang SC","Segoe UI",Roboto,"Microsoft YaHei",sans-serif;
+  font-size:14px;line-height:1.5;letter-spacing:0;
+  padding:calc(18px + env(safe-area-inset-top)) 14px calc(52px + env(safe-area-inset-bottom));
+  min-height:100vh;background:var(--bg);
+  transition:background .45s var(--ease),color .45s var(--ease);
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  overflow-x:hidden;
+}
+/* 背景：极简双色光斑 + 竖直微渐变 */
+body::before{
+  content:'';position:fixed;inset:0;z-index:-2;pointer-events:none;
+  background:
+    radial-gradient(80% 48% at 18% -8%, var(--g1), transparent 66%),
+    radial-gradient(70% 46% at 100% 96%, var(--g2), transparent 68%),
+    linear-gradient(166deg, var(--bg) 0%, var(--bg-2) 100%);
+}
+
+/* ============ 布局 ============ */
+.wrap{
+  max-width:576px;margin:0 auto;
+  display:flex;flex-direction:column;gap:var(--gap);
+  position:relative;z-index:1;
+}
+
+/* ============ 顶栏 ============ */
+header{display:flex;align-items:flex-start;justify-content:space-between;padding:0 4px;gap:12px}
+.htitle{display:flex;flex-direction:column;gap:6px;min-width:0}
+.htitle h1{
+  font-size:var(--t-xl);margin:0;font-weight:800;
+  letter-spacing:-.45px;line-height:1.1;color:var(--fg);
+}
+.htitle .sub{
+  font-size:var(--t-xs);color:var(--muted);
+  letter-spacing:.35px;font-weight:500;
+}
+.theme-btn{
+  width:42px;height:42px;flex:none;border-radius:var(--r-md);
+  border:1px solid var(--stroke2);
+  background:var(--s2);
+  color:var(--fg);font-size:17px;line-height:1;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  -webkit-backdrop-filter:blur(var(--blur)) saturate(160%);
+  backdrop-filter:blur(var(--blur)) saturate(160%);
+  box-shadow:var(--shadow-sm),inset 0 1px 0 var(--hi);
+  transition:transform .34s var(--spring),background .24s,border-color .24s;
+}
+.theme-btn:active{transform:scale(.88)}
+
+/* 署名行 */
+.meta-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 4px;margin-top:-2px;gap:10px;
+}
+.meta-row .by{
+  font-size:var(--t-xs);color:var(--muted);letter-spacing:.2px;
+  white-space:nowrap;font-variant-numeric:tabular-nums;
+}
+
+/* 机型徽章 */
+.badge{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:var(--t-cap);font-weight:700;letter-spacing:.35px;
+  padding:4px 10px;border-radius:var(--r-pill);
+  background:var(--s2);color:var(--fg2);
+  border:1px solid var(--stroke2);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.badge::before{
+  content:'';flex:none;width:5px;height:5px;border-radius:50%;
+  background:var(--fg2);
+  animation:dotPulse 2.6s var(--ease) infinite;
+}
+@keyframes dotPulse{0%,100%{opacity:.35;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}
+
+/* ============ 卡片（液态玻璃） ============ */
+.glass{
+  position:relative;
+  background:var(--s1);
+  border-radius:var(--r-xl);
+  border:1px solid var(--stroke);
+  -webkit-backdrop-filter:blur(var(--blur)) saturate(155%);
+  backdrop-filter:blur(var(--blur)) saturate(155%);
+  box-shadow:var(--shadow),inset 0 1px 0 var(--hi);
+  transition:background .4s var(--ease),box-shadow .4s var(--ease),border-color .4s var(--ease);
+}
+/* 顶部发丝高光线（比整圈描边克制得多） */
+.glass::before{
+  content:'';position:absolute;left:14%;right:14%;top:0;height:1px;pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.24) 22%,rgba(255,255,255,.34) 50%,rgba(255,255,255,.24) 78%,transparent);
+  opacity:.9;
+}
+:root[data-theme="light"] .glass::before{
+  left:12%;right:12%;height:1.5px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,1) 20%,#fff 50%,rgba(255,255,255,1) 80%,transparent);
+  opacity:1;
+}
+/* 左下极淡补光，让平面不死 */
+.glass::after{
+  content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:radial-gradient(120% 90% at 8% 108%,rgba(255,255,255,.045),transparent 58%);
+}
+:root[data-theme="light"] .glass::after{
+  background:
+    radial-gradient(120% 90% at 8% 108%,rgba(255,255,255,.62),transparent 58%),
+    radial-gradient(90% 60% at 92% 0%,rgba(148,196,255,.16),transparent 62%);
+}
+
+.card,.pcard,.chart-card,.ovw,.log-sec{padding:var(--pad)}
+
+/* ============ 概览 ============ */
+.ovw-sec+.ovw-sec{
+  margin-top:15px;padding-top:15px;
+  border-top:1px solid var(--stroke);
+}
+.ovw-cap{
+  display:flex;align-items:center;gap:7px;
+  font-size:var(--t-cap);font-weight:800;letter-spacing:1.2px;
+  color:var(--muted);margin:0 0 10px 1px;text-transform:uppercase;
+}
+/* 强调条：中性灰（不再用强调色 —— 颜色只留给真正需要表达状态的元素） */
+.ovw-cap::before{
+  content:'';flex:none;width:3px;height:10px;border-radius:2px;
+  background:var(--muted);opacity:.55;
+}
+.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tile{
+  position:relative;overflow:hidden;
+  background:var(--s2);
+  border:1px solid var(--stroke);
+  border-radius:var(--r-md);
+  padding:11px 12px 10px;
+  display:flex;flex-direction:column;gap:3px;
+  box-shadow:inset 0 1px 0 var(--hi);
+  transition:background .3s var(--ease),border-color .3s;
+}
+.tile .k{
+  font-size:var(--t-cap);font-weight:700;letter-spacing:.5px;
+  color:var(--muted);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.tile .v{
+  font-size:16px;color:var(--fg);font-weight:800;letter-spacing:-.3px;line-height:1.22;
+  font-variant-numeric:tabular-nums;color:var(--fg);
+  /* v3.7.0：长值（公版PPS / 不限制）防溢出 */
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.tile .v small{
+  font-size:10px;font-weight:700;color:var(--muted);
+  margin-left:1.5px;letter-spacing:0;
+}
+/* 充电中：描边用「能量色」，两套主题各自定义 */
+.tile.breath{
+  border-color:var(--energy-soft);
+  background:linear-gradient(160deg,var(--energy-soft),var(--s2) 68%);
+  box-shadow:inset 0 1px 0 var(--hi),0 0 0 1px var(--energy-soft);
+}
+
+/* ============ 功率卡片 ============ */
+.pcard .ptop{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:1px}
+.pcard .cur{
+  font-size:var(--t-cap);font-weight:800;letter-spacing:1.2px;
+  color:var(--muted);text-transform:uppercase;
+}
+.pcard .big{display:flex;align-items:baseline;gap:5px;margin-top:6px;position:relative}
+/* 主数字背后的柔和辉光 */
+.pcard .big::before{
+  content:'';position:absolute;left:-6%;top:-40%;width:70%;height:200%;
+  background:radial-gradient(circle at 30% 50%,var(--glow),transparent 66%);
+  pointer-events:none;filter:blur(18px);z-index:0;
+}
+.pcard .big b{
+  position:relative;z-index:1;
+  font-size:var(--t-hero);font-weight:900;line-height:.9;letter-spacing:-3px;
+  font-variant-numeric:tabular-nums;color:var(--fg);
+}
+.pcard .big .u{
+  position:relative;z-index:1;
+  font-size:var(--t-sm);font-weight:800;color:var(--muted);letter-spacing:.4px;
+}
+.pcard .big .u .mx{color:var(--accent2)}
+#pTarget{
+  font-size:var(--t-cap);font-weight:800;letter-spacing:.4px;
+  padding:5px 10px;border-radius:var(--r-pill);
+  background:var(--s3);color:var(--fg2);
+  border:1px solid var(--stroke2);
+  white-space:nowrap;flex:none;margin-top:2px;
+  font-variant-numeric:tabular-nums;
+}
+.pstate{
+  font-size:var(--t-xs);color:var(--muted);
+  margin-top:9px;min-height:17px;line-height:1.5;
+  font-variant-numeric:tabular-nums;
+}
+.pstate.loading{opacity:.86}
+
+/* ---- 功率滑块 ---- */
+.slider-row{display:flex;align-items:center;gap:9px;margin:22px 0 9px}
+.slider-row .end{
+  font-size:var(--t-cap);font-weight:800;color:var(--muted);
+  flex:none;letter-spacing:.8px;
+}
+.cslider{
+  flex:1;width:100%;height:30px;position:relative;
+  cursor:pointer;outline:none;touch-action:none;
+  -webkit-tap-highlight-color:transparent;
+}
+.csl-inner{position:absolute;left:15px;right:15px;top:0;bottom:0}
+.csl-track{
+  position:absolute;left:0;right:0;top:50%;height:8px;margin-top:-4px;
+  border-radius:var(--r-pill);background:var(--track);
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.35);
+}
+.csl-fill{
+  position:absolute;left:0;top:50%;height:8px;margin-top:-4px;width:0;
+  border-radius:var(--r-pill);
+  background:linear-gradient(90deg,var(--accent3),var(--accent) 72%);
+  box-shadow:0 0 14px var(--accent-soft);
+  /* v3.4.0：原来是 width .34s + 带过冲的 spring 曲线 → 填充条追赶旋钮，
+     看起来"跟手一半"。改成短促线性，拖动时直接关掉（见 .dragging）。 */
+  transition:width .16s var(--ease);
+}
+.csl-knob{
+  position:absolute;left:0;top:50%;
+  width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;
+  clip-path:circle(50% at 50% 50%);pointer-events:none;
+  background:#fff;
+  box-shadow:0 2px 7px rgba(0,0,0,.42),0 0 0 1px rgba(0,0,0,.06);
+  /* ★ v3.4.0【跟手修复】transform 绝对不能有 transition —
+     原来写的是 .34s + var(--spring-soft)（cubic-bezier(.25,1.2,.4,1)，带过冲），
+     于是拖动时旋钮会滞后 340ms 再回弹一下，手感和画面完全脱节。
+     现在只给 box-shadow 做过渡，位置永远瞬时跟随手指。 */
+  transition:box-shadow .18s ease;
+}
+.cslider.dragging .csl-fill{transition:none}
+/* 按下时的光圈收细（原来 8px 太大，配合拉伸看起来像"变形了"） */
+.cslider:active .csl-knob{
+  box-shadow:0 2px 8px rgba(0,0,0,.45),0 0 0 5px var(--accent-soft);
+}
+.scale{
+  display:flex;justify-content:space-between;
+  font-size:var(--t-cap);color:var(--muted);padding:0 3px;
+}
+.scale span{
+  flex:1;text-align:center;cursor:pointer;
+  font-variant-numeric:tabular-nums;
+  transition:color .22s,transform .26s var(--spring-soft),font-weight .22s;
+}
+.scale span.on{color:var(--fg);font-weight:800;transform:scale(1.04)}
+.pbtns{display:flex;gap:9px;margin-top:16px}
+
+/* ---- v3.4.2：无级电流滑块（4 档 → 1.0~22.0A） ---- */
+/* pTarget 现在要放「≈96.4 W · current_limit」，比原来的「90W MAX」长得多。
+   原来的 white-space:nowrap + 无宽度上限会把 .ptop 挤爆（大数字被压缩/换行），
+   这里给一个上限并允许省略号；完整节点名由 JS 写进 title。 */
+#pTarget{max-width:60%;overflow:hidden;text-overflow:ellipsis}
+/* 卡片底部：功率估算口径说明 */
+.pnote{
+  margin-top:11px;text-align:center;
+  font-size:var(--t-cap);color:var(--muted);line-height:1.55;
+  font-variant-numeric:tabular-nums;
+}
+
+/* ============ 按钮 ============ */
+.btn{
+  position:relative;overflow:hidden;flex:1;
+  border:none;border-radius:var(--r-md);
+  padding:14px;font-size:14px;font-weight:800;letter-spacing:.3px;
+  cursor:pointer;color:#fff;font-family:inherit;
+  background:linear-gradient(176deg,#4a5b78,var(--accent) 46%,var(--accent-deep));
+  box-shadow:0 8px 22px -12px var(--accent-line),inset 0 1px 0 rgba(255,255,255,.4);
+  transition:transform .2s var(--spring),box-shadow .24s,filter .24s;
+}
+.btn:active{
+  transform:scale(.968);
+  box-shadow:0 3px 12px -8px var(--accent-line),inset 0 1px 0 rgba(255,255,255,.35);
+}
+.btn:disabled{opacity:.42;filter:grayscale(.35)}
+.btn.ghost{
+  flex:none;padding:13px 16px;
+  background:var(--s3);color:var(--fg);
+  border:1px solid var(--stroke2);
+  box-shadow:inset 0 1px 0 var(--hi);
+}
+.btn.ghost:hover{background:var(--s4);color:var(--accent2);border-color:var(--accent-line)}
+.btn.ghost:active{transform:scale(.965)}
+.btn.sm{padding:11px;font-size:var(--t-sm);border-radius:var(--r-sm)}
+:root[data-theme="light"] .btn.ghost{background:#fff;border-color:rgba(16,26,46,.11)}
+:root[data-theme="light"] .tile{
+  box-shadow:inset 0 1px 0 #fff,inset 0 -1px 0 rgba(30,45,80,.045),0 1px 2px rgba(30,45,80,.055);
+}
+:root[data-theme="light"] .btn.ghost:hover{background:rgba(255,255,255,.98)}
+.btn .rip{
+  position:absolute;border-radius:50%;pointer-events:none;
+  background:rgba(255,255,255,.55);transform:scale(0);
+  animation:ripple .62s var(--ease-out);
+}
+@keyframes ripple{to{transform:scale(3.6);opacity:0}}
+
+/* ============ 图表 ============ */
+.chart-head{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:10px;gap:10px;
+}
+.chart-head b{
+  display:flex;align-items:center;gap:7px;
+  font-size:var(--t-md);font-weight:800;letter-spacing:.2px;color:var(--fg);
+}
+.chart-head b::before{
+  content:'';flex:none;width:3px;height:11px;border-radius:2px;
+  background:var(--muted);opacity:.55;
+}
+.chart-head .lg{
+  font-size:var(--t-cap);color:var(--muted);
+  display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:flex-end;
+}
+.chart-head .lg i{
+  font-style:normal;font-size:9.5px;font-weight:800;letter-spacing:.4px;
+  padding:1.5px 5px;border-radius:4px;
+  background:var(--s3);color:var(--fg2);
+  border:1px solid var(--stroke);
+}
+.chart-head .lg i.axR{margin-left:3px}
+.chart-tip{
+  font-size:var(--t-cap);color:var(--muted);
+  margin-top:9px;line-height:1.55;
+}
+.chart-tip b{color:var(--fg2);font-weight:700;font-variant-numeric:tabular-nums}
+.cbox{position:relative;height:172px;touch-action:pan-y}
+.chint{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:var(--t-sm);color:var(--muted);pointer-events:none;letter-spacing:.5px;
+}
+.dim{opacity:.84;font-size:var(--t-xs)}
+
+/* ============ 行 / 开关 ============ */
+.row{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:13px 1px;border-bottom:1px solid var(--stroke);
+}
+.row:last-child{border-bottom:none}
+.row .ri{display:flex;flex-direction:column;gap:2px;padding-right:8px;min-width:0}
+.row .ri b{font-size:var(--t-md);font-weight:700;letter-spacing:.1px;color:var(--fg)}
+.row .ri span{font-size:var(--t-xs);color:var(--muted);line-height:1.48}
+
+/* 开关 */
+.sw{position:relative;width:50px;height:29px;flex:none}
+.sw input{position:absolute;opacity:0;width:0;height:0}
+.sw .tr{
+  position:absolute;inset:0;border-radius:var(--r-pill);
+  background:var(--track);border:1px solid var(--stroke2);
+  transition:background .3s var(--ease),border-color .3s,box-shadow .3s;
+}
+.sw .kn{
+  position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;
+  background:#fff;
+  box-shadow:0 1px 4px rgba(0,0,0,.38),inset 0 -1px 1px rgba(0,0,0,.05);
+  transition:transform .36s var(--spring);
+  will-change:transform;
+}
+.sw input:checked+.tr{
+  background:linear-gradient(96deg,var(--accent2),var(--accent));
+  border-color:transparent;
+  box-shadow:0 0 16px var(--accent-soft),inset 0 1px 0 rgba(255,255,255,.28);
+}
+.sw input:checked+.tr .kn{transform:translateX(21px)}
+.sw input:disabled+.tr{opacity:.42}
+.sw.busy{pointer-events:none}
+.sw.busy .tr{animation:swPulse 1s var(--ease) infinite}
+@keyframes swPulse{0%,100%{opacity:1}50%{opacity:.58}}
+
+/* ============ 折叠 ============ */
+details{overflow:hidden}
+details>summary{
+  list-style:none;cursor:pointer;
+  padding:16px;font-size:var(--t-md);font-weight:800;letter-spacing:.15px;
+  display:flex;justify-content:space-between;align-items:center;
+  transition:background .22s;
+}
+details>summary::-webkit-details-marker{display:none}
+details>summary .ar{
+  color:var(--muted);font-size:11px;
+  transition:transform .36s var(--spring),color .22s;
+  display:inline-block;
+}
+details[open]>summary .ar{transform:rotate(90deg);color:var(--accent)}
+details.collapsing>summary .ar{transform:rotate(0deg)}
+details>.dbody{
+  padding:0 16px 16px;
+  display:flex;flex-direction:column;gap:11px;
+  overflow:hidden;transform-origin:top center;
+}
+
+/* ============ 表单 ============ */
+.mini{font-size:var(--t-xs);color:var(--muted);line-height:1.58}
+select{
+  width:100%;padding:12px;
+  background:var(--s3);color:var(--fg);
+  border:1px solid var(--stroke2);border-radius:var(--r-sm);
+  font-size:var(--t-md);font-family:inherit;font-weight:600;
+  -webkit-appearance:none;appearance:none;
+  background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+  background-position:calc(100% - 18px) calc(50% - 2px),calc(100% - 13px) calc(50% - 2px);
+  background-size:5px 5px,5px 5px;background-repeat:no-repeat;
+  transition:border-color .22s,background-color .22s;
+}
+select:focus{outline:none;border-color:var(--accent-line);box-shadow:0 0 0 3px var(--accent-soft)}
+input[type="text"]{font-family:inherit}
+
+/* 输出框 */
+.out{
+  margin:0;padding:12px;
+  background:var(--code-bg);
+  border:1px solid var(--stroke);border-radius:var(--r-sm);
+  font-size:var(--t-xs);line-height:1.65;color:var(--fg2);
+  white-space:pre-wrap;word-break:break-all;
+  max-height:220px;overflow:auto;display:none;
+  font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  transition:opacity .3s var(--ease);
+}
+.out.show{display:block}
+.out::-webkit-scrollbar{width:5px}
+.out::-webkit-scrollbar-thumb{background:var(--stroke2);border-radius:3px}
+.out::-webkit-scrollbar-track{background:transparent}
+.lgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sec-title{
+  display:flex;align-items:center;gap:7px;
+  font-size:var(--t-md);font-weight:800;letter-spacing:.2px;
+}
+.sec-title::before{
+  content:'';flex:none;width:3px;height:11px;border-radius:2px;
+  background:var(--muted);opacity:.55;
+}
+.log-sec{display:flex;flex-direction:column;gap:11px}
+
+/* ============ Toast ============ */
+#toast{
+  position:fixed;left:50%;bottom:calc(40px + env(safe-area-inset-bottom));
+  transform:translateX(-50%) translateY(22px) scale(.95);
+  background:var(--s4);color:var(--fg);
+  border:1px solid var(--stroke2);
+  padding:12px 22px;border-radius:var(--r-md);
+  font-size:var(--t-md);font-weight:600;
+  box-shadow:var(--shadow-lift);
+  -webkit-backdrop-filter:blur(22px) saturate(170%);
+  backdrop-filter:blur(22px) saturate(170%);
+  opacity:0;pointer-events:none;
+  transition:opacity .3s var(--ease),transform .4s var(--spring);
+  z-index:99;max-width:84vw;text-align:center;
+}
+:root[data-theme="light"] #toast{background:rgba(255,255,255,.94)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
+
+/* ============ 流动光斑（动态流动氛围） ============
+   性能与正确性设计：
+     · 每个光斑只做 transform（translate + scale）→ 纯合成器，不触发重绘
+     · 每团走各自的「闭合路径」（0% 与 100% 同姿态）→ 循环无缝、永不重合
+     · ★ 特意【不旋转容器】：容器有 overflow:hidden，一旦整体旋转，
+       光斑会被旋转的矩形边界切断，手机上能看到转动的切割边（已避坑）
+     · 页面不可见 / 低性能 / 减少动态 时全部暂停或移除 */
+.aurora{
+  position:fixed;inset:-18%;z-index:-1;pointer-events:none;overflow:hidden;
+}
+.aurora b{
+  position:absolute;display:block;border-radius:50%;
+  filter:blur(64px);opacity:.42;
+  animation-timing-function:ease-in-out;
+  animation-iteration-count:infinite;
+}
+.aurora b:nth-child(1){
+  width:60%;height:38%;left:-10%;top:-8%;background:var(--g1);
+  animation-name:flowA;animation-duration:58s;
+}
+.aurora b:nth-child(2){
+  width:52%;height:32%;right:-12%;top:4%;background:var(--g2);
+  animation-name:flowB;animation-duration:74s;
+}
+.aurora b:nth-child(3){
+  width:66%;height:42%;left:4%;bottom:-14%;background:var(--g3);
+  animation-name:flowC;animation-duration:92s;
+}
+/* 闭合路径：首尾同姿态，循环无跳变 */
+@keyframes flowA{
+  0%  {transform:translate3d(0,0,0) scale(1)}
+  25% {transform:translate3d(7%,4%,0) scale(1.13)}
+  50% {transform:translate3d(3%,9%,0) scale(1.04)}
+  75% {transform:translate3d(-5%,5%,0) scale(.96)}
+  100%{transform:translate3d(0,0,0) scale(1)}
+}
+@keyframes flowB{
+  0%  {transform:translate3d(0,0,0) scale(1.06)}
+  25% {transform:translate3d(-8%,5%,0) scale(.94)}
+  50% {transform:translate3d(-4%,-6%,0) scale(1.10)}
+  75% {transform:translate3d(6%,-3%,0) scale(1.00)}
+  100%{transform:translate3d(0,0,0) scale(1.06)}
+}
+@keyframes flowC{
+  0%  {transform:translate3d(0,0,0) scale(1)}
+  25% {transform:translate3d(5%,-6%,0) scale(1.12)}
+  50% {transform:translate3d(-4%,-2%,0) scale(1.02)}
+  75% {transform:translate3d(-2%,7%,0) scale(.95)}
+  100%{transform:translate3d(0,0,0) scale(1)}
+}
+
+/* ============ 动效 ============ */
+.glass.anim-in{
+  opacity:0;transform:translateY(14px) scale(.99);
+  transition:opacity .55s var(--ease-out),transform .55s var(--ease-out);
+}
+.glass.anim-in.done{opacity:1;transform:none}
+.row-in{animation:rowIn .4s var(--ease-out)}
+@keyframes rowIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.row-out{animation:rowOut .3s var(--ease) forwards}
+@keyframes rowOut{to{opacity:0;transform:translateX(14px)}}
+
+/* 主题切换过渡 */
+html.theme-tx *{
+  transition:background-color .38s var(--ease),color .38s var(--ease),
+             border-color .38s var(--ease),box-shadow .38s var(--ease)!important;
+}
+
+/* 性能钩子（保留，JS 会加这些 class） */
+/* 光斑保持流动（作者明确要求"动态流动"）；只在页面不可见时暂停 */
+html.page-hidden .aurora,
+html.page-hidden .aurora b,
+html.page-hidden .badge::before{animation-play-state:paused}
+html.ambient-still .badge::before{animation:none}
+
+/* ============ 细节 ============ */
+::selection{background:var(--accent-soft);color:var(--fg)}
+#dirList:empty{display:none}
+#imageList:empty{display:none}
+/* 焦点可见（键盘/无障碍） */
+:focus-visible{
+  outline:2px solid var(--accent);
+  outline-offset:2px;
+  border-radius:6px;
+}
+.cslider:focus-visible{outline:2px solid var(--accent);outline-offset:6px;border-radius:var(--r-pill)}
+
+/* 窄屏 */
+@media (max-width:360px){
+  :root{--t-hero:44px;--pad:14px;--gap:11px}
+  .grid3{gap:7px}
+  .tile{padding:9px 10px 8px}
+  .tile .v{font-size:14.5px}
+}
+/* 减少动态 */
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+  html{scroll-behavior:auto}
+}
+
+/* ============================================================
+   v3.3.x 特效层（自适应，按性能/功耗自动升降级）
+   ============================================================ */
+
+/* ---------- 实色兜底（降级时用，避免完全丢失层次） ---------- */
+:root[data-theme="dark"]{
+  --s1-solid:#11141a;--s2-solid:#1a1e26;--s3-solid:#232831;--s4-solid:#2d323b;
+}
+:root[data-theme="light"]{
+  --s1-solid:rgba(255,255,255,.93);--s2-solid:rgba(255,255,255,.96);
+  --s3-solid:#ffffff;--s4-solid:#ffffff;
+}
+
+/* ---------- ① 全局噪点 + 暗角（纯静态，零运行时开销） ---------- */
+body::after{
+  content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background-image:
+    radial-gradient(120% 100% at 50% 0%, transparent 42%, rgba(0,0,0,.16) 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+  background-size:100% 100%,140px 140px;
+  opacity:.055;
+}
+:root[data-theme="light"] body::after{
+  background-image:
+    radial-gradient(120% 100% at 50% 0%, transparent 52%, rgba(24,40,78,.055) 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+  opacity:.042;
+}
+
+/* ---------- ② 功率卡片：充电时的能量流光 ---------- */
+/* 只在有电的时候跑（插着电，不怕这点合成开销）；
+   关键帧里只有 0~32% 在动，其余 68% 完全静止 → 平均功耗极低 */
+.pcard{overflow:hidden}
+html.fx-charging .pcard .ptop::before{
+  content:'';position:absolute;inset:-3px;border-radius:var(--r-xl);
+  pointer-events:none;z-index:0;
+  background:linear-gradient(114deg,
+    transparent 30%,
+    var(--energy-soft) 42%,
+    var(--accent-soft) 50%,
+    var(--energy-soft) 57%,
+    transparent 70%);
+  filter:blur(6px);
+  transform:translateX(-72%);
+  animation:energySheen 5.2s var(--ease) infinite;
+}
+@keyframes energySheen{
+  0%{transform:translateX(-72%);opacity:0}
+  4%{opacity:1}
+  32%{transform:translateX(72%);opacity:0}
+  100%{transform:translateX(72%);opacity:0}
+}
+/* 流光期间内容压在它上面 */
+html.fx-charging .pcard>.ptop,
+html.fx-charging .pcard>.slider-row,
+html.fx-charging .pcard>.scale,
+html.fx-charging .pcard>.pstate,
+html.fx-charging .pcard>.pbtns{position:relative;z-index:1}
+
+/* ---------- ③ 充电时主数字背光呼吸（只动 opacity/transform） ---------- */
+html.fx-charging .pcard .big::before{
+  animation:heroBreath 4.6s ease-in-out infinite;
+}
+@keyframes heroBreath{
+  0%,100%{opacity:.62;transform:scale(.94)}
+  50%{opacity:1;transform:scale(1.06)}
+}
+
+/* ---------- ④ 充电瓦片的青色边缘呼吸 ---------- */
+html.fx-charging .tile.breath{
+  animation:tileBreath 3.4s ease-in-out infinite;
+}
+@keyframes tileBreath{
+  0%,100%{box-shadow:inset 0 1px 0 var(--hi),0 0 0 1px var(--energy-soft)}
+  50%{box-shadow:inset 0 1px 0 var(--hi),0 0 0 1px var(--energy-soft),0 0 12px -6px var(--energy-soft)}
+}
+
+
+/* ---------- ⑥ 顶部标题旁的极淡光晕（静态） ---------- */
+header{position:relative}
+header::before{}
+
+/* 完全关闭特效（用户系统里开了「减少动态效果」） */
+html.fx-off .aurora{display:none!important}
+html.fx-off .pcard .ptop::before,
+html.fx-off .pcard .big::before,
+html.fx-off .tile.breath,
+html.fx-off header::before{animation:none!important;display:none!important}
+html.fx-off body::after{display:none}
+
+/* 页面不可见时（模块 JS 会加 page-hidden）—— 全部暂停 */
+html.page-hidden .pcard .ptop::before,
+html.page-hidden .pcard .big::before,
+html.page-hidden .tile.breath{animation-play-state:paused!important}
+
+/* 系统已开启「减少动态效果」时，特效层自动降级 */
+@media (prefers-reduced-motion:reduce){
+  .aurora{display:none}
+  .pcard .ptop::before,.pcard .big::before,.tile.breath{animation:none!important}
+}
+
+/* ============================================================
+   v3.3.6 液态玻璃交互层 Liquid Glass
+   ------------------------------------------------------------
+   iOS 26 液态玻璃的四个可落地特征，逐条按开销取舍：
+     ① 触摸光照（光斑跟随手指落点）→ 只在 pointerdown 触发 1 次，抬手清除
+     ② 弹性形变（滑块胶囊拉伸 / 开关旋钮拉长）→ 纯 CSS :active/.dragging
+     ③ 骨架屏加载（Skeleton shimmer）→ 只在首屏那 1~2 秒跑，数据到了立刻移除
+     ④ 按压回弹（squash）→ 纯 CSS
+   全部只在「用户正在操作」时产生一帧开销，静置时零成本。
+   ============================================================ */
+
+/* ---------- 骨架屏变量 ---------- */
+:root[data-theme="dark"]{
+  --sk1:rgba(255,255,255,.055);
+  --sk2:rgba(255,255,255,.14);
+}
+:root[data-theme="light"]{
+  --sk1:rgba(30,45,80,.06);
+  --sk2:rgba(30,45,80,.13);
+}
+
+/* ---------- ① 触摸光照（液态玻璃核心） ---------- */
+/* 卡片默认是底部补光；按下时切换成「以手指为圆心」的高光。
+   只在 pointerdown 写一次 CSS 变量 → 只重绘那一张卡片 1 次。 */
+.glass{--gx:50%;--gy:0%}
+.glass::after{transition:background .26s var(--ease)}
+
+/* ---------- ② 弹性形变 ---------- */
+/* v3.4.0：滑块的"拖动拉成胶囊"已删除 ——
+   ① 它要改 width/height/margin，会让旋钮的视觉中心与 JS 算出的位置短暂错开；
+   ② 加上 8px 光圈，观感像"滑块被拉变形了"，用户反馈"特效好奇怪"。
+   滑块现在只保留瞬时跟随 + 按下光圈，不改变任何几何尺寸。 */
+/* 开关旋钮：按住时横向拉长 */
+.sw .kn{transition:transform .36s var(--spring),width .18s var(--spring-soft)}
+.sw:active .kn{width:26px}
+.sw input:checked:active+.tr .kn{transform:translateX(16px)}
+/* 按钮按压：squash（横向略胖、纵向略扁） */
+html:not(.fx-off) .btn:active{transform:scale(.972,.948)}
+
+/* ---------- ③ 骨架屏 ---------- */
+/* html.booting 由特效层 JS 在首屏数据到达前挂上，到达后立刻移除。
+   只在加载那一两秒跑，之后完全不存在。 */
+html.booting .tile .v{
+  color:transparent!important;
+  background:linear-gradient(90deg,var(--sk1) 20%,var(--sk2) 40%,var(--sk1) 60%);
+  background-size:300% 100%;
+  animation:skShimmer 1.25s linear infinite;
+  border-radius:5px;
+  width:62%;height:1.05em;
+  align-self:flex-start;
+  min-height:15px;
+}
+html.booting .tile .v small{display:none}
+html.booting .pcard .big .u,
+html.booting #pTarget{opacity:0;transition:opacity .2s}
+html.booting .pcard .big b{
+  color:transparent!important;
+  background:linear-gradient(90deg,var(--sk1) 20%,var(--sk2) 40%,var(--sk1) 60%);
+  background-size:300% 100%;
+  animation:skShimmer 1.25s linear infinite;
+  border-radius:10px;
+}
+@keyframes skShimmer{
+  0%{background-position:150% 0}
+  100%{background-position:-150% 0}
+}
+/* 骨架阶段不要跑能量流光/呼吸，避免和 shimmer 打架 */
+html.booting .pcard .ptop::before,
+html.booting .tile.breath{animation:none!important}
+html.booting .tile.breath{background:var(--s2)}
+
+/* ---------- ④ 交互反馈细节 ---------- */
+/* 可点元素统一 cursor + 阻止选中（手机长按不出现选区） */
+.btn,.sw,.scale span,.theme-btn,details>summary,.cslider{
+  cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+/* 折叠展开时内容的一次淡入（配合模块 JS 的高度过渡） */
+details[open]>.dbody{animation:foldIn .34s var(--ease-out)}
+@keyframes foldIn{
+  from{opacity:.35;transform:translateY(-4px)}
+  to{opacity:1;transform:none}
+}
+html.fx-off .glass.lit::after{background:none}
+html.fx-off details[open]>.dbody{animation:none}
+html.fx-off .btn:active{transform:scale(.97)}
+html.fx-off .cslider.dragging .csl-knob{width:26px;height:26px;margin:-13px 0 0 -13px}
+html.fx-off .sw:active .kn{width:21px}
+
+@media (prefers-reduced-motion:reduce){
+  html.booting .tile .v,
+  html.booting .pcard .big .u,
+html.booting #pTarget{opacity:0;transition:opacity .2s}
+html.booting .pcard .big b{animation:none!important}
+  details[open]>.dbody{animation:none!important}
+  .cslider.dragging .csl-knob{width:26px;height:26px;margin:-13px 0 0 -13px}
+  .sw:active .kn{width:21px}
+}
+
+/* ============================================================
+   v3.3.7 镜面边缘光 Specular Rim Light
+   ------------------------------------------------------------
+   参考：kube.io 那篇 Liquid Glass 逆向分析里最关键的结论 ——
+   真正的 SVG 位移折射（feDisplacementMap）手机端开销太大、且只有 Chrome 支持
+   当 backdrop-filter，作者自己标注「实验性 / 动态改尺寸开销很大」→ 本项目不采用。
+
+   但同一篇里指出的另一半是**可以零成本实现的**：
+     "Apple 的实现是简单的 rim light，高光在玻璃边缘，强度随表面法线
+       相对固定光源方向的角度变化。"
+
+   这正是 conic-gradient 的天然用途：
+     · 在 1px 宽的边框环上跑一圈角度渐变
+     · 高光最大处 = 光源方向，对侧最暗
+     · 用 @property 注册 --light-ang，触摸时平滑过渡（而非瞬变）
+     · 只用 mask 抠出边框环，不遮内容
+   全部静态栅格化一次，只在触摸时改一个角度变量。
+   ============================================================ */
+
+/* 注册角度变量 → 让它能平滑过渡（Chrome 85+；不支持时降级为瞬变，不影响功能） */
+@property --light-ang{
+  syntax:'<angle>';
+  inherits:false;
+  initial-value:135deg;
+}
+
+.glass{--light-ang:135deg}
+
+/* 只在不支持 mask 的旧内核上保留原来的「顶部发丝线」；
+   支持 mask-composite 的（现代 WebView 全部支持）改用整圈镜面边缘光。 */
+@supports ((mask-composite:exclude) or (-webkit-mask-composite:xor)){
+
+  /* 覆盖掉旧的顶部发丝线 */
+  .glass::before{
+    left:0;right:0;top:0;height:auto;bottom:0;
+    padding:1px;
+    border-radius:inherit;
+    background:conic-gradient(from var(--light-ang),
+      rgba(255,255,255,.62) 0deg,
+      rgba(255,255,255,.30) 26deg,
+      rgba(255,255,255,.07) 62deg,
+      rgba(255,255,255,0)   108deg,
+      rgba(255,255,255,0)   232deg,
+      rgba(255,255,255,.10) 286deg,
+      rgba(255,255,255,.40) 330deg,
+      rgba(255,255,255,.62) 360deg);
+    opacity:.85;
+    transition:opacity .3s var(--ease);
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite:xor;
+            mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+            mask-composite:exclude;
+  }
+
+  /* 浅色主题：白边在纸白底上要更淡，否则像描了一圈白线 */
+:root[data-theme="light"] .glass::before{opacity:.5}
+html.fx-off .glass::before{transition:none}
+}  /* @supports ((mask-composite) or (-webkit-mask-composite)) */
+
+/* ============================================================
+   v3.3.8 工程细节补全（参考大厂站点的通用做法）
+   ============================================================ */
+
+/* ---------- ① 防白闪：WebView 里滚过头会露出容器底色 ---------- */
+/* html 也铺上主题底色（原来只有 body 有），并把过卷行为收住 */
+html{
+  background:var(--bg);
+  overscroll-behavior-y:none;
+  overscroll-behavior-x:none;
+}
+body{overscroll-behavior-y:contain}
+
+/* ---------- ② 滚动进场（原生滚动驱动动画，零 JS） ---------- */
+/* animation-timeline: view() 由浏览器在合成线程直接驱动，不跑 JS、不占主线程。
+   只作用于「首屏之外」的卡片（nth-child(n+4)），避免首屏元素参与导致闪烁。 */
+@supports (animation-timeline: view()){
+  @media (prefers-reduced-motion: no-preference){
+  }
+  @keyframes revealUp{
+    from{opacity:.001;transform:translateY(18px) scale(.985)}
+    to{opacity:1;transform:none}
+  }
+}
+
+/* ---------- ③ 排版细节 ---------- */
+h1,.htitle h1{text-wrap:balance}
+.row .ri span,.mini,.chart-tip{text-wrap:pretty}
+/* 数字统一等宽 + 旧式数字关闭（避免 1 和 0 宽度跳动） */
+.tile .v,#pBig,.scale span,#pTarget,.pstate{
+  font-variant-numeric:tabular-nums;
+  font-feature-settings:"tnum" 1;
+}
+
+/* ---------- ④ 空状态不再是一句干巴巴的括号 ---------- */
+.out:empty{display:none}
+.out.show:not(:empty)::before{content:none}
+/* “（暂无输出）”这类占位文字调淡一档，但仍达 4.5:1 */
+.out{color:var(--fg2)}
+.out.show:only-child{color:var(--muted)}
+
+/* ---------- ⑤ 滚动条（桌面端内核也会渲染，顺手统一） ---------- */
+*{scrollbar-width:thin;scrollbar-color:var(--stroke2) transparent}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--stroke2);border-radius:3px}
+::-webkit-scrollbar-thumb:active{background:var(--accent-line)}
+
+/* ---------- ⑥ 高对比度偏好 ---------- */
+@media (prefers-contrast:more){
+  :root[data-theme="dark"]{--stroke:rgba(255,255,255,.16);--stroke2:rgba(255,255,255,.26)}
+  :root[data-theme="light"]{--stroke:rgba(28,44,78,.16);--stroke2:rgba(28,44,78,.26)}
+  .glass{border-width:1.5px}
+}
+
+/* ---------- ⑦ 打印/导出时别把玻璃和动效算进去 ---------- */
+@media print{
+  .aurora,body::after,body::before,.glass::before,.glass::after{display:none!important}
+  .glass{backdrop-filter:none!important;background:#fff!important;box-shadow:none!important;border:1px solid #ddd!important}
+  body{background:#fff!important;color:#000!important}
+}
+
+/* ============================================================
+   v3.7.0 自动档徽标 + 充电实况
+   ============================================================ */
+.chip{
+  display:inline-flex;align-items:center;vertical-align:2px;
+  font-size:9.5px;font-weight:800;letter-spacing:.8px;
+  padding:2.5px 8px;border-radius:var(--r-pill);margin-left:7px;
+  background:var(--accent-soft);color:var(--accent2);
+  border:1px solid var(--accent-line);
+  transition:opacity .3s var(--ease);
+}
+.chip.hide{display:none}
+:root[data-theme="light"] .chip{color:#1e293b;background:rgba(30,41,59,.07)}
+</style>
+</head>
+<body>
+<div class="aurora" aria-hidden="true"><b></b><b></b><b></b></div>
+<div class="wrap">
+  <header>
+    <div class="htitle">
+      <h1>电池解容工具箱</h1>
+      <div class="sub">解容 · 自适应功率限流 · 云控屏蔽</div>
+    </div>
+    <button class="theme-btn" id="themeBtn" title="切换主题">🌙</button>
+  </header>
+  <div class="meta-row">
+    <span class="badge" id="devBadge">识别中…</span>
+    <span class="by">by tingyefeng · <span id="verTxt">—</span></span>
+  </div>
+
+  <div class="glass card" style="margin-bottom:10px">
+    <div class="mini" style="line-height:1.75">
+      <b>二改声明</b>：本页属于「HyperOS 动态温控 K2」的二改整合版，非原作者官方发布。<br>
+      动态温控作者：Axiaojiux　｜　电池解容工具箱作者：听夜风1337
+    </div>
+  </div>
+
+  <!-- 概览：按类型分组 -->
+  <div class="glass ovw">
+    <div class="ovw-sec">
+      <div class="ovw-cap">电池</div>
+      <div class="grid2">
+        <div class="tile"><div class="k">电量</div><div class="v" id="cSoc">--</div></div>
+        <div class="tile"><div class="k">状态</div><div class="v" id="cSt">--</div></div>
+      </div>
+    </div>
+    <div class="ovw-sec">
+      <div class="ovw-cap">容量</div>
+      <div class="grid3">
+        <div class="tile"><div class="k">设计容量</div><div class="v" id="cDes">--</div></div>
+        <div class="tile"><div class="k">满充容量</div><div class="v" id="cCap">--</div></div>
+        <div class="tile"><div class="k">健康度</div><div class="v" id="cH">--</div></div>
+      </div>
+    </div>
+    <div class="ovw-sec">
+      <div class="ovw-cap">实时数据</div>
+      <div class="grid2">
+        <div class="tile"><div class="k">电压</div><div class="v" id="cV">--</div></div>
+        <div class="tile"><div class="k">电流</div><div class="v" id="cI">--</div></div>
+        <div class="tile"><div class="k">功率</div><div class="v" id="cP">--</div></div>
+        <div class="tile"><div class="k">温度</div><div class="v" id="cT">--</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 功率控制 -->
+  <div class="glass pcard">
+    <div class="ptop">
+      <div>
+        <div class="cur">充电功率<span class="chip" id="autoChip">全速</span></div>
+        <div class="big"><b id="pBig">—</b><span class="u" id="pUnit"><span class="mx">MAX</span></span></div>
+      </div>
+      <div class="mini" id="pTarget">目标 --</div>
+    </div>
+    <div class="slider-row">
+      <span class="end">大</span>
+      <div class="cslider" id="slider" role="slider" tabindex="0" aria-label="充电功率档位" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0" aria-valuetext="全速">
+        <div class="csl-inner">
+          <div class="csl-track"></div>
+          <div class="csl-fill" id="cslFill"></div>
+          <div class="csl-knob" id="cslKnob"></div>
+        </div>
+      </div>
+      <span class="end">小</span>
+    </div>
+    <div class="scale" id="scale"></div>
+    <div class="pstate loading" id="pState">读取状态中…</div>
+    <div class="pbtns">
+      <button class="btn" id="btnApply">确认应用</button>
+    </div>
+    <div class="pnote" id="pNote">4 档制 · 全速 / 快 / 中 / 慢 · 实际功率受电池电压与温度限制</div>
+  </div>
+
+  <!-- 图表①：电量 / 电流 -->
+  <div class="glass chart-card">
+    <div class="chart-head"><b>电量 / 电流</b><span class="lg"><i class="axL">左</i>电量% <i class="axR">右</i>电流A</span></div>
+    <div class="cbox"><canvas id="chA"></canvas><div class="chint" id="chartHint"></div></div>
+    <div class="chart-tip">最近 <b id="spanA">—</b> · 长按曲线看该点数值</div>
+  </div>
+  <!-- 图表②：功率 / 温度 -->
+  <div class="glass chart-card">
+    <div class="chart-head"><b>功率 / 温度</b><span class="lg"><i class="axL">左</i>功率W <i class="axR">右</i>温度°C</span></div>
+    <div class="cbox"><canvas id="chB"></canvas></div>
+    <div class="chart-tip">最近 <b id="spanB">—</b> · 放电为负值 · 台阶=限流动作</div>
+  </div>
+
+  <!-- 运行日志（固定展开，不可收回） -->
+  <div class="glass log-sec">
+    <div class="sec-title">运行日志 / 输出</div>
+    <div class="lgrid">
+      <button class="btn sm ghost" id="btnLog">读取模块日志</button>
+      <button class="btn sm ghost" id="btnClearOut">清屏</button>
+    </div>
+    <pre class="out show" id="detailOut">(暂无输出)</pre>
+  </div>
+
+  <!-- 功能开关 -->
+  <div class="glass card">
+    <div class="row">
+      <div class="ri"><b>电池解容</b><span>BAA 挂载 · smart_fv 守护 · 低电锁容处理</span></div>
+      <label class="sw"><input id="unlockToggle" type="checkbox"><span class="tr"><span class="kn"></span></span></label>
+    </div>
+    <div class="row">
+      <div class="ri"><b>云控屏蔽</b><span>阻止云端下发覆盖解容配置（推荐开启）</span></div>
+      <label class="sw"><input id="cloudToggle" type="checkbox"><span class="tr"><span class="kn"></span></span></label>
+    </div>
+    <div class="row">
+      <div class="ri"><b>公版 PPS 解锁</b><span>第三方 PD/PPS 头（酷态科/安克等）解锁公版 PPS 高功率；官方小米头走私有协议，无需开启<br><span class="dim">开/关后需拔插一次充电器才生效</span></span></div>
+      <label class="sw"><input id="freeppsToggle" type="checkbox"><span class="tr"><span class="kn"></span></span></label>
+    </div>
+  </div>
+
+  <!-- 温控守护（随 4 档制保留；后端 thermal_ctl.sh） -->
+  <div class="glass card">
+    <div class="row">
+      <div class="ri"><b>温控守护</b><span id="thermalDesc">到设定温度自动降档，降温后自动还原</span></div>
+      <label class="sw"><input id="thermalToggle" type="checkbox"><span class="tr"><span class="kn"></span></span></label>
+    </div>
+    <div class="row" style="border-bottom:none;padding-bottom:2px">
+      <div class="ri" style="flex:1;min-width:0;padding-right:6px">
+        <div class="mini" style="margin-bottom:5px">温度上限（到这就降档）</div>
+        <select id="thermalLimit"></select>
+      </div>
+      <div class="ri" style="flex:1;min-width:0;padding-left:6px;padding-right:0">
+        <div class="mini" style="margin-bottom:5px">降到哪一档</div>
+        <select id="thermalAction"></select>
+      </div>
+    </div>
+    <div class="mini" id="thermalState" style="margin-top:8px;padding:0 2px;line-height:1.6"></div>
+  </div>
+
+  <!-- 高级设置 -->
+  <details class="glass">
+    <summary>高级设置<span class="ar">›</span></summary>
+    <div class="dbody">
+      <div class="row" style="padding-top:2px">
+        <div class="ri"><b>切换功率后需手动重插充电器</b><span>新限流约 20~30 秒自然收敛；拔插一次充电器可立即生效</span></div>
+      </div>
+      <div>
+        <div class="mini" style="margin-bottom:6px">循环次数伪装（开机维护，阻止循环虚增；此项为伪装值）</div>
+        <select id="cycleSel">
+          <option value="">不干预</option>
+          <option value="20">20</option>
+          <option value="50">50</option>
+          <option value="80">80</option>
+          <option value="200">200</option>
+          <option value="__custom__">自定义…</option>
+        </select>
+      </div>
+      <div class="lgrid">
+        <button class="btn sm ghost" id="btnInfo">电池信息</button>
+        <button class="btn sm ghost" id="btnCloudStatus">云控状态</button>
+        <button class="btn sm ghost" id="btnCloudCheck">云控巡检</button>
+      </div>
+    </div>
+  </details>
+
+  <!-- DTBO 工具 -->
+  <details class="glass">
+    <summary>DTBO 工具<span class="ar">›</span></summary>
+    <div class="dbody">
+      <div class="mini">当前槽 <b id="slotNow">_b</b> · 刷写前会自动备份</div>
+      <select id="slotSel"><option value="a">dtbo_a</option><option value="b" selected>dtbo_b</option></select>
+      <button class="btn" id="btnFlashLocal" style="width:100%">⬇ 一键刷入本机解容 DTBO</button>
+      <div class="mini" style="margin-top:6px;line-height:1.65">说明：此按钮刷入的是<b>当前安装包内已内置的 DTBO</b>（本机解容版）。后续若仅更新 DTBO，作者会<b>单独发布镜像</b>——请以作者最新发布为准，下载后用下方「扫描镜像」选中刷入即可，无需重装整个模块。</div>
+      <div class="lgrid">
+        <button class="btn sm ghost" id="btnDtboStatus">查看状态</button>
+        <button class="btn sm ghost" id="btnDtboBackup">备份当前槽</button>
+        <button class="btn sm ghost" id="btnLoadImages">扫描镜像</button>
+        <button class="btn sm ghost" id="btnShowDirs">刷新目录</button>
+      </div>
+      <div class="mini" style="margin-top:4px">已添加目录（扫描来源）</div>
+      <div id="dirList"></div>
+      <div class="mini" style="margin-top:6px">扫描目录（先添加镜像所在文件夹，再点“扫描镜像”）</div>
+      <input id="dirInput" type="text" inputmode="text" autocomplete="off" placeholder="/sdcard/Download"
+        style="width:100%;background:var(--glass2);color:var(--fg);border:1px solid var(--stroke);border-radius:12px;padding:10px;font-size:12.5px">
+      <div class="lgrid">
+        <button class="btn sm ghost" id="btnAddDir">添加目录</button>
+        <button class="btn sm ghost" id="btnDelDir">移除目录</button>
+      </div>
+      <div id="imageList"></div>
+    </div>
+  </details>
+
+  <!-- 诊断记录 -->
+  <details class="glass">
+    <summary>诊断 / 反馈<span class="ar">›</span></summary>
+    <div class="dbody">
+      <div class="mini" style="line-height:1.65"><b>充电异常时，点一下下面的按钮就行。</b>会自动把「运行日志 + 诊断采样 + 当前状态快照」打包到 Download，把生成的文件发给作者即可。</div>
+      <button class="btn" id="btnDiagPack">📤 一键导出诊断包</button>
+      <div class="mini" id="diagKnob" style="margin-top:2px;line-height:1.6"></div>
+      <div class="lgrid">
+        <button class="btn sm ghost" id="btnDiagTail">查看最近日志</button>
+        <button class="btn sm ghost" id="btnDiagClear">清空日志</button>
+      </div>
+    </div>
+  </details>
+</div>
+<div id="toast"></div>
+
+<script src="assets/chart.min.js"></script>
+<script>
+(function(){
+'use strict';
+var XBT='/data/adb/modules/HyperOS_XJ/battery';
+var MAXW={xuanyuan:90,dada:90,haotian:90,nezha:90,myron:100,annibale:100,bixi:67,onyx:90,popsicle:100,miro:120,songyuan:100,warsaw:100,pudding:100,byron:100}; // 各机型最大有线功率(W)
+// 目标瓦数显示（随 status_kv 的 fast_w/mid_w/slow_w 实时同步）
+var FASTW=40,MIDW=25,SLOWW=10;
+var devMaxW=90;
+var $=function(id){return document.getElementById(id);};
+function toast(m){var t=$('toast');if(!t)return;t.textContent=(m===undefined||m===null)?'':m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show');},1800);}
+function showOut(text){
+  var el=$('detailOut');if(!el)return;
+  var from=el.classList.contains('show')?el.getBoundingClientRect().height:0;
+  el.textContent=text||'(无输出)';
+  el.classList.add('show');
+  el.style.transition='none';
+  el.style.height='auto';
+  var to=el.getBoundingClientRect().height;   // 受 max-height 限制
+  el.style.transition='';
+  el.style.height=from+'px';
+  void el.offsetWidth;                        // 锁定起点，避免与目标合并
+  el.style.height=to+'px';
+  clearTimeout(el._hT);
+  el._hT=setTimeout(function(){el.style.height='';},340);   // 过渡后回归自适应
+}
+
+// ---- KSU 桥接 ----
+var cbSeq=0,refreshing=false;
+function execCmd(cmd,options){
+  options=options||{};
+  return new Promise(function(resolve){
+    var k=(typeof window.ksu!=='undefined')?window.ksu:null;
+    if(!k||typeof k.exec!=='function'){resolve({errno:-1,stdout:'',stderr:'KSU 桥接不可用：请在 KernelSU 管理器 WebUI 中打开'});return;}
+    var cb='bt_cb_'+Date.now()+'_'+(cbSeq++),done=false;
+    function clean(){try{delete window[cb];}catch(e){}}
+    window[cb]=function(errno,stdout,stderr){if(done)return;done=true;clean();
+      resolve({errno:(typeof errno==='number')?errno:0,stdout:(stdout==null)?'':String(stdout),stderr:(stderr==null)?'':String(stderr)});};
+    try{k.exec(cmd,JSON.stringify(options),cb);}catch(e){if(!done){done=true;clean();resolve({errno:-2,stdout:'',stderr:'exec 失败: '+e});}return;}
+    setTimeout(function(){if(!done){done=true;clean();resolve({errno:-3,stdout:'',stderr:'执行超时'});}},30000);
+  });
+}
+function sh(cmd){return execCmd(cmd).then(function(r){var o=r.stdout||'';if(r.stderr)o+=(o?'\n':'')+'[stderr] '+r.stderr;return o;});}
+function parseKV(t){var o={},L=String(t||'').split(/\r?\n/);for(var i=0;i<L.length;i++){var m=/^([A-Za-z0-9_]+)=(.*)$/.exec(L[i]);if(m)o[m[1]]=m[2];}return o;}
+
+// ---- 主题 ----
+var _txTimer=0;
+function applyTheme(t,animate){
+  var root=document.documentElement;
+  if(animate){root.classList.add('theme-tx');void root.offsetWidth;}  // 先加过渡类并强制重排，再切变量
+  root.setAttribute('data-theme',t);
+  try{localStorage.setItem('bt-theme',t);}catch(e){}
+  $('themeBtn').textContent=t==='light'?'☀️':'🌙';
+  if(window._charts)for(var i=0;i<window._charts.length;i++)refreshChartTheme(window._charts[i]);
+  if(animate){clearTimeout(_txTimer);_txTimer=setTimeout(function(){root.classList.remove('theme-tx');},380);}
+}
+function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+
+// ---- 单位 ----
+function fmtA(ma){var n=Math.abs(Number(ma));return (n/1000).toFixed(2)+'A';}
+function stText(s){var m={Charging:'充电中',Discharging:'放电中',Full:'已充满','Not charging':'未充电'};return m[s]||s||'未知';}
+// v2.6.23：空值语义修正。后端 status_kv.sh 在节点读不到时会**故意输出空串**，
+//   而 `Number('')===0`（不是 NaN）→ 旧代码 `||0` 会把"读不到"显示成真实的 0
+//   （表现为同屏电流显示 `--`、状态行却写 `0.00A / 0.0W`，电量 `0%`、温度 `0.0°C`）
+//   统一用 num()：空值 -> null，调用方据此显示 `--`
+function num(v){if(v===null||v===undefined)return null;var s=String(v).trim();if(s==='')return null;var n=Number(s);return isFinite(n)?n:null;}
+// 数值或 -- 兜底（带单位与小数位）
+function fmtNum(v,div,dp,unit){var n=num(v);if(n===null)return '--';return (n/div).toFixed(dp)+'<small>'+unit+'</small>';}
+
+// ---- 实时数据更新（v2.5.9 优化）----
+// 旧版：先 480ms「滚动计数」再缩放+闪色 → 视觉突兀，且每帧改文字在滚动时明显卡顿。
+// 新版：直接更新文本；仅在页面空闲（非滚动/触摸）时叠加一次极轻的透明度淡入。
+var _busyUntil=0,_scrollQuietOn=false,_scrollQuietTimer=0;
+// 滚动"静默"：仅暂停光斑动画（零视觉差异）。不再做毛玻璃切换——那会引起重栅格化闪烁。
+function scrollQuiet(ms){
+  if(!_scrollQuietOn){_scrollQuietOn=true;document.documentElement.classList.add('scrolling');}
+  clearTimeout(_scrollQuietTimer);
+  _scrollQuietTimer=setTimeout(function(){
+    _scrollQuietOn=false;document.documentElement.classList.remove('scrolling');
+    if(_dirtyCharts)scheduleChartUpdate();     // v2.7.13：滚动停下来后补一次图表渲染
+  },ms||320);
+}
+// v2.7.13：markBusy 加节流（同一批事件只处理一次），并删掉下面重复的 scroll 监听
+var _busyTick=0;
+function markBusy(){
+  var n=Date.now();
+  if(n-_busyTick<90)return;
+  _busyTick=n;_busyUntil=n+260;scrollQuiet(340);
+}
+window.addEventListener('scroll',markBusy,{passive:true});
+window.addEventListener('touchmove',markBusy,{passive:true});
+var _reduceMotion=!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+function setVal(id,html){
+  var el=$(id);if(!el)return;
+  if(html===undefined||html===null)html='--';   // v3.4.2：统一兜底，杜绝把 "undefined" 写进 DOM
+  if(el._last===html)return;              // 值未变不重绘
+  el._last=html;el.innerHTML=html;
+  if(_reduceMotion||Date.now()<_busyUntil)return;
+  /* v3.3.7：这里原本有一次 opacity 淡入（.45→1，后来改 .9→1）。
+     实测每 2 秒刷新一次数值都会让数字短暂变淡，用户两次反馈「文字和背景混在一起」。
+     数值本来就每 2 秒变一次，动效没有信息价值 —— 彻底移除，保持始终清晰。 */
+}
+function ripple(e){
+  var t=e.target;var b=t&&t.closest?t.closest('.btn'):null;if(!b)return;
+  var r=document.createElement('span');r.className='rip';
+  var rect=b.getBoundingClientRect(),d=Math.max(rect.width,rect.height);
+  r.style.width=r.style.height=d+'px';
+  r.style.left=(e.clientX-rect.left-d/2)+'px';
+  r.style.top=(e.clientY-rect.top-d/2)+'px';
+  b.appendChild(r);setTimeout(function(){r.remove();},600);
+}
+function playEntrance(){
+  if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  var els=document.querySelectorAll('.wrap>.glass');
+  for(var i=0;i<els.length;i++)(function(el,k){el.classList.add('anim-in');setTimeout(function(){el.classList.add('done');},40+k*55);})(els[i],i);
+}
+// v2.5.9: 折叠动画统一为下方「高度过渡」版（原此处曾有一份 btSlide 动画版 bindFolds，
+// 与下方同名函数重复定义、后者覆盖前者，已删除死代码，避免维护混淆）。
+
+function loadDirs(){
+  var box=$('dirList');if(!box)return;
+  shR('sh '+XBT+'/scripts/dtbo.sh dirslist').then(function(rr){
+    // v2.7.5：读失败时不要把错误文本当成"扫描目录"渲染并挂"移除"按钮
+    //   （原实现会渲染出"读取失败：…"这样一条目录，点移除会真的执行 dtbo.sh deldir "读取失败：…"）
+    if(rr.errno!==0){
+      box.innerHTML='<div class="mini" style="padding:4px 2px">读取失败：'+errText(rr.errno)+'</div>';
+      return;
+    }
+    var o=rr.out;
+    var lines=String(o||'').split(/\r?\n/).map(function(s){return s.trim();}).filter(function(s){return s.length&&s.charAt(0)==='/'&&s.indexOf('[stderr]')!==0;});
+    if(!lines.length){box.innerHTML='<div class="mini" style="padding:4px 2px">（暂无，请在下方添加目录）</div>';return;}
+    box.innerHTML='';
+    lines.forEach(function(dir){
+      var row=document.createElement('div');row.className='row row-in';
+      var ri=document.createElement('div');ri.className='ri';
+      var b=document.createElement('b');b.textContent=String(dir).split('/').pop()||dir;
+      var s=document.createElement('span');s.textContent=dir;
+      ri.appendChild(b);ri.appendChild(s);
+      var del=document.createElement('button');del.className='btn sm ghost';del.style.flex='none';del.style.padding='8px 12px';del.textContent='移除';
+      del.onclick=function(){removeDir(dir,row);};
+      row.appendChild(ri);row.appendChild(del);box.appendChild(row);
+    });
+  });
+}
+function removeDir(dir,row){
+  if(dir.indexOf('"')!==-1){toast('路径含特殊字符，无法移除');return;}
+  if(!confirm('移除扫描目录？\n'+dir))return;
+  if(row)row.classList.add('row-out');
+  toast('移除中');
+  shR('sh '+XBT+'/scripts/dtbo.sh deldir "'+dir+'"').then(function(r){showOut(r.out);if(r.errno===0){toast('已移除');}else{toast(errText(r.errno));}setTimeout(loadDirs,280);loadImages();});
+}
+
+// ---- 图表 ----
+// v2.7.13 图表改造：
+//  ① H 120 → 720：轮询间隔从固定 3s 改为自适应 5~20s 后，必须同步加大窗口，
+//     否则历史只有 120×5s = 10 分钟（充电时）甚至 120×20s = 40 分钟外的空档。
+//     720 点 × 5s = 1 小时，× 20s = 4 小时（静止时段）。
+//  ② 新增 tSec[]：存"相对当前时刻的秒数"（负数），供时间轴归一化使用。
+var H=720,tLabels=[],tSec=[],dS=[],dI=[],dV=[],dP=[],dT=[];
+var _t0=Date.now();
+/* v3.3.0：图表配色改为双主题通用的中饱和色
+   旧值 (#5eead4/#fcd34d/#c4b5fd/#93c5fd/#fca5a5) 是浅色调，深色下好看但浅色下发白看不清。
+   这批颜色在 #0a0c10 与 #eff2f7 两种底色上都能保持 2.2px 线宽的可辨识度。 */
+/* 图表配色（v3.3.3）：双主题通用的中间调
+   深色底(#07060e)与浅色底(#f4f4f5)上都保持可辨识，
+   选色原则：饱和但不刺眼，四个色相互可区分。 */
+/* v3.4.0：图表系列色不再硬编码，改为从主题变量读。
+   旧版是写死的十六进制，切主题后线条颜色完全不变（用户反馈"颜色不符合主题"）。
+   下面保留一份兜底值，css() 拿不到变量时用它。 */
+var CH={soc:'#a78bfa',cur:'#f0b93a',vol:'#6366f1',pow:'#38bdf8',tmp:'#fb7185'};
+var CH_VARS={soc:'--ch-soc',cur:'--ch-cur',vol:'--ch-vol',pow:'--ch-pow',tmp:'--ch-tmp'};
+function refreshCH(){
+  for(var _k in CH_VARS){
+    var _v=css(CH_VARS[_k]);
+    if(_v&&_v.replace(/\s/g,''))CH[_k]=_v.replace(/\s/g,'');
+  }
+  return CH;
+}
+function hexA(hex,a){hex=hex.replace('#','');if(hex.length===3)hex=hex.split('').map(function(c){return c+c;}).join('');
+  var r=parseInt(hex.substr(0,2),16),g=parseInt(hex.substr(2,2),16),b=parseInt(hex.substr(4,2),16);
+  return 'rgba('+r+','+g+','+b+','+a+')';}
+function grad(ctx,color){var g=ctx.createLinearGradient(0,0,0,168);g.addColorStop(0,hexA(color,.14));g.addColorStop(.55,hexA(color,.05));g.addColorStop(1,hexA(color,0));return g;}
+function lineGrad(ctx,color){var g=ctx.createLinearGradient(0,0,360,0);g.addColorStop(0,hexA(color,.20));g.addColorStop(.55,hexA(color,.9));g.addColorStop(1,color);return g;}
+function mkChart(canvas,series){
+  if(!canvas)throw new Error('canvas 缺失');
+  if(typeof Chart==='undefined')throw new Error('Chart.js 未加载');
+  var ctx=canvas.getContext('2d');
+  if(!ctx)throw new Error('getContext(2d) 不可用');
+  // v2.7.13 图表可读性 + 功耗改造（参考 AaTempSpoof 的做法）：
+  //  · tension .45 → 0：功率是阶跃/方波信号，贝塞尔平滑会把"限流台阶"糊成圆丘，丢真信息
+  //  · 填充 alpha .38 → .14（见 grad）：大面积高不透明填充是视觉噪音 + 合成开销
+  //  · pointHitRadius：没有它手指很难点中数据点
+  var ds=series.map(function(s){return {label:s.label,data:[],borderColor:lineGrad(ctx,s.color),
+    backgroundColor:s.fill?grad(ctx,s.color):s.color,yAxisID:s.axis,
+    tension:0,pointRadius:0,pointHoverRadius:4,pointHitRadius:14,borderWidth:2.2,
+    fill:s.fill?true:false,spanGaps:true,
+    _cv:s.cv||null,_fill:!!s.fill};});   /* v3.4.0：记住主题变量名，切主题时重建颜色 */
+  // 时间轴：x 用真实时间戳（不再当"等距类目"），采样稀疏时刻度位置才正确。
+  // ★ 注意：x 改成 linear 后，数据集必须用 {x:毫秒时间戳, y:值} 的对象数组（见 rebuildChartData）。
+  var scales={x:{type:'linear',grace:'2%',ticks:{color:css('--muted'),maxTicksLimit:6,font:{size:9},autoSkip:true,
+      // v2.9.4：加有效性守卫 —— 旧版 v 异常时会画出 `NaN:NaN` 刻度
+      // v3.0.0：跨度 < 2 分钟时带秒显示。旧版只显示 HH:MM，短窗口下四个刻度全是
+      //         "20:32"，用户完全看不出时间在走（被当成"图卡住了/缺一半"）。
+      callback:function(v){if(v===null||v===undefined||!isFinite(v))return '';var d=new Date(v);
+        if(isNaN(d.getTime()))return '';
+        var hh=('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
+        return (_xSpanMs<120000)?(hh+':'+('0'+d.getSeconds()).slice(-2)):hh;}},
+    grid:{display:false},border:{display:false}}};
+  var seen={};
+  series.forEach(function(s){
+    if(seen[s.axis])return;seen[s.axis]=1;
+    scales[s.axis]={position:s.pos||'left',ticks:{color:css('--muted'),font:{size:9},maxTicksLimit:5},
+      grid:{color:css('--stroke'),borderDash:[3,4],drawOnChartArea:(s.axis==='y')},border:{display:false}};
+  });
+  // ★ 刻度数值格式化 + 单位（v2.9.4 修复）
+  //   【旧 bug】`scales[k].ticks.callback=function(v){return v+u;}` 把 Chart.js 给的刻度值
+  //     原样拼上单位。数据范围不规整时 Chart.js 会产生小数刻度（如右轴 2.34 / 4.68），
+  //     浮点误差再放大成 `2.3400000000000003A`、`7.0199999999999996°C` ——
+  //     用户看到的「一堆小数点 + 一大串不明数字」。
+  //   【另】旧代码两个 forEach 里都用 `var u` 闭包捕获，后一个轴会覆盖前一个轴的单位。
+  //   现在按量纲定精度（0.1k 以上取整防小数尾巴），并用 IIFE 把单位与格式固化。
+  function tickUnit(lab){
+    var m=String(lab||'').match(/[（(]?\s*([%WA]|°C|V|mAh)\s*[)）]?\s*$/);
+    return m?m[1]:'';
+  }
+  function tickFmt(u){
+    // 各量纲精度：电量 %→0 位、电流 A→2 位、电压 V→3 位、功率 W→1 位、温度 °C→1 位、mAh→0 位
+    var dp={'%':0,'A':2,'V':3,'W':1,'°C':1,'mAh':0}[u];
+    if(dp===undefined)dp=1;
+    return function(v){
+      if(v===null||v===undefined||!isFinite(v))return '';
+      // 大数走整数，避免 340.00000000000006 这类尾巴
+      if(Math.abs(v)>=1000)return Math.round(v)+u;
+      return v.toFixed(dp)+u;
+    };
+  }
+  Object.keys(scales).forEach(function(k){
+    if(k==='x')return;
+    var lab='';
+    for(var j=0;j<series.length;j++){if(series[j].axis===k){lab=series[j].label;break;}}
+    var u=tickUnit(lab);
+    // 即使推不出单位也要挂格式化器（防脏刻度），故不按 u 是否为空跳过
+    scales[k].ticks.callback=tickFmt(u);
+  });
+  return new Chart(canvas,{type:'line',data:{labels:tLabels,datasets:ds},options:{
+    responsive:true,maintainAspectRatio:false,
+    // v2.7.13：动画全关。旧版 duration:280 + 手指划过时 400ms 过渡 + Chart.js 自带 rAF
+    //   → 触摸时持续 60fps 全幅重绘（DPR=3 下每图 46 万像素）。关掉后只剩"数据真的变了"才画。
+    animation:false,
+    animations:{x:{duration:0},y:{duration:0},colors:{duration:0}},
+    transitions:{active:{animation:{duration:0}},resize:{animation:{duration:0}}},
+    // DPR 封顶 2：Chart.js 默认 getDevicePixelRatio 返回原始 DPR，
+    //   真机 DPR=3 时两图合计 92 万像素；封顶 2 后栅格像素降约 56%。
+    devicePixelRatio:Math.min(2,window.devicePixelRatio||1),
+    interaction:{mode:'index',intersect:false},
+    elements:{line:{borderJoinStyle:'round'},point:{radius:0}},
+    plugins:{legend:{labels:{color:css('--fg'),boxWidth:8,boxHeight:8,usePointStyle:true,pointStyle:'circle',font:{size:10},padding:12}},
+      // v2.9.4：tooltip 数值格式化。
+      // 旧毛病：① 默认 2 位小数，功率 32.8 显示成 32.80、温度 47.0 显示成 47.00；
+      //         ② 未定义单位的数据集会显示出 `undefined` 字样。
+      // 现在按量纲取精度，并用 Chart.js 解析出的 dataset.label 反推单位。
+      // v2.9.7：**补 title 回调** —— 这是用户报"每个点的名字都是一串数字"的真因。
+      //   x 轴是 `type:'linear'`（数值轴，见上方 scales.x 注释），数据点是
+      //   `{x: 毫秒时间戳, y: 值}`（见 rebuildChartData）。Chart.js 在 linear 轴上
+      //   默认把 tooltip 标题显示为 **x 的原始值** → 用户看到 `1760626182000` 这种
+      //   一串数字。v2.9.4 只格式化了 label，漏了 title。
+      //   修法：显式提供 title 回调，把时间戳格式化成与 x 轴刻度一致的 HH:MM:SS。
+      /* v3.4.0：tooltip 主题化。Chart.js 默认 backgroundColor 是 rgba(0,0,0,.8)，
+         无论深色浅色主题点一下都会弹出一块纯黑底 —— 这就是"点按背景变黑"。 */
+      tooltip:{animation:false,
+        backgroundColor:css('--tip-bg')||'rgba(30,25,44,.97)',
+        titleColor:css('--tip-fg')||'#f7f5fc',
+        bodyColor:css('--tip-fg')||'#f7f5fc',
+        borderColor:css('--tip-border')||'rgba(255,255,255,.13)',
+        borderWidth:1,padding:10,cornerRadius:10,boxPadding:4,
+        titleFont:{size:11,weight:'700'},bodyFont:{size:11},
+        callbacks:{
+        title:function(items){
+          if(!items||!items.length)return '';
+          var x=items[0].parsed&&items[0].parsed.x;
+          if(x===null||x===undefined||!isFinite(x))return '';
+          var d=new Date(x);
+          if(isNaN(d.getTime()))return '';
+          return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)+':'+('0'+d.getSeconds()).slice(-2);
+        },
+        label:function(ct){
+          var lab=ct.dataset&&ct.dataset.label?ct.dataset.label:'';
+          var u=tickUnit(lab);
+          var v=ct.parsed&&ct.parsed.y;
+          if(v===null||v===undefined||!isFinite(v))return lab+'：--';
+          var dp={'%':0,'A':2,'V':3,'W':1,'°C':1,'mAh':0}[u];
+          if(dp===undefined)dp=1;
+          var s=(Math.abs(v)>=1000)?String(Math.round(v)):v.toFixed(dp);
+          return lab+'：'+s+(u||'');
+        }
+      }}},
+    scales:scales
+  }});
+}
+function refreshChartTheme(c){
+  if(!c||!c.options)return;
+  if(c.options.plugins&&c.options.plugins.legend)c.options.plugins.legend.labels.color=css('--fg');
+  /* v3.4.0 ①：tooltip 配色也要跟着主题走（否则浅色主题下点按是黑底） */
+  var _tp=c.options.plugins&&c.options.plugins.tooltip;
+  if(_tp){
+    _tp.backgroundColor=css('--tip-bg')||'rgba(30,25,44,.97)';
+    _tp.titleColor=css('--tip-fg')||'#f7f5fc';
+    _tp.bodyColor=css('--tip-fg')||'#f7f5fc';
+    _tp.borderColor=css('--tip-border')||'rgba(255,255,255,.13)';
+  }
+  for(var k in c.options.scales){var s=c.options.scales[k];if(s.ticks)s.ticks.color=css('--muted');if(s.grid)s.grid.color=css('--stroke');}
+  /* v3.4.0 ②：数据线颜色也重建。
+     原来 borderColor 是初始化时算好的 CanvasGradient，切主题后永远是旧色；
+     现在按 dataset 上记的 _cv 变量名重新取色、重建渐变。 */
+  try{
+    refreshCH();
+    if(c.data&&c.data.datasets&&c.ctx){
+      for(var i=0;i<c.data.datasets.length;i++){
+        var d=c.data.datasets[i];
+        if(!d._cv)continue;
+        var col=css(d._cv);
+        if(!col||!col.replace(/\s/g,''))continue;
+        col=col.replace(/\s/g,'');
+        d.borderColor=lineGrad(c.ctx,col);
+        d.backgroundColor=d._fill?grad(c.ctx,col):col;
+      }
+    }
+  }catch(e){}
+  c.update('none');
+}
+function initCharts(){
+  refreshCH();                       /* v3.4.0：先按当前主题取值 */
+  window._charts=[
+    mkChart($('chA'),[
+      {label:'电量 %',color:CH.soc,cv:'--ch-soc',axis:'y',fill:true},
+      {label:'电流 A',color:CH.cur,cv:'--ch-cur',axis:'y1',pos:'right'}
+    ]),
+    mkChart($('chB'),[
+      {label:'功率 W',color:CH.pow,cv:'--ch-pow',axis:'y',fill:true},
+      {label:'温度 °C',color:CH.tmp,cv:'--ch-tmp',axis:'y1',pos:'right'}
+    ])
+  ];
+}
+var _sig='';
+// 图表按需更新（v2.5.9 优化）：
+// ① 图表不在屏幕内 → 不更新；② 滚动/触摸进行中 → 推迟到空闲，避免"数据更新时卡顿一下"。
+/* v2.7.13 功耗优化：去掉 260ms 忙等自旋。
+   旧实现用 setTimeout(run,260) 在忙碌期反复自旋轮询——每次都是一个新的定时器任务。
+   改成「脏标记 + rAF 合并」，忙时直接跳过（留给 scrollQuiet 收尾或下次采样时补一次）。 */
+var _chartVisible=[true,true],_chartPending=false,_dirtyCharts=false,_chartRaf=0;
+function initChartVisibility(){
+  if(!('IntersectionObserver' in window))return;
+  try{
+    var io=new IntersectionObserver(function(es){
+      for(var i=0;i<es.length;i++){var t=es[i].target;_chartVisible[(t.id==='chA')?0:1]=!!es[i].isIntersecting;}
+    },{threshold:0});
+    io.observe($('chA'));io.observe($('chB'));
+  }catch(e){}
+}
+function flushCharts(){
+  if(!_dirtyCharts)return;
+  if(Date.now()<_busyUntil)return;          // 忙：保持脏标记，等空闲后再刷
+  _dirtyCharts=false;_chartPending=false;
+  var c=window._charts;if(!c)return;
+  if(_chartVisible[0]&&c[0])c[0].update('none');
+  if(_chartVisible[1]&&c[1])c[1].update('none');
+}
+function scheduleChartUpdate(){
+  _dirtyCharts=true;
+  if(Date.now()<_busyUntil)return;          // 忙时不排队，交给 scrollQuiet 收尾补刷
+  if(_chartRaf)return;
+  _chartRaf=requestAnimationFrame(function(){_chartRaf=0;flushCharts();});
+}
+function pushData(kv){
+  // v2.7.4 修复：原先用 Number(x)||0 —— 后端"故意输出空串"表示缺失值，
+  //   于是缺失被画成真实的 0（0A/0V/0.0℃）曲线，同屏出现"--"与 0 并存。
+  //   改用 num()（空串→null），缺失点推 null 由 spanGaps 断线（数据集已设 spanGaps:true）。
+  var _p=num(kv.battery_power_w),_i=num(kv.battery_current_abs_ma),_v=num(kv.voltage_uv),
+      _t=num(kv.temp_c),_s=num(kv.soc);
+  var p=(_p===null)?null:(Math.round(((kv.status==='Discharging'?-1:1)*Math.abs(_p))*10)/10);
+  var i=(_i===null)?null:(Math.round(Math.abs(_i)/10)/100);
+  var v=(_v===null)?null:(Math.round(_v/1000)/1000);
+  var temp=(_t===null)?null:(Math.round(_t)/10);
+  var soc=(_s===null)?null:_s;
+  var sig=[p,i,v,temp,soc].join(',');
+  // ★ v2.7.13 关键修复：旧实现在 sig 未变时【直接 return】，连 label 都不推。
+  //   后果：手机静置、功率恒为 0W 时数值不变 → 曲线时间轴停止前进 → 用户以为界面卡死。
+  //   新实现：每个 tick 都推一个采样点（时间轴始终前进），
+  //           "是否重绘"交给脏标记 —— 数据全同则不重绘，省性能的效果不变。
+  _sig=sig;
+  var now=Date.now();
+  var t=new Date(now),lab=('0'+t.getHours()).slice(-2)+':'+('0'+t.getMinutes()).slice(-2)+':'+('0'+t.getSeconds()).slice(-2);
+  tLabels.push(lab);tSec.push(Math.round((now-_t0)/1000));
+  dS.push(soc);dI.push(i);dV.push(v);dP.push(p);dT.push(temp);
+  while(tLabels.length>H){
+    tLabels.shift();tSec.shift();dS.shift();dI.shift();dV.shift();dP.shift();dT.shift();
+  }
+  var c=window._charts;if(!c)return;
+  rebuildChartData();
+  // 显示当前窗口跨度（用户一眼知道"这条曲线覆盖多久"）
+  if(tSec.length>1){
+    var sec=tSec[tSec.length-1]-tSec[0];
+    var txt=(sec<90)?(sec+' 秒'):((sec<5400)?(Math.round(sec/60)+' 分钟'):((sec/3600).toFixed(1)+' 小时'));
+    setVal('spanA',txt);setVal('spanB',txt);
+  }
+  scheduleChartUpdate();
+}
+
+/* v2.7.13：x 轴改成 linear（真实时间戳）后，数据必须是 {x,y} 对象数组。
+   这里把并行数组转成 Chart.js 需要的点数组；x 用绝对毫秒时间戳
+   （tSec 是"相对 _t0 的秒数"，乘 1000 加回 _t0 即为绝对时间）。 */
+var _xSpanMs=0;   // v3.0.0：当前窗口跨度，供 x 轴刻度决定是否带秒
+function rebuildChartData(){
+  var c=window._charts;if(!c)return;
+  function pts(arr){
+    var o=[],n=Math.min(tSec.length,arr.length);
+    for(var i=0;i<n;i++)o.push({x:_t0+tSec[i]*1000,y:arr[i]});
+    return o;
+  }
+  if(c[0]){
+    c[0].data.datasets[0].data=pts(dS);
+    c[0].data.datasets[1].data=pts(dI);
+  }
+  if(c[1]){
+    c[1].data.datasets[0].data=pts(dP);
+    c[1].data.datasets[1].data=pts(dT);
+  }
+  // v3.0.0：算出窗口跨度（秒级刻度用），并显式锁定 x 范围。
+  //   旧版依赖 Chart.js 自动范围 —— 只有 1~2 个采样点时范围退化成 0，
+  //   曲线会缩成绘图区里的一小段（用户看到的"曲线图缺一半"）。
+  if(tSec.length){
+    var lo=_t0+tSec[0]*1000, hi=_t0+tSec[tSec.length-1]*1000;
+    if(!(hi>lo)) hi=lo+1000;
+    _xSpanMs=hi-lo;
+    for(var ci=0;ci<c.length;ci++){
+      if(!c[ci]||!c[ci].options||!c[ci].options.scales||!c[ci].options.scales.x)continue;
+      var xs=c[ci].options.scales.x;
+      xs.min=lo; xs.max=hi;
+    }
+  }
+  // 采集中提示（<2 点时画不出线，给用户明确反馈而不是空白图）
+  var _hint=$('chartHint');
+  if(_hint)_hint.textContent=(tSec.length<2)?'正在采集数据…':'';
+}
+
+// ============================================================================
+// 4 档制功率控制（逻辑移植自 v3.0.1-xyexp，视觉沿用 v3.7.7）
+//   档位顺序：POWERS[0]=inf(全速) → fast → mid → slow
+//   滑块方向：左侧=大(全速) / 右侧=小（与 v3.0.1-xyexp 一致）
+//   写入：power_limit.sh set <inf|fast|mid|slow>（基线原生接口）
+// ============================================================================
+var POWERS=['inf','fast','mid','slow'];
+var _TR={inf:3,fast:2,mid:1,slow:0},_AR={slow:0,mid:1,fast:2,stop:0};
+var TLIMITS=[40,42,45,48,50];
+var TACTS=['slow','mid','fast','stop'];
+var _scaleBuilt=false;
+var _pwrLabelDirty=false;   // ★v3.8.1：瓦数基准变化 → 下次状态刷新后重建刻度
+var sliderTouched=false,_sliding=false,_lastPIdx=-1,sliderIdx=0;
+var _lastKv={},_lastV=null;      // 最近一次 kv / 电池电压(V)
+var NOM_V=4.0;                   // 拿不到电压时的标称值
+
+function _volts(kv){
+  var uv=num(kv&&kv.voltage_uv);if(uv===null||uv<=0)return null;
+  var v=uv/1e6;return (v>=3&&v<=5.5)?v:null;
+}
+function _innerW(){var c=$('slider');return c?Math.max(0,c.getBoundingClientRect().width-28):0;}
+function _knobRatio(r){
+  r=Math.max(0,Math.min(1,r));
+  var k=$('cslKnob'),f=$('cslFill');
+  if(f)f.style.width=(r*100)+'%';
+  if(k)k.style.transform='translateX('+(r*_innerW()).toFixed(2)+'px)';
+}
+function sliderMax(){return POWERS.length-1;}
+function pLabel(v){
+  if(v==='inf')return devMaxW+'W MAX';
+  if(v==='fast')return FASTW+'W MAX';
+  if(v==='mid')return MIDW+'W MAX';
+  if(v==='slow')return SLOWW+'W MAX';
+  return v+'W';
+}
+// 后端 power_w → 档位索引。兼容纯数字瓦（更老的格式，按瓦数就近归档）
+function powerTierIdx(kv){
+  var pw=String((kv&&kv.power_w)||'').trim();
+  var i=POWERS.indexOf(pw);
+  if(i>=0)return i;
+  var f=num(pw);
+  if(f!==null&&f>0){
+    var cand=[devMaxW,FASTW,MIDW,SLOWW],best=0,bd=1e9;
+    for(var k=0;k<cand.length;k++){
+      var d=Math.abs(cand[k]-f);
+      if(d<bd){bd=d;best=k;}
+    }
+    return best;
+  }
+  return 0;   // 未知 → 全速
+}
+function buildScale(){
+  var s=$('scale');if(!s)return;
+  s.innerHTML='';
+  POWERS.forEach(function(v,idx){
+    var sp=document.createElement('span');
+    sp.textContent=pLabel(v);
+    sp.onclick=function(){pickPower(idx);};
+    s.appendChild(sp);
+  });
+}
+function paintScale(idx){
+  var sp=$('scale');if(!sp)return;
+  var ch=sp.children;
+  for(var i=0;i<ch.length;i++)ch[i].className=(i===idx)?'on':'';
+}
+function setSliderLabel(idx){
+  var v=POWERS[idx],isInf=(v==='inf');
+  var big=$('pBig');
+  var c=$('slider');
+  if(c){c.setAttribute('aria-valuenow',idx);c.setAttribute('aria-valuemax',sliderMax());
+        c.setAttribute('aria-valuetext',pLabel(v));}
+  paintScale(idx);
+  if(big)big.textContent=(isInf?devMaxW:(v==='fast'?FASTW:(v==='mid'?MIDW:SLOWW)))+'W';
+  var u=$('pUnit');if(u)u.innerHTML='<span class="mx">MAX</span>';
+  _lastPIdx=idx;
+}
+// ★v3.8.1 修复【显示不一致】：devMaxW / FASTW / MIDW / SLOWW 是「后端状态刷新时才被赋值」的，
+//   而 buildScale() 受 _scaleBuilt 约束只执行一次（初始化时 devMaxW 还是默认 90）。
+//   于是 100W/120W 机型上会出现：大数字已按 devMaxW 显示「100W」，
+//   但滑块下方 4 个刻度标签还是初始的「90W MAX」→ 用户看到的正是这个错位。
+//   任何一次瓦数基准变化都必须重建刻度并重刷当前档位标签。
+function refreshPowerLabels(){
+  if(_sliding) return;                 // 正在拖动时不打断手感
+  try{buildScale();}catch(e){}
+  try{setSliderLabel(sliderIdx);}catch(e){}
+  try{updatePowerNote(_lastKv);}catch(e){}
+  try{paintTarget(_lastKv);}catch(e){}
+}
+function setSliderPos(idx,animate){
+  var c=$('slider');
+  if(animate===false&&c)c.classList.add('dragging');
+  _knobRatio(sliderMax()?idx/sliderMax():0);
+  if(animate===false&&c){void c.offsetWidth;c.classList.remove('dragging');}
+}
+function sliderSet(idx,animate){
+  idx=Math.max(0,Math.min(sliderMax(),Math.round(idx)));
+  sliderIdx=idx;
+  setSliderPos(idx,animate);
+  setSliderLabel(idx);
+}
+function pickPower(idx){
+  if(idx<0||idx>sliderMax())return;
+  sliderTouched=true;
+  sliderSet(idx,true);
+}
+function bindSlider(){
+  var c=$('slider');if(!c)return;
+  var dragging=false,startX=0,startY=0,lastR=(sliderMax()?sliderIdx/sliderMax():0);
+  function ratioFromX(cx){var r=c.getBoundingClientRect();var inner=Math.max(1,r.width-28);return Math.max(0,Math.min(1,(cx-r.left-14)/inner));}
+  function follow(cx){lastR=ratioFromX(cx);_knobRatio(lastR);setSliderLabel(Math.round(lastR*sliderMax()));}
+  c.addEventListener('pointerdown',function(e){
+    sliderTouched=true;_sliding=true;dragging=false;startX=e.clientX;startY=e.clientY;
+    lastR=(sliderMax()?sliderIdx/sliderMax():0);
+    try{c.setPointerCapture(e.pointerId);}catch(err){}
+    e.preventDefault();
+  });
+  c.addEventListener('pointermove',function(e){
+    if(!dragging){ if(Math.abs(e.clientX-startX)<6&&Math.abs(e.clientY-startY)<6) return; dragging=true;c.classList.add('dragging'); }
+    follow(e.clientX);e.preventDefault();
+  });
+  function end(e){
+    if(dragging){ c.classList.remove('dragging');sliderSet(Math.round(lastR*sliderMax()),true); }
+    else{ var rr=(e&&typeof e.clientX==='number')?ratioFromX(e.clientX):lastR; sliderSet(Math.round(rr*sliderMax()),true); }
+    dragging=false;_sliding=false;
+  }
+  c.addEventListener('pointerup',end);
+  c.addEventListener('pointercancel',end);
+  // v2.7.5 修复：拖完不点应用不能自动跳回旧档 —— 只在 blur 复位 sliderTouched
+  function releaseTouch(){ if(!_sliding) sliderTouched=false; }
+  c.addEventListener('blur',releaseTouch);
+  document.addEventListener('pointerup',function(){ if(_sliding)_sliding=false; },true);
+  document.addEventListener('pointercancel',function(){ if(_sliding)_sliding=false; },true);
+  c.addEventListener('keydown',function(e){
+    var d=(e.key==='ArrowRight'||e.key==='ArrowUp')?1:((e.key==='ArrowLeft'||e.key==='ArrowDown')?-1:0);
+    if(!d)return;e.preventDefault();sliderTouched=true;sliderSet(sliderIdx+d,true);
+  });
+  window.addEventListener('resize',function(){sliderSet(sliderIdx,false);});
+  requestAnimationFrame(function(){sliderSet(sliderIdx,false);});
+}
+// 右上角「目标」= 后端当前生效档位（不是滑块预览）
+function paintTarget(kv){
+  var v=POWERS[powerTierIdx(kv)];
+  setVal('pTarget',pLabel(v));
+}
+// 卡片底部说明
+function updatePowerNote(kv){
+  var el=$('pNote');if(!el)return;
+  var parts=['4 档制'];
+  if(devMaxW>0)parts.push('本机 '+devMaxW+'W');
+  parts.push('实际功率受电池电压与温度限制');
+  var t=parts.join(' · ');
+  if(el._last===t)return;
+  el._last=t;el.textContent=t;
+}
+// v2.6.23：shR() 保留 errno，避免"命令失败也弹已应用"
+function shR(cmd){return execCmd(cmd).then(function(r){var o=r.stdout||'';if(r.stderr)o+=(o?'\n':'')+'[stderr] '+r.stderr;return {errno:r.errno,out:o};});}
+function errText(e){return e===-1?'KSU桥接不可用：请从 KernelSU管理器进入':(e===-3?'执行超时，请重试':(e===-2?'执行异常':'执行失败（见下方输出）'));}
+function applyPower(v){
+  if(_lastKv.thermal_active==='1'&&_lastKv.thermal_guard==='1'&&_tRank(v)>_aRank(normAct(_lastKv.thermal_action))){
+    if(!confirm('温控守护保护中（当前电池 '+fmtT(_lastKv.thermal_temp)+'）。\n该档位将在数十秒内被自动压回防护档。\n\n要强制快充，请先关闭「温控守护」（温控卡片右上角开关）。\n\n仍要应用？')){refresh();return;}
+  }
+  var b=$('btnApply');
+  if(b){if(b.disabled)return;b.disabled=true;}
+  toast('正在应用 '+pLabel(v));
+  shR('sh '+XBT+'/scripts/power_limit.sh set '+v).then(function(r){
+    showOut(r.out);
+    if(r.errno===0){toast('已应用 '+pLabel(v));sliderTouched=false;}
+    else{toast(errText(r.errno));}
+    refresh();
+  }).catch(function(e){toast('执行异常: '+e);}).finally(function(){if(b)b.disabled=false;});
+}
+
+// ============================================================================
+// 温控守护（随 4 档制一起移植 —— 后端 thermal_ctl.sh 仍在）
+// ============================================================================
+function _tRank(v){return (v in _TR)?_TR[v]:3;}
+function _aRank(a){return (a in _AR)?_AR[a]:0;}
+function fmtT(v){var n=num(v);return (n!==null&&n>0)?(n/10).toFixed(1)+'℃':'--';}
+function normAct(a){a=String(a||'slow');return (a==='slow'||a==='mid'||a==='fast'||a==='stop')?a:'slow';}
+function tActName(v){
+  if(v==='slow')return '慢充 '+SLOWW+'W';
+  if(v==='mid')return '中速 '+MIDW+'W';
+  if(v==='fast')return '快充 '+FASTW+'W';
+  if(v==='stop')return '停充（约 2W）';
+  return v;
+}
+function tActOpt(v){
+  if(v==='slow')return '降到 慢充（'+SLOWW+'W）';
+  if(v==='mid')return '降到 中速（'+MIDW+'W）';
+  if(v==='fast')return '降到 快充（'+FASTW+'W）';
+  if(v==='stop')return '几乎停止充电（约 2W）';
+  return v;
+}
+function thermalActLabel(v){return tActOpt(v);}
+function buildThermalUI(){
+  var ls=$('thermalLimit');
+  if(ls){
+    ls.innerHTML='';
+    TLIMITS.forEach(function(v){var o=document.createElement('option');o.value=String(v);o.textContent=v+'℃';o.dataset.std='1';ls.appendChild(o);});
+    var oc=document.createElement('option');oc.value='__custom__';oc.textContent='自定义…';ls.appendChild(oc);
+    ls.value='45';
+  }
+  var as=$('thermalAction');
+  if(as){
+    as.innerHTML='';
+    TACTS.forEach(function(v){var o=document.createElement('option');o.value=v;o.textContent=tActOpt(v);as.appendChild(o);});
+    as.value='slow';
+  }
+}
+function refreshActLabels(){
+  var as=$('thermalAction');if(!as)return;
+  if(as._busy)return;
+  if(document.activeElement===as)return;
+  var cur=as.value;
+  for(var i=0;i<as.options.length;i++){
+    var ov=as.options[i].value;
+    if(ov==='__custom__')continue;
+    var want=tActOpt(ov);
+    if(as.options[i].textContent!==want)as.options[i].textContent=want;
+  }
+  if(cur&&as.value!==cur)as.value=cur;
+}
+function syncThermal(kv){
+  if(!kv)return;
+  var ls=$('thermalLimit');
+  if(ls&&kv.thermal_limit){
+    var lim=String(kv.thermal_limit),found=false;
+    for(var i=0;i<ls.options.length;i++)if(ls.options[i].value===lim){found=true;break;}
+    if(!found){var o=document.createElement('option');o.value=lim;o.textContent=lim+'℃';ls.insertBefore(o,ls.querySelector('option[value="__custom__"]'));}
+    for(var k2=ls.options.length-1;k2>=0;k2--){
+      var ov=ls.options[k2].value;
+      if(ov==='__custom__'||ov==='')continue;
+      if(ls.options[k2].dataset&&ls.options[k2].dataset.std==='1')continue;
+      if(ov!==lim){ls.remove(k2);}
+    }
+    if(document.activeElement!==ls||ls._force===1){ls.value=lim;ls._force=0;}
+  }
+  var as=$('thermalAction');
+  if(as&&kv.thermal_action){
+    var av=normAct(kv.thermal_action),f2=false;
+    for(var j=0;j<as.options.length;j++)if(as.options[j].value===av){f2=true;break;}
+    if(!f2){var o2=document.createElement('option');o2.value=av;o2.textContent=tActName(av);as.appendChild(o2);}
+    if(document.activeElement!==as||as._force===1){as.value=av;as._force=0;}
+  }
+  var tt=$('thermalToggle');
+  if(tt&&!tt._busy)tt.checked=(kv.thermal_guard==='1');
+  var st=$('thermalState');
+  if(st){
+    var on=(kv.thermal_guard==='1'),act=normAct(kv.thermal_action);
+    var limN=num(kv.thermal_limit);if(limN===null)limN=45;
+    var hysN=num(kv.thermal_hyst);if(hysN===null)hysN=4;
+    var rec=limN-hysN;
+    var cur=num(kv.thermal_temp);if(cur!==null&&cur<=0)cur=null;
+    var board=(num(kv.thermal_temp_board)!==null&&num(kv.thermal_temp_board)>0)?('　主板 '+fmtT(kv.thermal_temp_board)):'';
+    var L=[];
+    if(!on){
+      L.push('<b>⭕ 已关闭</b> —— 不自动降档');
+    }else{
+      var gap=(cur!==null)?(limN-cur/10):null;
+      var gapTxt='';
+      if(gap!==null){
+        if(gap>0)gapTxt='　还有 <b>'+gap.toFixed(1)+'℃</b> 到上限';
+        else gapTxt='　已超上限 <b>'+Math.abs(gap).toFixed(1)+'℃</b>';
+      }
+      if(kv.thermal_active==='1'){
+        L.push('<b style="color:var(--warn)">🔴 保护中</b> —— 已把充电压到【'+tActName(act)+'】');
+        L.push('　降温到 <b>'+rec+'℃</b> 以下会自动还原你原来的档位');
+        L.push('　要强制快充请先关闭温控守护');
+      }else{
+        L.push('<b style="color:var(--ok)">🟢 守候中</b> —— 温度到 '+limN+'℃ 会自动降到【'+tActName(act)+'】');
+      }
+      L.push('<span class="mini">电池 '+fmtT(kv.thermal_temp)+gapTxt+board+'</span>');
+      L.push('<span class="mini">触发 '+limN+'℃ → 降档　·　降回 '+rec+'℃ → 自动还原原档位</span>');
+    }
+    var _th=L.join('<br>');
+    if(st._last!==_th){st._last=_th;st.innerHTML=_th;}
+  }
+}
+function setThermal(on){
+  if(!confirm(on?'开启温控守护？\n达到设定温度会自动处理，回落自动恢复。':'关闭温控守护？（如处于触发状态会自动恢复）')){$('thermalToggle').checked=!on;return;}
+  execToggle('sh '+XBT+'/scripts/thermal_ctl.sh '+(on?'on':'off'),$('thermalToggle'),null,!on);
+}
+function setThermalLimit(){
+  var sel=$('thermalLimit'),v=sel.value;
+  function rollback(){ sel._force=1; refresh(); }
+  if(v==='__custom__'){
+    var n=prompt('输入温度上限（35~58℃）：','45');
+    if(n===null){rollback();return;}
+    n=String(n).trim();
+    if(!/^[0-9]{1,2}$/.test(n)||Number(n)<35||Number(n)>58){toast('无效数值（35~58）');rollback();return;}
+    v=n;
+  }
+  if(!confirm('温度上限设为 '+v+'℃？到达后自动处理。')){rollback();return;}
+  execToggle('sh '+XBT+'/scripts/thermal_ctl.sh set limit '+v,$('thermalLimit'),'已设置 '+v+'℃');
+}
+function setThermalAction(){
+  var v=$('thermalAction').value;
+  if(!confirm('到达温度上限时执行：'+thermalActLabel(v)+'？')){$('thermalAction')._force=1;refresh();return;}
+  execToggle('sh '+XBT+'/scripts/thermal_ctl.sh set action '+v,$('thermalAction'),'已设置');
+}
+
+// ---- 刷新 ----
+// v3.0.1 修复：加"补刷一次"队列。
+//   旧实现 `if(refreshing)return;` 直接丢弃请求 —— 但开关/档位操作完成后必须在
+//   命令落地之后重新读一次配置。如果此时恰好有一次 refresh 在飞（它读的是
+//   【命令执行前】的 status_kv），请求被丢弃 → 界面一直显示旧状态，直到
+//   下一次 3 秒轮询。表现为"点了开关又弹回去"。
+//   现在：忙时记一个 _refreshAgain，当前这轮结束后立刻补刷一次。
+var _refreshAgain=false;
+function refresh(){
+  if(refreshing){_refreshAgain=true;return Promise.resolve();}
+  refreshing=true;_refreshAgain=false;
+  return sh('sh '+XBT+'/scripts/status_kv.sh').then(function(o){
+    var kv=parseKV(o);
+    _lastKv=kv;
+    // 4 档制：首次建立刻度
+    if(!_scaleBuilt){buildScale();_scaleBuilt=true;}
+    if(!(('status' in kv)||('voltage_uv' in kv)||('power_w' in kv)||('battery_power_w' in kv))){
+      setVal('pState','无法读取状态，请确认已授予 root');return;
+    }
+    var full=Number(kv.charge_full_mah)||0,des=Number(kv.charge_design_mah)||0;
+    var vV=num(kv.voltage_uv),vI=num(kv.battery_current_abs_ma),vP=num(kv.battery_power_w),vT=num(kv.temp_c),vSoc=num(kv.soc);
+    // v2.6.23：空值一律显示 `--`，不再把"读不到"伪装成 0
+    setVal('cSoc',vSoc===null?'--':vSoc+'<small>%</small>');
+    // v2.7.13：这几项原先走 textContent/innerHTML 直写、【没有去重】，
+    //   每次轮询都无条件产生 DOM 变更 → 样式失效 + 合成层重算。
+    //   统一改用 setVal（自带 _last 比较），值没变就不碰 DOM。
+    setVal('cSt',stText(kv.status));
+    setVal('cDes',des>0?(des+'<small>mAh</small>'):'--');
+    setVal('cCap',full>0?(full+'<small>mAh</small>'):'--');
+    setVal('cV',vV===null||vV<=0?'--':(vV/1000000).toFixed(3)+'<small>V</small>');
+    setVal('cI',vI===null||vI===0?'--':(Math.abs(vI)/1000).toFixed(2)+'<small>A</small>');
+    var vPout=(vP===null)?null:(kv.status==='Discharging'?-1:1)*Math.abs(vP);
+    setVal('cP',(vPout===null||vPout===0)?'--':vPout.toFixed(1)+'<small>W</small>');
+    setVal('cT',vT===null?'--':(vT/10).toFixed(1)+'<small>°C</small>');
+    setVal('cH',(full>0&&des>0)?(Math.round(full/des*100)+'<small>%</small>'):(kv.health||'--'));
+    var charging=(kv.status==='Charging');
+    var _ti=$('cI')&&$('cI').parentElement,_tp=$('cP')&&$('cP').parentElement;
+    if(_ti)_ti.classList.toggle('breath',charging);
+    if(_tp)_tp.classList.toggle('breath',charging);
+    // v3.7.1：充电实况栏已按作者要求移除
+    // v3.7.4：撤掉「输入 XW」——实测 ucsi 电流是合同授予值非实际抽流（17V/0A 时仍显示 4.5A），
+    //   算出来的输入功率是假数据，不配展示。电池侧功率（电压×电流）才是真实测。
+    // ---- 4 档制：档位同步 + 目标显示 ----
+    _lastV=_volts(kv);
+    var _idx=powerTierIdx(kv);
+    if(!_sliding&&!sliderTouched&&(_idx!==sliderIdx||($('pBig')&&$('pBig').textContent==='—')))sliderSet(_idx,true);
+    paintTarget(kv);
+    updatePowerNote(kv);
+    var _atMax=(_idx===0);          // inf = 全速档
+    var _chip=$('autoChip');
+    if(_chip)_chip.classList.toggle('hide',!(_atMax&&!sliderTouched&&!_sliding));
+    // v2.6.23：空值显示 `--`（旧版 `||0` 会把读不到显示成 0.0W）
+    var _pA=(vI===null)?'--':fmtA(vI), _pW=(vP===null)?'--':((kv.status==='Discharging'?'-':'')+Math.abs(vP).toFixed(1)+'W');
+    var _s='实测 '+_pA+' / '+_pW;
+    // 温控守护触发时明确提示（4 档制下这是"功率被压低"的最常见真因）
+    if(kv.thermal_active==='1')_s+=' · 温控降档中('+tActName(normAct(kv.thermal_action))+')';
+    setVal('pState',_s+(kv.status?' · '+stText(kv.status):''));
+    try{syncThermal(kv);}catch(e){}
+    // 内核旋钮回显（v2.5.9）：已移至「诊断记录」区（主界面保持简约，用户充电抓 log 时再看）。
+    // 直接暴露「解容总闸」thermal_remove 状态：电流已到上限时正确应为 1；若为 0，功率会被 DT 温控表压制（15/15Pro 15W 锁的典型现象）。
+    var _pk=$('diagKnob');
+    if(_pk){
+      var _th=String(kv.thermal_remove||''),_cl=String(kv.ctrl_limit||'');
+      if(_th===''&&_cl===''){_pk.textContent='';_pk.style.color='';}
+      else{
+        // v2.6.23：后端 common.sh thermal_target() 在电池 ≥50.0℃ 时**故意**返回 0
+        //   （主动交回驱动 DT 温控表做安全兜底）。旧判据只看 th!=='1' 会在高温时报假警，
+        //   诱导用户去"修"本来正确的保护状态 → 高温时改为中性说明。
+        var _battC=num(kv.thermal_temp)||0;
+        var _hot=(_battC>=500);
+        var _kwarn=(_atMax&&_th!=='1'&&!_hot);
+        _pk.style.color=_kwarn?'var(--warn)':'';
+        _pk.textContent='内核旋钮 thermal_remove='+(_th||'?')+' · ctrl_limit='+(_cl||'?')
+          +(_kwarn?' ⚠解容总闸未开启，功率可能被温控表压制':(_hot&&_atMax&&_th!=='1'?' （电池≥50℃ 已交回 DT 温控表，属正常保护）':''));
+      }
+    }
+    // 机型徽章/最大功率同步（并入本次状态刷新，避免额外 exec 调用与启动时序问题）
+    if(kv.dev_code){
+      // v2.6.23：优先用后端下发的 dev_name / dev_maxw（消除前端硬编码机型表漂移）；
+      //   MAXW 表仅作老版本后端（无 dev_maxw 字段）的兜底
+      var _NM={xuanyuan:'小米15 Ultra',dada:'小米15',haotian:'小米15 Pro',nezha:'小米17 Ultra',myron:'Redmi K90 Pro Max',annibale:'Redmi K90',bixi:'小米 MIX Flip2',onyx:'Redmi Turbo 4 Pro',popsicle:'小米17 Pro Max',miro:'Redmi K80 Pro',songyuan:'Redmi K100 Pro Max',warsaw:'Redmi K90 Ultra',pudding:'小米17',byron:'小米17 Max'};
+      var _nm=kv.dev_name||_NM[kv.dev_code]||kv.dev_code;
+      var _db=$('devBadge');if(_db)_db.textContent=_nm+' ('+kv.dev_code+')';
+      if(kv.version){var _vt=$('verTxt'); if(_vt)_vt.textContent=kv.version;}
+      var _mw=num(kv.dev_maxw);
+      if(_mw===null)_mw=MAXW[kv.dev_code]||null;
+      if(_mw&&_mw!==devMaxW){
+        devMaxW=_mw;
+        // ★v3.8.1：瓦数基准变了 → 必须重建刻度（否则刻度标签停在上一个值）
+        _pwrLabelDirty=true;
+      }
+    }
+    // 档位瓦数显示同步（fast_w/mid_w/slow_w → 界面"40W MAX / 25W MAX / 10W MAX"随设置实时更新）
+    // v3.4.2：界面不再显示 fast/mid/slow 档位标签，这些瓦数只保留给
+    //   「旧版后端 power_w → 电流」的回退换算（老模块也能显示合理数值）。
+    //   顺带修掉原代码里 _mw 与上面 dev_maxw 同名遮蔽的问题。
+    if(kv.fast_w||kv.mid_w||kv.slow_w){
+      var _fw=Number(kv.fast_w)||0,_miw=Number(kv.mid_w)||0,_sw=Number(kv.slow_w)||0;
+      if(_fw>0&&_fw!==FASTW){FASTW=_fw;_pwrLabelDirty=true;}
+      if(_miw>0&&_miw!==MIDW){MIDW=_miw;_pwrLabelDirty=true;}
+      if(_sw>0&&_sw!==SLOWW){SLOWW=_sw;_pwrLabelDirty=true;}
+    }
+    // ★v3.8.1：档位瓦数或本机最大功率有任何变化 → 统一重建刻度 + 刷新大数字/说明/目标
+    if(_pwrLabelDirty){_pwrLabelDirty=false;refreshPowerLabels();}
+    // v3.0.0：统一同步四个开关（缺键不改 → 不会把开关刷成灰）
+    //   旧版这里是三行硬赋值 kv.xxx==='1'：桥返回不完整时 undefined==='1' 为 false，
+    //   于是"随机掉图标"——所有开关一起变灰。
+    //   _lastKv 已在 refresh() 开头赋值（L971），这里直接用。
+    try{syncAllToggles();}catch(e){}
+    pushData(kv);
+  }).catch(function(e){
+    // v3.0.1：refresh 失败也要落到 finally，且不让 Promise 变成 unhandled rejection。
+    //   旧版 .then 抛错（如 parseKV/节点缺失）时只走 finally，错误无人接收 →
+    //   控制台 Noise，且 status_kv 连续失败时界面无任何提示。
+    try{toast('状态读取失败：'+(e&&e.message?e.message:e));}catch(_){}
+  }).finally(function(){
+    refreshing=false;
+    // v3.0.1：补刷一次（见 refresh() 顶部注释）
+    if(_refreshAgain){_refreshAgain=false;try{refresh();}catch(e){}}
+  });
+}
+
+// ---- 开关 ----
+// v2.6.23：
+//  ① 操作期间给控件打 _busy 标记，refresh 不再用轮询值覆写它
+//     （旧版开关会"先跳新态→自己弹回旧态→命令完成再跳回"，闪两下）
+//  ② 失败时显式回滚勾选态（桥不可用时 refresh 自身也失败 → 旧版会永久停在错误状态）
+function execToggle(cmd,el,okMsg,prevArg){
+  toast('执行中…');
+  // v2.7.4 修复：原先 prev=el.checked 取的是【用户已经翻转之后】的值 ——
+  //   因为调用点都在 change 事件触发之后（onchange → setXxx(this.checked) → execToggle），
+  //   所以 prev === 新值，失败回滚等于把错误状态再写一遍（空操作）。
+  //   桥不可用时 refresh() 会在 763 行早退，界面就长期谎报"功能已开"。
+  //   现在由调用点显式传入翻转前的值（prevArg）。
+  //
+  // v3.0.0 修复「开关 PPS 会随机掉其他按钮图标」：
+  //   ① 不再用 el.disabled（配合 :disabled 的 opacity:.5 → 命令一慢就像图标掉了），
+  //      改为给外层 .sw 加 busy 类（只锁点击，视觉只轻微脉冲）。
+  //   ② 记住"本次操作的目标开关"，refresh() 结束前统一重同步所有开关，
+  //      即使中途某段抛异常也不会留下一半亮一半灰的界面。
+  var prev=(prevArg===undefined||prevArg===null)?null:!!prevArg;
+  var wrap=el&&el.closest?el.closest('.sw'):null;
+  if(el){el._busy=true;}
+  if(wrap){wrap.classList.add('busy');}
+  return execCmd(cmd).then(function(r){
+    var o=r.stdout||'';if(r.stderr)o+=(o?'\n':'')+'[stderr] '+r.stderr;showOut(o);
+    if(r.errno===0){toast(okMsg||'完成');}
+    else if(r.errno===-1){toast('KSU桥接不可用：请从 KernelSU管理器进入');}
+    else if(r.errno===-3){toast('执行超时，请重试');}
+    else{toast('执行失败（见下方输出）');}
+    if(r.errno!==0&&el&&prev!==null){el.checked=prev;}   // 失败回滚勾选态（prev 来自调用点）
+    // v3.0.1 修复：必须【等待】refresh 完成。
+    //   旧写法只写 `refresh();` 不 return，而 .finally() 会在 .then() 返回后
+    //   立刻执行（微任务），此时 refresh 的 promise 还没 resolve →
+    //   _lastKv 仍是【操作前】的旧值 → 下面 finally 里的 syncAllToggles()
+    //   会把刚成功的开关按旧值刷回去（要等下一次 3 秒轮询才纠正）。
+    //   这正是 v2.6.23 注释里想消除的"弹回旧态"。return 之后 finally 必然在
+    //   refresh 落地之后才跑，_lastKv 已是新值。
+    return refresh();
+  }).catch(function(e){
+    if(el&&prev!==null)el.checked=prev;
+    toast('执行异常: '+e);
+  }).finally(function(){
+    if(el){el._busy=false;}
+    if(wrap){wrap.classList.remove('busy');}
+  });
+}
+// v3.0.0：按最近一次已知的 kv 同步所有开关（幂等；缺键不改，避免把开关刷成灰）
+//   _lastKv 由 refresh() 维护（L941 声明、L971 赋值），这里只读不写。
+function syncAllToggles(){
+  var t=[['unlockToggle','unlock'],['cloudToggle','cloud_guard'],['freeppsToggle','freepps']];
+  for(var i=0;i<t.length;i++){
+    var el=$(t[i][0]),k=t[i][1];
+    if(!el||el._busy)continue;
+    var v=_lastKv[k];
+    if(v===undefined||v===null||v==='')continue;   // 没有该键 → 保持现状
+    el.checked=(v==='1');
+  }
+}
+function setUnlock(on){
+  if(!confirm(on?'开启电池解容并挂载 BAA？':'关闭解容？将卸载 BAA 并停止 smart_fv 守护。')){$('unlockToggle').checked=!on;return;}
+  execToggle('sh '+XBT+'/scripts/unlock.sh '+(on?'on':'off'),$('unlockToggle'),null,!on);
+}
+function setCloud(on){
+  if(!confirm(on?'开启云控屏蔽并重挂载 BAA？':'关闭云控屏蔽并恢复允许云端下发？')){$('cloudToggle').checked=!on;return;}
+  execToggle('sh '+XBT+'/scripts/cloud_guard.sh '+(on?'on':'off'),$('cloudToggle'),null,!on);
+}
+function setFreepps(on){
+  var _m=on
+    ?'开启公版 PPS 解锁？\n\n【作用】让充电策略信任第三方充电头上报的 PPS 能力，\n酷态科 / 安克等全协议头可从 ~27W 档解锁到高功率 PPS。\n配合「自适应限流」会自动匹配该头的最大安全电流。\n\n⚠ 开启后必须【拔插一次充电器】才生效。\n⚠ 官方小米头走私有协议，开不开影响不大。\n⚠ 若开启后充电反而变慢/断续，关掉再拔插一次即可恢复。'
+    :'关闭公版 PPS 解锁？\n\npd_verifed 将还原为 0，第三方头回到固定档（一般 27W 左右）。\n关闭后拔插一次充电器生效。';
+  if(!confirm(_m)){$('freeppsToggle').checked=!on;return;}
+  execToggle('sh '+XBT+'/scripts/freepps.sh '+(on?'on':'off'),$('freeppsToggle'),null,!on);
+}
+function syncCycle(){
+  // v2.7.5：加 _busy 保护 —— 与另外三个开关一致。
+  //   旧版没这层保护：用户选完新值 → shR 写盘尚未返回 → 期间任何一次 syncCycle()
+  //   （本函数自己会在操作末尾调用，refresh() 里没有轮询它，但确认框取消路径也会调）
+  //   读到的是【旧值】→ 下拉框瞬时跳回旧值 → 用户以为"改了没生效"而反复点。
+  //   操作进行中不打乱用户当前选择，写盘完成后再由本函数回读真实值。
+  var sel=$('cycleSel');if(!sel)return;
+  if(sel._busy)return;
+  // v2.7.4：改用 shR 区分"读失败"与"空值"。
+  //   旧版读失败时 o 只有 "[stderr] …"，正则不匹配 → v='' → 下拉框显示「不干预」，
+  //   而后端实际可能是 50 → 用户看到的是【假状态】。
+  // v2.7.5 【修复 errno 护栏是死代码】
+  //   原命令 "grep ... | head -n1 | cut -d= -f2-" 的退出码取自【管道最后一个命令 cut】，
+  //   而 cut 恒为 0 → r.errno 只在 KSU 桥自身失败(-1/-2/-3)时才非 0。
+  //   grep 读不到 / 文件不存在时 errno 仍是 0、输出为空 → 下拉静默显示"不干预"，
+  //   正是注释声称已修掉的【假状态】。
+  //   改用显式存在性判断：先看键在不在，再取值。这样"键不存在"与"键存在但为空"
+  //   能正确区分（前者回退到"不干预"，后者也是"不干预"，但语义清晰且可上报）。
+  shR("grep -c '^cycle_fake=' "+XBT+"/config/settings.conf 2>/dev/null").then(function(r0){
+    if(r0.errno!==0){sel.disabled=true;return;}
+    var cnt=String(r0.out||'').trim();
+    if(!/^[0-9]+$/.test(cnt)){sel.disabled=true;return;}
+    if(cnt==='0'){
+      // 配置里没有这个键 —— 视为"不干预"（新装默认），并解锁控件
+      sel.disabled=false;sel.value='';return;
+    }
+    sel.disabled=false;
+    shR("grep '^cycle_fake=' "+XBT+"/config/settings.conf 2>/dev/null | head -n1 | cut -d= -f2-").then(function(r){
+    var v=String(r.out||'').trim(),found=false;
+    if(!/^[0-9]*$/.test(v))v='';
+    // v2.7：原实现"边遍历边插入"——插入位置若在游标之前，遍历会提前结束，
+    //   导致 found 恒为 false 且 sel.value 设不上，下拉框不显示当前值
+    //   → 用户以为没生效，反复改（反馈"改了四次才成功"）。改为先判断、后插入、再赋值。
+    for(var i=0;i<sel.options.length;i++){if(sel.options[i].value===v){found=true;break;}}
+    if(!found&&v!==''){
+      var op=document.createElement('option');op.value=v;op.textContent=v;
+      var anchor=sel.querySelector('option[value="__custom__"]');
+      if(anchor)sel.insertBefore(op,anchor);else sel.appendChild(op);
+    }
+    sel.value=v;
+    });
+  });
+}
+function setCycle(){
+  var sel=$('cycleSel'),v=sel.value;
+  // v2.7.5：保持 1~9999 契约（脚本注释与提示都写 1~9999），但修掉两个真 bug：
+  //   ① 原先正则 /^[0-9]{1,4}$/ 放行 "007" 这类前导零 → 写盘后下拉会插入 value="007" 的选项；
+  //   ② 前端与后端范围必须一致（后端 unlock.sh 的 `????*` 原先反向拒绝 1000~9999，
+  //      已在后端改为真正的区间校验）。
+  if(v==='__custom__'){
+    var n=prompt('输入循环伪装次数（1 ~ 9999）：','100');
+    if(n===null){syncCycle();return;}
+    n=String(n).trim();
+    if(!/^[1-9][0-9]{0,3}$/.test(n)){toast('无效数值（1~9999，不能有前导零）');syncCycle();return;}
+    v=n;
+  }
+  if(v==='0'){toast('0 无效：FG 不接受 0，请选「不干预」取消伪装');syncCycle();return;}
+  if(v!==''&&!confirm('将循环计数（伪装值）设为 '+v+'？\n（真实值会自动记录，选「不干预」可恢复）')){syncCycle();return;}
+  // v2.7.5：操作期间打 _busy，防轮询/自身回读把用户刚选的值冲掉；完成后回读真实值
+  sel._busy=true;sel.disabled=true;
+  toast('执行中');
+  shR(v===''?'sh '+XBT+'/scripts/unlock.sh cycle clear':'sh '+XBT+'/scripts/unlock.sh cycle '+v).then(function(r){
+    showOut(r.out);
+    if(r.errno===0){toast(v===''?'已清除伪装':'已设置为 '+v);}else{toast(errText(r.errno));}
+    sel._busy=false;sel.disabled=false;
+    syncCycle();
+  }).catch(function(e){
+    sel._busy=false;sel.disabled=false;
+    toast('执行异常: '+e);
+    syncCycle();
+  });
+}
+function loadImages(){
+  var box=$('imageList');box.innerHTML='<div class="mini">正在扫描…</div>';
+  shR('sh '+XBT+'/scripts/dtbo.sh list').then(function(rr){
+    var o=rr.errno===0?rr.out:('读取失败：'+errText(rr.errno)+'\n'+(rr.out||''));
+    var lines=String(o||'').split(/\r?\n/).filter(function(l){return /^\d+\|/.test(l);});
+    if(!lines.length){box.innerHTML='<div class="mini">未找到候选镜像（可点上方“刷新目录”检查目录）</div>';return;}
+    box.innerHTML='';
+    lines.forEach(function(l){
+      var p=l.split('|'),path=p[1],nm=String(path).split('/').pop();
+      var row=document.createElement('div');row.className='row row-in';
+      var ri=document.createElement('div');ri.className='ri';
+      var _sz=Number(p[2]||0), _szTxt=_sz>0?(_sz/1048576).toFixed(1)+' MB':'?';
+      var _b=document.createElement('b');_b.textContent=nm;
+      var _s=document.createElement('span');_s.textContent=_szTxt+' · '+String(p[3]||'');
+      ri.appendChild(_b);ri.appendChild(_s);
+      var b=document.createElement('button');b.className='btn sm';b.style.flex='none';b.style.padding='8px 14px';b.textContent='刷入';
+      b.onclick=function(){
+        if(/["$`\\]/.test(path)){toast('路径含特殊字符');return;}
+        var slot=$('slotSel').value;
+        if(b._busy)return;                       // v2.7.5：在途保护，防连点并发 dd 同一分区
+        if(!confirm('刷入 DTBO\n文件: '+nm+'\n槽: dtbo_'+slot+'\n(自动备份→写入→校验)'))return;
+        if(b._busy)return;
+        b._busy=true;b.disabled=true;
+        toast('刷入中');
+        shR('sh '+XBT+'/scripts/dtbo.sh flash "'+path+'" '+slot).then(function(r){
+          showOut(r.out);
+          if(r.errno!==0){toast(errText(r.errno));return;}
+          if(/失败|中止|不一致|错误/.test(String(r.out||''))){toast('刷入失败：详见下方输出');}
+          else{toast('刷写结束');}
+        }).catch(function(e){toast('执行异常: '+e);})
+          .finally(function(){b._busy=false;b.disabled=false;});
+      };
+      row.appendChild(ri);row.appendChild(b);box.appendChild(row);
+    });
+  });
+}
+
+// ---- 绑定 ----
+$('themeBtn').onclick=function(){var cur=document.documentElement.getAttribute('data-theme');applyTheme(cur==='light'?'dark':'light',true);};
+bindSlider();
+$('btnApply').onclick=function(){applyPower(POWERS[sliderIdx]);};
+$('unlockToggle').onchange=function(){setUnlock(this.checked);};
+$('cloudToggle').onchange=function(){setCloud(this.checked);};
+$('freeppsToggle').onchange=function(){setFreepps(this.checked);};
+$('cycleSel').onchange=setCycle;
+$('btnInfo').onclick=function(){sh('sh '+XBT+'/scripts/battery_info.sh').then(showOut);};
+$('btnLog').onclick=function(){sh('tail -n 80 /data/local/tmp/xt_toolbox.log').then(showOut);};
+$('btnClearOut').onclick=function(){showOut('(暂无输出)');};
+$('btnCloudStatus').onclick=function(){sh('sh '+XBT+'/scripts/cloud_guard.sh status').then(showOut);};
+$('btnCloudCheck').onclick=function(){toast('巡检中');shR('sh '+XBT+'/scripts/cloud_guard.sh check').then(function(r){showOut(r.out);if(r.errno===0){toast('完成');}else{toast(errText(r.errno));}});};
+$('btnDtboStatus').onclick=function(){sh('sh '+XBT+'/scripts/dtbo.sh status').then(showOut);};
+// v2.7.5：刷写/备份类按钮加在途保护 —— 连点两次会并发 dd 同一分区（可能损坏）。
+function dtboBtnGuard(btn,fn){
+  if(btn._busy)return;
+  btn._busy=true;btn.disabled=true;
+  var p;
+  try{p=fn();}catch(e){btn._busy=false;btn.disabled=false;toast('执行异常: '+e);return;}
+  if(p&&p.then){p.then(function(){}).catch(function(e){toast('执行异常: '+e);})
+                 .finally(function(){btn._busy=false;btn.disabled=false;});}
+  else{btn._busy=false;btn.disabled=false;}
+}
+$('btnDtboBackup').onclick=function(){var s=$('slotSel').value;
+  dtboBtnGuard(this,function(){toast('备份中');
+  return shR('sh '+XBT+'/scripts/dtbo.sh backup '+s).then(function(r){
+    showOut(r.out);
+    if(r.errno!==0){toast(errText(r.errno));return;}
+    if(/失败|中止|错误|不存在/.test(String(r.out||''))){toast('备份失败：详见下方输出');}
+    else{toast('备份完成（文件在 Download/dtbo_backup）');}
+  });});};
+$('btnLoadImages').onclick=loadImages;
+// ---- 诊断 / 反馈（v2.5.9 傻瓜化：一键导出即可）----
+  $('btnDiagTail').onclick=function(){sh('sh '+XBT+'/scripts/diag_log.sh tail 120').then(showOut);};
+  $('btnDiagPack').onclick=function(){
+    toast('正在生成诊断包…');showOut('正在生成诊断包，请稍候…');
+    shR('sh '+XBT+'/scripts/diag_log.sh pack').then(function(r){
+      showOut(r.out);
+      if(r.errno!==0){toast(errText(r.errno));return;}
+      // v2.7.5：优先匹配"已自动打包"（新格式会 rm 掉散装目录、只留 .tar.gz）
+      var m=/已自动打包:\s*(\S+\.tar\.gz)/.exec(String(r.out||''))||/已导出到:\s*(\S+)/.exec(String(r.out||''));
+      if(m){toast('已导出: '+String(m[1]).split('/').pop());}
+      else if(/失败|错误|中止/.test(String(r.out||''))){toast('导出失败：详见下方输出');}
+      else{toast('已导出到 Download（请检查输出确认文件名）');}
+    });
+  };
+  $('btnDiagClear').onclick=function(){if(!confirm('清空全部诊断日志？'))return;shR('sh '+XBT+'/scripts/diag_log.sh clear').then(function(r){showOut(r.out);if(r.errno===0){toast('已清空');}else{toast(errText(r.errno));}});};
+$('btnShowDirs').onclick=function(){loadDirs();toast('目录已刷新');};
+function addScanDir(){var v=String($('dirInput').value||'').trim();if(!v){toast('请输入目录绝对路径');return;}if(/["$`\\]/.test(v)){toast('路径含特殊字符');return;}toast('添加中');shR('sh '+XBT+'/scripts/dtbo.sh adddir "'+v+'"').then(function(r){showOut(r.out);if(r.errno===0){toast('完成');}else{toast(errText(r.errno));}loadDirs();loadImages();});}
+function delScanDir(){var v=String($('dirInput').value||'').trim();if(!v){toast('请输入要移除的目录');return;}if(/["$`\\]/.test(v)){toast('路径含特殊字符');return;}toast('移除中');shR('sh '+XBT+'/scripts/dtbo.sh deldir "'+v+'"').then(function(r){showOut(r.out);if(r.errno===0){toast('完成');}else{toast(errText(r.errno));}loadDirs();loadImages();});}
+$('btnAddDir').onclick=addScanDir;
+$('btnDelDir').onclick=delScanDir;
+$('btnFlashLocal').onclick=function(){
+  var _btn=this;
+  if(_btn._busy)return;
+  _btn._busy=true;_btn.disabled=true;
+  var _done=function(){_btn._busy=false;_btn.disabled=false;};
+  shR('sh '+XBT+'/scripts/dtbo.sh haslocal').then(function(rr){
+    if(rr.errno!==0){toast('无法确认内置镜像：'+errText(rr.errno));_done();return;}
+    if(String(rr.out||'').trim()!=='yes'){toast('安装包未内置本机 DTBO，请用下方扫描刷入');_done();return;}
+    var s=$('slotSel').value;
+    if(!confirm('⚠ 刷入解容 DTBO（二次确认）\n\n目标槽: dtbo_'+s+'\n来源: 安装包内置镜像\n\n流程: 自动备份当前 DTBO → 写入 → SHA 校验\n刷入后需重启生效\n\n确认继续？')){_done();return;}
+    toast('刷入中，请勿操作');showOut('刷入中…');
+    shR('sh '+XBT+'/scripts/dtbo.sh flashlocal '+s).then(function(r){
+      showOut(r.out);
+      if(r.errno!==0){toast(errText(r.errno));return;}
+      if(/失败|中止|不一致|错误/.test(String(r.out||''))){toast('刷入失败：详见下方输出');}
+      else{toast('刷写结束，重启后生效');}
+    }).catch(function(e){toast('执行异常: '+e);}).finally(_done);
+  }).catch(function(e){toast('执行异常: '+e);_done();});
+};
+
+function syncDev(){
+  // 机型徽章/最大功率已在 refresh() 中随 status_kv 的 dev_code 同步（减少一次 exec 调用）
+  // v3.7.0：刻度/滑块预渲染只在有缓存量程时做（首开等第一拍数据，避免假数字）
+  buildScale();sliderSet(sliderIdx,false);
+  sh('getprop ro.boot.slot_suffix').then(function(o){var s=String(o||'').trim();if(s==='_a'||s==='_b'){$('slotNow').textContent=s;$('slotSel').value=s.slice(1);}});
+}
+
+// ---- 启动 ----
+applyTheme(document.documentElement.getAttribute('data-theme')||'dark',false);
+// v3.7.0：有上次量程缓存才预渲染滑块；首次打开等第一拍数据（骨架屏遮罩，
+//   不再闪 22.0/30.0 假数字）
+buildScale();buildThermalUI();sliderSet(0,false);
+$('thermalToggle').onchange=function(){setThermal(this.checked);};
+$('thermalLimit').onchange=setThermalLimit;
+$('thermalAction').onchange=setThermalAction;
+// v2.6.23：图表初始化必须容错。旧版 initCharts() 一旦抛错（chart.min.js 缺失/损坏、
+//   getContext('2d') 返回 null），异常会冒泡出 IIFE → 其后的 refresh() 与 3 秒轮询
+//   **全部不执行**，表现为"页面能开、按钮能点，但数据永远 --、开关点了不亮"且无报错。
+try{initCharts();initChartVisibility();}catch(e){window._charts=null;showOut&&showOut('[图表] 初始化跳过: '+e);}
+syncDev();syncCycle();refresh();
+document.addEventListener('pointerdown',ripple);
+function bindFolds(){
+  var list=document.querySelectorAll('details');
+  for(var i=0;i<list.length;i++)(function(d){
+    var head=d.querySelector('summary'),body=d.querySelector('.dbody');
+    if(!head||!body)return;
+    var pb=parseFloat(getComputedStyle(body).paddingBottom)||0;
+    var timer=0;
+    var reset=function(){
+      body.style.transition='';body.style.height='';body.style.opacity='';body.style.paddingBottom='';
+      d.classList.remove('collapsing');
+    };
+    head.addEventListener('click',function(e){
+      e.preventDefault();
+      clearTimeout(timer);
+      // v2.5.9：折叠期间不再切换毛玻璃（backdrop-filter 开/关会造成重栅格化闪烁，
+      // 实测收尾瞬间卡内元素会闪一下）；仅保留高度动画本身。
+      var from=body.getBoundingClientRect().height||0;   // 小数高度：从"当前实际高度"起，可随时打断、无跳变
+      if(d.open){
+        // 收回
+        d.classList.add('collapsing');
+        body.style.transition='none';
+        body.style.height=from+'px';body.style.paddingBottom=pb+'px';body.style.opacity='1';
+        void body.offsetWidth;                // 锁定起点
+        body.style.transition='height .3s cubic-bezier(.22,.61,.36,1),padding-bottom .3s cubic-bezier(.22,.61,.36,1),opacity .24s ease';
+        body.style.height='0px';body.style.paddingBottom='0px';body.style.opacity='0';
+        timer=setTimeout(function(){d.open=false;reset();},330);
+      }else{
+        // 展开：先量出"自然高度"，保证动画终点与展开后的真实高度完全一致（杜绝收尾跳动）
+        d.open=true;
+        body.style.transition='none';
+        body.style.height='auto';body.style.paddingBottom=pb+'px';body.style.opacity='1';
+        var h2=body.getBoundingClientRect().height||body.scrollHeight;   // 小数高度：终点与真实高度完全一致
+        body.style.height='0px';body.style.paddingBottom='0px';body.style.opacity='0';
+        void body.offsetWidth;                // 锁定起点
+        body.style.transition='height .3s cubic-bezier(.22,.61,.36,1),padding-bottom .3s cubic-bezier(.22,.61,.36,1),opacity .24s ease';
+        body.style.height=h2+'px';body.style.paddingBottom=pb+'px';body.style.opacity='1';
+        timer=setTimeout(function(){reset();},340);
+      }
+    });
+  })(list[i]);
+};
+bindFolds();loadDirs();playEntrance();
+
+/* ==================== v2.7.13 轮询调度（功耗主开关） ====================
+   旧实现：setInterval(refresh, 3000) —— 固定 3 秒、永不清除、只看 document.hidden。
+   实测代价：每次 refresh 起 1 个 root shell（status_kv.sh），而该脚本会 source
+   38KB 的 common.sh（载入期 9 处顶层 $(...)）+ 多次 cfg_get + baa_state 的
+   2 次 sha256sum(60~140KB) → 单次约 100 次进程创建。3 秒一次 = 每分钟约 2000 fork。
+   新实现：自适应间隔（充电中才密）+ 页面隐藏立即停 + 出错指数退避。
+   ★ 注意：间隔拉长后【图表历史窗口同步变长】，H 已从 120 提到 720（见图表区）。 */
+var _pollTimer=0,_pollMs=8000,_pollErr=0,_pageVisible=true;
+function pollDelay(){
+  var st=String((_lastKv&&_lastKv.status)||'');
+  if(st.indexOf('Charging')>=0)return 5000;     // 充电中：曲线正在用，5s
+  if(st.indexOf('Discharging')>=0)return 15000; // 放电中：15s
+  return 20000;                                 // 未充电/已满/未知：20s
+}
+function pollStop(){ if(_pollTimer){clearTimeout(_pollTimer);_pollTimer=0;} }
+function pollStart(){ if(_pollTimer||!_pageVisible)return; _pollTimer=setTimeout(pollTick,_pollMs); }
+function pollTick(){
+  _pollTimer=0;
+  if(!_pageVisible)return;
+  try{
+    Promise.resolve().then(function(){return refresh();}).then(function(){
+      _pollErr=0;_pollMs=pollDelay();pollStart();
+    },function(){
+      _pollErr=Math.min(_pollErr+1,4);
+      _pollMs=Math.min(5000*Math.pow(2,_pollErr),60000);   // 5s→10s→20s→40s→60s
+      pollStart();
+    });
+  }catch(e){ _pollMs=Math.min(_pollMs*2,60000); pollStart(); }
+}
+
+/* ---- 可见性生命周期：隐藏 → 停轮询 / 停无限动画 / 撤 rAF；恢复 → 立刻刷一次 ---- */
+function applyVis(){
+  _pageVisible=!document.hidden;
+  var root=document.documentElement;
+  if(!_pageVisible){
+    pollStop();
+    if(typeof _chartRaf!=='undefined'&&_chartRaf){cancelAnimationFrame(_chartRaf);_chartRaf=0;}
+    root.classList.add('page-hidden');
+  }else{
+    root.classList.remove('page-hidden');
+    if(typeof _dirtyCharts!=='undefined'&&_dirtyCharts&&typeof scheduleChartUpdate==='function')scheduleChartUpdate();
+    refresh();pollStart();
+  }
+}
+document.addEventListener('visibilitychange',applyVis);
+window.addEventListener('pagehide',function(){_pageVisible=false;pollStop();});
+window.addEventListener('pageshow',applyVis);
+
+/* ===== v3.4.2.3【修复首屏空窗】=====
+   旧代码只 pollStart()，而 pollStart 只是 setTimeout(pollTick, _pollMs)，
+   并不立即执行 → 打开 WebUI 后要等满 _pollMs（原来写死 15000ms）才第一次出数据，
+   期间页面停在骨架屏/`--`。这里改成：立即刷一次，成功后按状态决定间隔。 */
+_pollMs=3000;
+(function bootRefresh(){
+  try{
+    Promise.resolve().then(function(){return refresh();}).then(function(){
+      _pollErr=0;_pollMs=pollDelay();pollStart();
+    },function(){
+      _pollErr=Math.min(_pollErr+1,4);
+      _pollMs=Math.min(5000*Math.pow(2,_pollErr),60000);
+      pollStart();
+    });
+  }catch(e){ _pollMs=5000; pollStart(); }
+})();
+
+// 预热 KSU exec 通道（首次调用通常较慢；空闲时提前消化，提升开关首点体验）
+setTimeout(function(){try{execCmd('echo warmup').then(function(){});}catch(e){}},1500);
+/* 氛围动画定格（省电）：v2.7.13 改为「首次交互立即定格 + 20s 兜底」（原固定 120s） */
+(function(){
+  var _done=false;
+  function still(){
+    if(_done)return;_done=true;
+    document.documentElement.classList.add('ambient-still');
+    window.removeEventListener('pointerdown',still);window.removeEventListener('scroll',still);
+    window.removeEventListener('touchstart',still);
+  }
+  window.addEventListener('pointerdown',still,{passive:true});
+  window.addEventListener('scroll',still,{passive:true});
+  window.addEventListener('touchstart',still,{passive:true});
+  setTimeout(still,20000);
+})();
+})();
+</script>
+<script>
+/* ============================================================================
+   v3.3.x WebUI 特效层（自适应）
+   ----------------------------------------------------------------------------
+   设计原则：
+     · 不碰模块的任何函数/变量，全部独立，任何异常都吞掉不影响功能
+     · 只在「插着电」时开重特效（那时不怕耗电）
+     · 启动后只采样 3 秒 FPS 就彻底停掉 rAF，不留常驻循环
+     · 低性能 / 低电量 / 用户要求减少动态 → 自动降级（砍 backdrop-filter）
+     · 页面不可见时全部暂停（模块 JS 会加 .page-hidden）
+   ============================================================================ */
+(function(){
+  'use strict';
+  try{
+    var root = document.documentElement;
+    if(!root) return;
+
+    /* ---------- 1. 用户偏好：减少动态效果 ---------- */
+    var reduce = false;
+    try{ reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
+    if(reduce) root.classList.add('fx-off');
+
+
+    /* ---------- 3. 供电状态：插电才开能量流光 ---------- */
+    function setCharging(on){
+      if(on) root.classList.add('fx-charging');
+      else   root.classList.remove('fx-charging');
+    }
+    try{
+      if(typeof navigator.getBattery === 'function'){
+        navigator.getBattery().then(function(b){
+          var upd = function(){
+            try{
+              setCharging(!!b.charging);
+            }catch(e){}
+          };
+          upd();
+          try{ b.addEventListener('chargingchange', upd); }catch(e){}
+          try{ b.addEventListener('levelchange', upd); }catch(e){}
+        }).catch(function(){});
+      }
+    }catch(e){}
+
+
+    /* ---------- 6. 首屏骨架屏 ---------- */
+    /* 数据到达前给 <html> 挂 .booting，CSS 把数值位置渲染成 shimmer；
+       数值一到立刻移除。最多轮询 10 秒兜底，之后无论如何都撤掉。 */
+    try{
+      var socEl = document.getElementById('cSoc');
+      var cur = socEl ? String(socEl.textContent||'').replace(/\s/g,'') : '';
+      if(socEl && cur === '--'){
+        root.classList.add('booting');
+        var _tries = 0;
+        var _stopBoot = function(){ root.classList.remove('booting'); };
+        var _bootTimer = setInterval(function(){
+          _tries++;
+          var n = document.getElementById('cSoc');
+          var txt = n ? String(n.textContent||'').replace(/\s/g,'') : '';
+          if(txt && txt !== '--' && txt !== '…'){ _stopBoot(); clearInterval(_bootTimer); }
+          else if(_tries >= 40){ _stopBoot(); clearInterval(_bootTimer); }
+        }, 250);
+      }
+    }catch(e){}
+
+    /* ---------- 7. 液态玻璃：触摸落点光照 ---------- */
+    /* 只在 pointerdown 写一次 CSS 变量（约 2 次重绘/次点击），抬手立刻清除。
+       不做 pointermove 跟随 —— 那会是每帧重绘，手机上不值得。 */
+    try{
+      if(!reduce){
+        var _litEl = null;
+        document.addEventListener('pointerdown', function(ev){
+          var t = ev.target;
+          var g = (t && t.closest) ? t.closest('.glass') : null;
+          if(!g) return;
+          var r = g.getBoundingClientRect();
+          if(!r.width || !r.height) return;
+          g.style.setProperty('--gx', (((ev.clientX - r.left) / r.width) * 100).toFixed(1) + '%');
+          g.style.setProperty('--gy', (((ev.clientY - r.top) / r.height) * 100).toFixed(1) + '%');
+          /* 镜面边缘光：把「光源方向」对准手指那一侧，玻璃的亮边就会朝向你。
+             @property 已注册 --light-ang，浏览器会把它平滑过渡过去，不用逐帧写。 */
+          var _dx = ev.clientX - (r.left + r.width / 2);
+          var _dy = ev.clientY - (r.top + r.height / 2);
+          var _ang = Math.atan2(_dy, _dx) * 180 / Math.PI + 90;
+          g.style.setProperty('--light-ang', _ang.toFixed(0) + 'deg');
+          g.classList.add('lit');
+          _litEl = g;
+        }, {passive:true});
+        var _unlit = function(){
+          if(_litEl){ _litEl.classList.remove('lit'); _litEl = null; }
+        };
+        document.addEventListener('pointerup', _unlit, {passive:true});
+        document.addEventListener('pointercancel', _unlit, {passive:true});
+      }
+    }catch(e){}
+
+  }catch(e){ /* 特效失败绝不影响模块功能 */ }
+})();
+</script>
+</body>
+</html>

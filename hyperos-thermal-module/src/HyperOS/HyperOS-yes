@@ -1,0 +1,20 @@
+#!/system/bin/sh
+PROPS="debug.game.video.support debug.game.video.speed"
+
+_rp=""
+for p in /data/adb/ksu/bin/resetprop /data/adb/magisk/resetprop /data/adb/ap/bin/resetprop; do
+    [ -x "$p" ] && { _rp="$p"; break; }
+done
+[ -z "$_rp" ] && command -v resetprop >/dev/null 2>&1 && _rp="resetprop"
+
+for k in $PROPS; do
+    if [ -n "$_rp" ]; then "$_rp" -n "$k" true >/dev/null 2>&1; fi
+    setprop "$k" true >/dev/null 2>&1
+done
+
+_ok=1
+for k in $PROPS; do
+    [ "$(getprop "$k" 2>/dev/null)" = "true" ] || _ok=0
+done
+[ "$_ok" = "1" ] && exit 0
+exit 1

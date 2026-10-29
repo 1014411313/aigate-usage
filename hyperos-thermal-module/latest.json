@@ -1,0 +1,33 @@
+{
+  "moduleId": "HyperOS_XJ",
+  "name": "HyperOS 动态温控 · 电池解容（二改整合）",
+  "versionName": "K2+BT3.9.6-build10",
+  "versionCode": 10,
+  "zip": "https://cdn.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v10.zip",
+  "zipRaw": "https://raw.githubusercontent.com/1014411313/aigate-usage/main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v10.zip",
+  "sha256": "f89449f36a566738d0196316fa13d7a221404657aee49697239e781bc13572d9",
+  "size": 9146685,
+  "minOS": "HyperOS 4（DTBO 仅 OS4 自动刷入）",
+  "devices": [
+    "dada", "haotian", "xuanyuan", "pudding", "pandora", "byron",
+    "nezha", "popsicle", "myron", "annibale", "miro", "songyuan",
+    "warsaw", "bixi", "onyx"
+  ],
+  "credits": {
+    "dynamic_thermal": "Axiaojiux（动态温控 K2）",
+    "battery_toolbox": "听夜风1337（电池解容工具箱 v3.9.6）",
+    "note": "二改整合版，非原作者官方发布"
+  },
+  "updated": "2026-10-29",
+  "versions": [
+    {
+      "versionCode": 10,
+      "versionName": "K2+BT3.9.6-build10",
+      "file": "dist/HyperOS_XJ_K2_battery-pps-dtbo_v10.zip",
+      "sha256": "f89449f36a566738d0196316fa13d7a221404657aee49697239e781bc13572d9",
+      "size": 9146685,
+      "date": "2026-10-29",
+      "note": "首个正式多版本留存；移除误打包的解密分析产物"
+    }
+  ]
+}
