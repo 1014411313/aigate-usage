@@ -4,6 +4,7 @@
   "versionName": "K2+BT3.9.6-build10",
   "versionCode": 10,
   "zip": "https://cdn.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v10.zip",
+  "zipCN": "https://testingcf.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v10.zip",
   "zipRaw": "https://raw.githubusercontent.com/1014411313/aigate-usage/main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v10.zip",
   "sha256": "f89449f36a566738d0196316fa13d7a221404657aee49697239e781bc13572d9",
   "size": 9146685,
