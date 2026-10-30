@@ -2409,6 +2409,16 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
   </div>
 
   <div class="card">
+    <div class="pref" onclick="openAuthorCard()" style="cursor:pointer">
+      <div class="pref-body">
+        <div class="pref-title">酷安名片</div>
+        <div class="pref-desc">小米热炸了 · 点击查看二维码获取最新版本</div>
+      </div>
+      <div class="update-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></div>
+    </div>
+  </div>
+
+  <div class="card">
     <div class="pref" onclick="checkUpdate()" style="cursor:pointer">
       <div class="pref-body">
         <div class="pref-title">检查更新</div>
@@ -2753,6 +2763,48 @@ function exec(cmd, timeoutMs){
   });
 }
 function toast(m){const s=document.getElementById('snackbar');s.textContent=m;s.classList.add('show');clearTimeout(s._t);s._t=setTimeout(()=>s.classList.remove('show'),2500);}
+
+// ===== 酷安名片 =====
+const AUTHOR_CARD = AUTHOR_BASE + 'XJ_card.png';
+const COOLAPK_SEARCH = 'https://www.coolapk.com/search?q=%E5%B0%8F%E7%B1%B3%E7%83%AD%E7%82%B8%E4%BA%86';
+
+async function openAuthorCard(){
+  if(document.getElementById('cardWrap')) return;
+  let src='';
+  try{ src=await fileToDataUrl(AUTHOR_CARD); }catch(e){}
+  const wrap=document.createElement('div');
+  wrap.id='cardWrap';
+  wrap.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;padding:22px;box-sizing:border-box;';
+  wrap.onclick=function(){ wrap.remove(); };
+  const box=document.createElement('div');
+  box.style.cssText='width:100%;max-width:380px;max-height:86vh;overflow:auto;background:#fff;border-radius:18px;padding:14px;box-sizing:border-box;';
+  if(src){
+    const img=document.createElement('img');
+    img.src=src;
+    img.style.cssText='width:100%;display:block;border-radius:12px;';
+    box.appendChild(img);
+  }else{
+    const t=document.createElement('div');
+    t.textContent='读取名片失败，请到酷安搜索「小米热炸了」';
+    t.style.cssText='font-size:14px;color:#333;padding:20px 4px;text-align:center;';
+    box.appendChild(t);
+  }
+  const btn=document.createElement('button');
+  btn.textContent='打开酷安';
+  btn.style.cssText='display:block;width:100%;margin-top:12px;padding:12px;border:0;border-radius:12px;background:#0aa06e;color:#fff;font-size:15px;';
+  btn.onclick=function(ev){
+    ev.stopPropagation();
+    exec('am start -a android.intent.action.VIEW -d "'+COOLAPK_SEARCH+'" >/dev/null 2>&1');
+    toast('已调用浏览器打开酷安');
+  };
+  box.appendChild(btn);
+  const tip=document.createElement('div');
+  tip.textContent='点击空白处关闭';
+  tip.style.cssText='text-align:center;font-size:12px;color:#888;margin-top:9px;';
+  box.appendChild(tip);
+  wrap.appendChild(box);
+  document.body.appendChild(wrap);
+}
 
 // ===== 检查更新 =====
 const UPDATE_JSON = 'https://testingcf.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/latest.json';
