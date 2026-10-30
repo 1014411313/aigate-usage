@@ -2892,10 +2892,15 @@ async function bkRefresh(){
     bkPair('Health', (d > 0 && f > 0) ? Math.round(f / d * 100) : '--');
     const uv = parseFloat(kv.voltage_uv);
     bkPair('Volt', (isFinite(uv) && uv > 0) ? (uv / 1000000).toFixed(3) : '--');
-    const ma = parseFloat(kv.battery_current_ma);
-    bkPair('Cur', isFinite(ma) ? (ma / 1000).toFixed(2) : '--');
     const charging = (kv.status === 'Charging' || kv.status === 'Full');
-    bkTxt('sPower', charging ? (kv.power_w || kv.battery_power_w) : '--');
+    let ma = parseFloat(kv.battery_current_ma);
+    // 部分机型充电时 current_now 给负数，界面按“充电为正、放电为负”统一
+    if (charging && isFinite(ma) && ma < 0) ma = -ma;
+    bkPair('Cur', isFinite(ma) ? (ma / 1000).toFixed(2) : '--');
+    let pw = kv.power_w || kv.battery_power_w;
+    const pwn = parseFloat(pw);
+    if (charging && isFinite(pwn) && pwn < 0) pw = Math.abs(pwn).toFixed(1);
+    bkTxt('sPower', charging ? pw : '--');
     const tc = parseFloat(kv.temp_c);
     bkPair('Temp', isFinite(tc) ? (tc / 10).toFixed(1) : '--');
 
