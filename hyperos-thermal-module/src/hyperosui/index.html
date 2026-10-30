@@ -2409,6 +2409,23 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
   </div>
 
   <div class="card">
+    <div class="pref" onclick="checkUpdate()" style="cursor:pointer">
+      <div class="pref-body">
+        <div class="pref-title">检查更新</div>
+        <div class="pref-desc" id="updateDesc">点击检查最新版本</div>
+      </div>
+      <div class="pref-right about-right" id="updateVer">—</div>
+    </div>
+    <div class="pref" id="updateDlRow" style="display:none;cursor:pointer" onclick="openUpdateUrl()">
+      <div class="pref-body">
+        <div class="pref-title">下载新版本</div>
+        <div class="pref-desc" id="updateUrlText" style="word-break:break-all">—</div>
+      </div>
+      <div class="update-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></div>
+    </div>
+  </div>
+
+  <div class="card">
     <div class="pref" onclick="openLink('https://t.me/HyperOSwk')" style="cursor:pointer">
       <div class="pref-body">
         <div class="pref-title">加入社区</div>
@@ -2743,6 +2760,83 @@ function exec(cmd, timeoutMs){
   });
 }
 function toast(m){const s=document.getElementById('snackbar');s.textContent=m;s.classList.add('show');clearTimeout(s._t);s._t=setTimeout(()=>s.classList.remove('show'),2500);}
+
+// ===== 检查更新 =====
+const UPDATE_JSON = 'https://testingcf.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/latest.json';
+const UPDATE_JSON_ALT = 'https://cdn.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/latest.json';
+const UPDATE_PAGE = 'https://github.com/1014411313/aigate-usage/tree/main/hyperos-thermal-module/dist';
+let _upd = null;
+
+async function fetchRemoteJson(url){
+  try{
+    const c=new AbortController(); const t=setTimeout(()=>c.abort(),8000);
+    const r=await fetch(url,{cache:'no-store',signal:c.signal}); clearTimeout(t);
+    if(r&&r.ok){ const j=await r.json(); if(j&&j.versionCode) return j; }
+  }catch(e){}
+  const cmds=[
+    'curl -s --max-time 12 "'+url+'" 2>/dev/null',
+    '/system/bin/curl -s --max-time 12 "'+url+'" 2>/dev/null',
+    'toybox wget -q -O - "'+url+'" 2>/dev/null',
+    'busybox wget -q -O - "'+url+'" 2>/dev/null'
+  ];
+  for(const cmd of cmds){
+    try{
+      const r=await exec(cmd,20000);
+      const out=(r&&r.stdout)?String(r.stdout).trim():'';
+      if(out&&out.charAt(0)==='{'){ const j=JSON.parse(out); if(j&&j.versionCode) return j; }
+    }catch(e){}
+  }
+  return null;
+}
+
+async function localVersion(){
+  try{
+    const r=await exec('cat "'+MODDIR+'/module.prop" 2>/dev/null');
+    const t=(r&&r.stdout)||'';
+    const m1=t.match(/^versionCode=(.*)$/m), m2=t.match(/^version=(.*)$/m);
+    return {versionCode:parseInt((m1&&m1[1])||'0',10)||0, versionName:((m2&&m2[1])||'').trim()};
+  }catch(e){ return {versionCode:0,versionName:''}; }
+}
+
+async function checkUpdate(){
+  const desc=document.getElementById('updateDesc');
+  const ver=document.getElementById('updateVer');
+  const row=document.getElementById('updateDlRow');
+  if(desc) desc.textContent='正在检查…';
+  if(row) row.style.display='none';
+  const loc=await localVersion();
+  if(ver) ver.textContent=loc.versionName||('v'+loc.versionCode);
+  let j=await fetchRemoteJson(UPDATE_JSON);
+  if(!j) j=await fetchRemoteJson(UPDATE_JSON_ALT);
+  if(!j){
+    _upd=null;
+    if(desc) desc.textContent='检查失败：网络不可达（可稍后重试）';
+    const ut=document.getElementById('updateUrlText');
+    if(ut) ut.textContent=UPDATE_PAGE;
+    if(row) row.style.display='';
+    return;
+  }
+  _upd=j;
+  const url=j.zipCN||j.zip||j.zipRaw||UPDATE_PAGE;
+  const ut=document.getElementById('updateUrlText');
+  if((j.versionCode|0)>(loc.versionCode|0)){
+    if(desc) desc.textContent='发现新版本 '+j.versionName+'（当前 '+loc.versionName+'）';
+    if(ut) ut.textContent=url;
+    if(row) row.style.display='';
+  }else{
+    if(desc) desc.textContent='已是最新版本（'+loc.versionName+'）';
+    if(ut) ut.textContent='';
+    if(row) row.style.display='none';
+  }
+}
+
+function openUpdateUrl(){
+  const ut=document.getElementById('updateUrlText');
+  const u=(ut&&ut.textContent)?ut.textContent.trim():(UPDATE_PAGE);
+  if(!/^https?:\/\//.test(u)){ toast('链接无效'); return; }
+  exec('am start -a android.intent.action.VIEW -d "'+u+'" >/dev/null 2>&1');
+  toast('已调用浏览器打开下载链接');
+}
 
 async function openBatteryPage(){
   if(document.getElementById('btWrap')) return;

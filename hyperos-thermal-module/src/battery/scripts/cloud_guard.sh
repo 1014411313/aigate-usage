@@ -191,6 +191,10 @@ case "$1" in
     if [ "$_cg" != "1" ]; then echo "云控屏蔽已关闭，巡检不执行。"; exit 0; fi
     do_check
     ;;
+  restore)
+    _ret=$(restore_quarantine)
+    echo "归还云端文件: ${_ret} 个"
+    ;;
   early)
     _cg=$(cfg_get cloud_guard 1)
     [ "$_cg" = "1" ] || exit 0

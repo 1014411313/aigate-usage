@@ -69,6 +69,12 @@ xbt_kill 'HyperOS_XJ/battery/scripts/cloud_guard\.sh'    'HyperOS_XJ/battery/scr
 xbt_kill 'HyperOS_XJ/battery/scripts/diag_log\.sh'       'HyperOS_XJ/battery/scripts/diag_log.sh'
 xbt_kill 'HyperOS_XJ/battery/scripts/fv_guard\.sh'       'HyperOS_XJ/battery/scripts/fv_guard.sh'
 xbt_kill 'HyperOS_XJ/battery/scripts/fv_handler\.sh'     'HyperOS_XJ/battery/scripts/fv_handler.sh'
+# 3c) 归还被云控屏蔽隔离的云端配置：隔离区在模块目录内，必须先归还再删模块目录，
+#     否则这些文件随目录一起消失，系统会少掉云端下发的配置。
+if [ -f "$XBT/scripts/cloud_guard.sh" ]; then
+  _qret=$(sh "$XBT/scripts/cloud_guard.sh" restore 2>/dev/null | tail -n 1)
+  [ -n "$_qret" ] && echo "- $_qret"
+fi
 rm -f /data/local/tmp/xt_fv_guard.pid /data/local/tmp/xt_cycle_guard.pid /data/local/tmp/xt_thermal_guard.pid 2>/dev/null
 rm -f $XBT/state/thermal_restore_active 2>/dev/null
 # v2.7.8：清理"全局限流写入间隔"状态（这是 v2.7.8 新增的持久节流时间戳；
