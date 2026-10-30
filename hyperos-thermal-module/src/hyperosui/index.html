@@ -1095,6 +1095,21 @@ html[data-theme="dark"] body.glass .backup-stat {
 
 
 
+/* 电池解容（场景页）*/
+.bk-power { display: flex; gap: 8px; }
+.bk-pbtn {
+  flex: 1;
+  padding: 11px 0;
+  border: 0;
+  border-radius: 12px;
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: calc(13px * var(--fs));
+  font-family: inherit;
+}
+.bk-pbtn.on { background: var(--primary); color: #fff; }
+
+
 #page-aboutmodule { display: none !important; }
 #page-aboutmodule.modal-open {
   display: flex !important;
@@ -1419,6 +1434,19 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
         <div class="mini"><div class="mini-val" id="sCapacity">--</div><div class="mini-lbl">电量 %</div></div>
         <div class="mini"><div class="mini-val" id="sStatus">--</div><div class="mini-lbl">状态</div></div>
       </div>
+
+      <div class="mini-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="mini"><div class="mini-val" id="pcDes">--</div><div class="mini-lbl">设计容量 mAh</div></div>
+        <div class="mini"><div class="mini-val" id="pcFull">--</div><div class="mini-lbl">满充容量 mAh</div></div>
+        <div class="mini"><div class="mini-val" id="pcHealth">--</div><div class="mini-lbl">健康度 %</div></div>
+      </div>
+
+      <div class="mini-grid" style="grid-template-columns:repeat(4,1fr)">
+        <div class="mini"><div class="mini-val" id="pcVolt">--</div><div class="mini-lbl">电压 V</div></div>
+        <div class="mini"><div class="mini-val" id="pcCur">--</div><div class="mini-lbl">电流 A</div></div>
+        <div class="mini"><div class="mini-val" id="pcPow">--</div><div class="mini-lbl">功率 W</div></div>
+        <div class="mini"><div class="mini-val" id="pcTemp">--</div><div class="mini-lbl">温度 ℃</div></div>
+      </div>
     </div>
   </div>
 
@@ -1447,13 +1475,49 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
     <div class="subtitle">控制 / 充电 / 游戏 / 旁路 / 功率</div>
   </div>
 
-  <div class="panel" onclick="openBatteryPage()">
-    <div class="panel-head">
-      <span style="flex:1">电池解容 · 公版 PPS · DTBO</span>
-      <span class="expand-arrow open"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></span>
+  <div class="small-title">电池解容</div>
+  <div class="card">
+    <div class="pref">
+      <div class="pref-body">
+        <div class="pref-title">电池解容</div>
+        <div class="pref-desc" id="bkUnlockDesc">挂载 BAA、防低电量锁容</div>
+      </div>
+      <div class="pref-right"><label class="hyper-switch"><input type="checkbox" id="bkUnlock" onchange="bkSet('unlock',this.checked)"><span class="track"></span><span class="thumb"></span></label></div>
     </div>
-    <div class="panel-body" style="padding-top:2px">
-      <div style="font-size:12.5px;color:#9aa3b2;line-height:1.7">解容开关、充电功率档位、PPS 解锁与 DTBO 状态/刷入</div>
+    <div class="pref">
+      <div class="pref-body">
+        <div class="pref-title">公版 PPS 解锁</div>
+        <div class="pref-desc">第三方充电头功率上不去时开启，开启后拔插一次充电器</div>
+      </div>
+      <div class="pref-right"><label class="hyper-switch"><input type="checkbox" id="bkPps" onchange="bkSet('pps',this.checked)"><span class="track"></span><span class="thumb"></span></label></div>
+    </div>
+    <div class="pref">
+      <div class="pref-body">
+        <div class="pref-title">云控屏蔽</div>
+        <div class="pref-desc">拦截 BAA 云端下发与巡检隔离</div>
+      </div>
+      <div class="pref-right"><label class="hyper-switch"><input type="checkbox" id="bkCloud" onchange="bkSet('cloud',this.checked)"><span class="track"></span><span class="thumb"></span></label></div>
+    </div>
+  </div>
+
+  <div class="small-title">充电功率</div>
+  <div class="card">
+    <div class="bk-power">
+      <button class="bk-pbtn" data-p="inf" onclick="bkSetPower('inf')">全速</button>
+      <button class="bk-pbtn" data-p="fast" onclick="bkSetPower('fast')">40W</button>
+      <button class="bk-pbtn" data-p="mid" onclick="bkSetPower('mid')">25W</button>
+      <button class="bk-pbtn" data-p="slow" onclick="bkSetPower('slow')">10W</button>
+    </div>
+    <div class="pref-desc" id="bkPowerDesc" style="margin-top:10px;text-align:center">读取中…</div>
+  </div>
+
+  <div class="card">
+    <div class="pref" onclick="bkDtboFlash()">
+      <div class="pref-body">
+        <div class="pref-title">DTBO</div>
+        <div class="pref-desc" id="bkDtboDesc">读取中…</div>
+      </div>
+      <div class="pref-right" id="bkDtboState">--</div>
     </div>
   </div>
 
@@ -2351,7 +2415,7 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
       </div>
       <div class="author-info">
         <div class="author-name">小米热炸了</div>
-        <div class="author-role">HyperOS 动态温控开发者</div>
+        <div class="author-role">HyperOS - 动态温控·解容开发者</div>
       </div>
       <div class="update-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></div>
     </div>
@@ -2377,7 +2441,7 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
     <div class="pref" style="cursor:default">
       <div class="pref-body">
         <div class="pref-title">动态温控 K2</div>
-        <div class="pref-desc">作者 Axiaojiux（酷安 @Axiaojiux）</div>
+        <div class="pref-desc">作者 Axiaojiux</div>
       </div>
     </div>
     <div class="pref" style="cursor:default">
@@ -2842,38 +2906,120 @@ async function checkUpdate(){
   }
 }
 
-async function openBatteryPage(){
-  if(document.getElementById('btWrap')) return;
-  toast('正在打开解容面板…');
-  let html='';
-  try{ const r=await exec('cat "'+MODDIR+'/hyperosui/battery.html" 2>/dev/null'); html=(r&&r.stdout)?r.stdout:''; }catch(e){}
-  if(!html || html.length<1000){ toast('读取 battery.html 失败，可在 KernelSU 管理器打开 WebUI'); return; }
-  html=html.replace('src="assets/chart.min.js"','src="file://'+MODDIR+'/hyperosui/assets/chart.min.js"');
-  const wrap=document.createElement('div');
-  wrap.id='btWrap';
-  wrap.style.cssText='position:fixed;inset:0;z-index:99999;background:#0b0d12;';
-  const btn=document.createElement('button');
-  btn.textContent='关闭';
-  btn.style.cssText='position:absolute;right:14px;top:14px;z-index:100001;padding:9px 16px;border:0;border-radius:20px;background:rgba(0,0,0,.62);color:#fff;font-size:14px;';
-  btn.onclick=function(){ wrap.remove(); };
-  const f=document.createElement('iframe');
-  f.style.cssText='width:100%;height:100%;border:0;background:#0b0d12;';
-  f.setAttribute('srcdoc',html);
-  wrap.appendChild(f);
-  wrap.appendChild(btn);
-  document.body.appendChild(wrap);
+// ===== 电池解容（场景页）=====
+const BK_DIR = MODDIR + '/battery/scripts';
+let bkBusy = false;
+
+function bkSh(cmd){
+  return exec('sh ' + cmd + ' 2>&1', 25000)
+    .then(function(r){ return (r && r.stdout) ? r.stdout : ''; })
+    .catch(function(){ return ''; });
+}
+function bkKV(t){
+  const o = {};
+  String(t || '').split(/\r?\n/).forEach(function(l){
+    const i = l.indexOf('=');
+    if (i > 0) o[l.slice(0, i).trim()] = l.slice(i + 1).trim();
+  });
+  return o;
+}
+function bkTxt(id, v){
+  const e = document.getElementById(id);
+  if (e) e.textContent = (v === undefined || v === null || v === '') ? '--' : v;
+}
+function bkPair(key, v){
+  bkTxt('bk' + key, v);
+  bkTxt('pc' + key, v);
 }
 
-// 内嵌的解容页没有 ksu 对象，用 postMessage 把命令转回本页执行
-window.addEventListener('message', function(e){
-  const d=e.data||{};
-  if(!d || !d.__btExec) return;
-  exec(d.cmd).then(function(r){
-    try{ e.source.postMessage({__btExecResult:d.__btExec, errno:(r&&r.errno)||0, stdout:(r&&r.stdout)||'', stderr:(r&&r.stderr)||''}, '*'); }catch(x){}
-  }).catch(function(err){
-    try{ e.source.postMessage({__btExecResult:d.__btExec, errno:-1, stdout:'', stderr:String(err)}, '*'); }catch(x){}
-  });
-});
+async function bkRefresh(){
+  if (bkBusy) return;
+  bkBusy = true;
+  try {
+    const kv = bkKV(await bkSh(BK_DIR + '/status_kv.sh'));
+    const stMap = { Charging: '充电中', Discharging: '放电中', Full: '已充满', 'Not charging': '未充电' };
+    const stCn = stMap[kv.status] || kv.status;
+    bkPair('Soc', kv.soc);
+    bkPair('St', stCn);
+    bkTxt('sCapacity', kv.soc);
+    bkTxt('sStatus', stCn);
+    bkPair('Des', kv.charge_design_mah);
+    bkPair('Full', kv.charge_full_mah);
+    const d = parseFloat(kv.charge_design_mah), f = parseFloat(kv.charge_full_mah);
+    bkPair('Health', (d > 0 && f > 0) ? Math.round(f / d * 100) : '--');
+    const uv = parseFloat(kv.voltage_uv);
+    bkPair('Volt', (isFinite(uv) && uv > 0) ? (uv / 1000000).toFixed(3) : '--');
+    const ma = parseFloat(kv.battery_current_ma);
+    bkPair('Cur', isFinite(ma) ? (ma / 1000).toFixed(2) : '--');
+    bkPair('Pow', kv.power_w || kv.battery_power_w);
+    const tc = parseFloat(kv.temp_c);
+    bkPair('Temp', isFinite(tc) ? (tc / 10).toFixed(1) : '--');
+
+    const u = document.getElementById('bkUnlock'); if (u) u.checked = (kv.unlock === '1');
+    const pp = document.getElementById('bkPps'); if (pp) pp.checked = (kv.freepps === '1');
+    const c = document.getElementById('bkCloud'); if (c) c.checked = (kv.cloud_guard === '1');
+    bkUnlockDescUpdate(kv.baa_state);
+
+    const cfgtxt = await bkSh('/system/bin/grep -m1 "^power_limit=" ' + MODDIR + '/battery/config/settings.conf');
+    const pl = ((cfgtxt.split('=')[1] || 'inf').trim()) || 'inf';
+    document.querySelectorAll('.bk-pbtn').forEach(function(b){
+      b.classList.toggle('on', b.getAttribute('data-p') === pl);
+    });
+    const wmap = { inf: '全速', fast: (kv.fast_w || 40) + 'W', mid: (kv.mid_w || 25) + 'W', slow: (kv.slow_w || 10) + 'W' };
+    bkTxt('bkPowerDesc', '当前：' + (wmap[pl] || pl) + ' 上限');
+
+    const has = (await bkSh(BK_DIR + '/dtbo.sh haslocal')).trim();
+    if (has === 'yes') {
+      bkTxt('bkDtboState', '可刷入');
+      bkTxt('bkDtboDesc', '点击刷入内置的本机解容 DTBO（刷前自动备份）');
+    } else {
+      bkTxt('bkDtboState', '--');
+      bkTxt('bkDtboDesc', '未找到本机镜像，可在 KernelSU 管理器中重装模块');
+    }
+  } finally {
+    bkBusy = false;
+  }
+}
+
+function bkUnlockDescUpdate(baa){
+  bkTxt('bkUnlockDesc', baa === 'active' ? 'BAA 已挂载 · 防低电量锁容' : '挂载 BAA、防低电量锁容');
+}
+
+async function bkSet(kind, on){
+  const map = { unlock: 'unlock.sh', pps: 'freepps.sh', cloud: 'cloud_guard.sh' };
+  const script = map[kind];
+  if (!script) return;
+  toast((on ? '正在开启…' : '正在关闭…'));
+  const out = await bkSh(BK_DIR + '/' + script + ' ' + (on ? 'on' : 'off'));
+  const tail = (out || '').trim().split(/\r?\n/).slice(-1)[0];
+  if (tail) toast(tail.slice(0, 60));
+  setTimeout(bkRefresh, 800);
+}
+
+async function bkSetPower(p){
+  toast('正在切换功率…');
+  const out = await bkSh(BK_DIR + '/power_limit.sh set ' + p);
+  const tail = (out || '').trim().split(/\r?\n/).slice(-1)[0];
+  if (tail) toast(tail.slice(0, 60));
+  setTimeout(bkRefresh, 1200);
+}
+
+async function bkDtboFlash(){
+  const st = document.getElementById('bkDtboState');
+  if (!st || st.textContent !== '可刷入') { toast('本机没有可刷入的镜像'); return; }
+  if (!confirm('将把内置的解容 DTBO 写入当前槽，刷前会自动备份到 Download/dtbo_backup，确定继续？')) return;
+  toast('正在刷入 DTBO…');
+  const out = await bkSh(BK_DIR + '/dtbo.sh flashlocal');
+  const tail = (out || '').trim().split(/\r?\n/).slice(-1)[0];
+  toast(tail ? tail.slice(0, 60) : '已执行，重启后生效');
+  bkRefresh();
+}
+
+setInterval(function(){
+  const pg = document.getElementById('page-scene');
+  if (pg && pg.classList.contains('active') && !document.getElementById('btWrap')) bkRefresh();
+}, 6000);
+
 function setTxt(id,v){const e=document.getElementById(id);if(e)e.textContent=(v===undefined||v===null||v==='')?'--':v;}
 
 function openLink(url){

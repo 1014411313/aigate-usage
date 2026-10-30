@@ -1,13 +1,13 @@
 {
   "moduleId": "HyperOS_XJ",
   "name": "HyperOS - 动态温控·解容",
-  "versionName": "K2+BT3.9.6-build18",
-  "versionCode": 18,
-  "zip": "https://cdn.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v18.zip",
-  "zipCN": "https://testingcf.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v18.zip",
-  "zipRaw": "https://raw.githubusercontent.com/1014411313/aigate-usage/main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v18.zip",
-  "sha256": "14c750ec7bb2c03bd4e2c80895225039d42f86dfef6198b40f61587c8cf86726",
-  "size": 9227101,
+  "versionName": "K2+BT3.9.6-build20",
+  "versionCode": 20,
+  "zip": "https://cdn.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v20.zip",
+  "zipCN": "https://testingcf.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v20.zip",
+  "zipRaw": "https://raw.githubusercontent.com/1014411313/aigate-usage/main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v20.zip",
+  "sha256": "9a8fc64c87e687f5d500cb56bece40a3d50aee18e53dbcbd5bd8208eb70723ab",
+  "size": 9111888,
   "minOS": "HyperOS 4（DTBO 仅 OS4 自动刷入）",
   "devices": [
     "dada",
@@ -34,6 +34,24 @@
   },
   "updated": "2026-10-31",
   "versions": [
+    {
+      "versionCode": 20,
+      "versionName": "K2+BT3.9.6-build20",
+      "file": "dist/HyperOS_XJ_K2_battery-pps-dtbo_v20.zip",
+      "sha256": "9a8fc64c87e687f5d500cb56bece40a3d50aee18e53dbcbd5bd8208eb70723ab",
+      "size": 9111888,
+      "date": "2026-10-31",
+      "note": "电池数值（容量/健康度/电压/电流/功率/温度）移到主页实时面板内，场景页只保留开关、四档功率与 DTBO"
+    },
+    {
+      "versionCode": 19,
+      "versionName": "K2+BT3.9.6-build19",
+      "file": "dist/HyperOS_XJ_K2_battery-pps-dtbo_v19.zip",
+      "sha256": "22b1da2f5d39e3371ac18488432189b487dd951b36c94d47cd1c3afbe19c3a37",
+      "size": 9111862,
+      "date": "2026-10-31",
+      "note": "解容面板改为场景页原生排版（数据/开关/四档功率/DTBO），移除旧 iframe 面板与 chart 资源；关于页文案调整"
+    },
     {
       "versionCode": 18,
       "versionName": "K2+BT3.9.6-build18",
