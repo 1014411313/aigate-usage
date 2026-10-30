@@ -1276,13 +1276,30 @@ function execCmd(cmd,options){
   options=options||{};
   return new Promise(function(resolve){
     var k=(typeof window.ksu!=='undefined')?window.ksu:null;
-    if(!k||typeof k.exec!=='function'){resolve({errno:-1,stdout:'',stderr:'KSU 桥接不可用：请在 KernelSU 管理器 WebUI 中打开'});return;}
-    var cb='bt_cb_'+Date.now()+'_'+(cbSeq++),done=false;
-    function clean(){try{delete window[cb];}catch(e){}}
-    window[cb]=function(errno,stdout,stderr){if(done)return;done=true;clean();
-      resolve({errno:(typeof errno==='number')?errno:0,stdout:(stdout==null)?'':String(stdout),stderr:(stderr==null)?'':String(stderr)});};
-    try{k.exec(cmd,JSON.stringify(options),cb);}catch(e){if(!done){done=true;clean();resolve({errno:-2,stdout:'',stderr:'exec 失败: '+e});}return;}
-    setTimeout(function(){if(!done){done=true;clean();resolve({errno:-3,stdout:'',stderr:'执行超时'});}},30000);
+    if(k&&typeof k.exec==='function'){
+      var cb='bt_cb_'+Date.now()+'_'+(cbSeq++),done=false;
+      function clean(){try{delete window[cb];}catch(e){}}
+      window[cb]=function(errno,stdout,stderr){if(done)return;done=true;clean();
+        resolve({errno:(typeof errno==='number')?errno:0,stdout:(stdout==null)?'':String(stdout),stderr:(stderr==null)?'':String(stderr)});};
+      try{k.exec(cmd,JSON.stringify(options),cb);}catch(e){if(!done){done=true;clean();resolve({errno:-2,stdout:'',stderr:'exec 失败: '+e});}return;}
+      setTimeout(function(){if(!done){done=true;clean();resolve({errno:-3,stdout:'',stderr:'执行超时'});}},30000);
+      return;
+    }
+    // 无 ksu 桥接时（控制台 App 用 iframe 内嵌本页），交给父窗口代执行
+    if(window.parent&&window.parent!==window){
+      var pid='bt_pm_'+Date.now()+'_'+(cbSeq++),wdone=false;
+      function onMsg(e){
+        var d=e.data||{};
+        if(!d||d.__btExecResult!==pid)return;
+        wdone=true;window.removeEventListener('message',onMsg);
+        resolve({errno:(typeof d.errno==='number')?d.errno:0,stdout:(d.stdout==null)?'':String(d.stdout),stderr:(d.stderr==null)?'':String(d.stderr)});
+      }
+      window.addEventListener('message',onMsg);
+      try{window.parent.postMessage({__btExec:pid,cmd:cmd},'*');}catch(e){}
+      setTimeout(function(){if(!wdone){window.removeEventListener('message',onMsg);resolve({errno:-3,stdout:'',stderr:'执行超时'});}},30000);
+      return;
+    }
+    resolve({errno:-1,stdout:'',stderr:'KSU 桥接不可用：请在 KernelSU 管理器 WebUI 或控制台内打开'});
   });
 }
 function sh(cmd){return execCmd(cmd).then(function(r){var o=r.stdout||'';if(r.stderr)o+=(o?'\n':'')+'[stderr] '+r.stderr;return o;});}

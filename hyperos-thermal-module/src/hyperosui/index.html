@@ -1398,7 +1398,7 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
     <div class="subtitle">心之所向的你 是否也于我同频</div>
   </div>
 
-  <div class="panel" onclick="location.href='battery.html'">
+  <div class="panel" onclick="openBatteryPage()">
     <div class="panel-head">
       <span style="flex:1">电池解容 · 公版 PPS · DTBO</span>
       <span class="expand-arrow open"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></span>
@@ -2743,6 +2743,39 @@ function exec(cmd, timeoutMs){
   });
 }
 function toast(m){const s=document.getElementById('snackbar');s.textContent=m;s.classList.add('show');clearTimeout(s._t);s._t=setTimeout(()=>s.classList.remove('show'),2500);}
+
+async function openBatteryPage(){
+  if(document.getElementById('btWrap')) return;
+  toast('正在打开解容面板…');
+  let html='';
+  try{ const r=await exec('cat "'+MODDIR+'/hyperosui/battery.html" 2>/dev/null'); html=(r&&r.stdout)?r.stdout:''; }catch(e){}
+  if(!html || html.length<1000){ toast('读取 battery.html 失败，可在 KernelSU 管理器打开 WebUI'); return; }
+  html=html.replace('src="assets/chart.min.js"','src="file://'+MODDIR+'/hyperosui/assets/chart.min.js"');
+  const wrap=document.createElement('div');
+  wrap.id='btWrap';
+  wrap.style.cssText='position:fixed;inset:0;z-index:99999;background:#0b0d12;';
+  const btn=document.createElement('button');
+  btn.textContent='关闭';
+  btn.style.cssText='position:absolute;right:14px;top:14px;z-index:100001;padding:9px 16px;border:0;border-radius:20px;background:rgba(0,0,0,.62);color:#fff;font-size:14px;';
+  btn.onclick=function(){ wrap.remove(); };
+  const f=document.createElement('iframe');
+  f.style.cssText='width:100%;height:100%;border:0;background:#0b0d12;';
+  f.setAttribute('srcdoc',html);
+  wrap.appendChild(f);
+  wrap.appendChild(btn);
+  document.body.appendChild(wrap);
+}
+
+// 内嵌的解容页没有 ksu 对象，用 postMessage 把命令转回本页执行
+window.addEventListener('message', function(e){
+  const d=e.data||{};
+  if(!d || !d.__btExec) return;
+  exec(d.cmd).then(function(r){
+    try{ e.source.postMessage({__btExecResult:d.__btExec, errno:(r&&r.errno)||0, stdout:(r&&r.stdout)||'', stderr:(r&&r.stderr)||''}, '*'); }catch(x){}
+  }).catch(function(err){
+    try{ e.source.postMessage({__btExecResult:d.__btExec, errno:-1, stdout:'', stderr:String(err)}, '*'); }catch(x){}
+  });
+});
 function setTxt(id,v){const e=document.getElementById(id);if(e)e.textContent=(v===undefined||v===null||v==='')?'--':v;}
 
 function openLink(url){

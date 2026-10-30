@@ -1,26 +1,47 @@
 {
   "moduleId": "HyperOS_XJ",
   "name": "HyperOS 动态温控 · 电池解容（二改整合）",
-  "versionName": "K2+BT3.9.6-build10",
-  "versionCode": 10,
-  "zip": "https://cdn.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v10.zip",
-  "zipCN": "https://testingcf.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v10.zip",
-  "zipRaw": "https://raw.githubusercontent.com/1014411313/aigate-usage/main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v10.zip",
-  "sha256": "f89449f36a566738d0196316fa13d7a221404657aee49697239e781bc13572d9",
-  "size": 9146685,
+  "versionName": "K2+BT3.9.6-build11",
+  "versionCode": 11,
+  "zip": "https://cdn.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v11.zip",
+  "zipCN": "https://testingcf.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v11.zip",
+  "zipRaw": "https://raw.githubusercontent.com/1014411313/aigate-usage/main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v11.zip",
+  "sha256": "7b361679ca5e8f8827478eaee88608fe0b7b23edaf3697530152e1fbc0a74fa1",
+  "size": 9147546,
   "minOS": "HyperOS 4（DTBO 仅 OS4 自动刷入）",
   "devices": [
-    "dada", "haotian", "xuanyuan", "pudding", "pandora", "byron",
-    "nezha", "popsicle", "myron", "annibale", "miro", "songyuan",
-    "warsaw", "bixi", "onyx"
+    "dada",
+    "haotian",
+    "xuanyuan",
+    "pudding",
+    "pandora",
+    "byron",
+    "nezha",
+    "popsicle",
+    "myron",
+    "annibale",
+    "miro",
+    "songyuan",
+    "warsaw",
+    "bixi",
+    "onyx"
   ],
   "credits": {
     "dynamic_thermal": "Axiaojiux（动态温控 K2）",
     "battery_toolbox": "听夜风1337（电池解容工具箱 v3.9.6）",
     "note": "二改整合版，非原作者官方发布"
   },
-  "updated": "2026-10-29",
+  "updated": "2026-10-31",
   "versions": [
+    {
+      "versionCode": 11,
+      "versionName": "K2+BT3.9.6-build11",
+      "file": "dist/HyperOS_XJ_K2_battery-pps-dtbo_v11.zip",
+      "sha256": "7b361679ca5e8f8827478eaee88608fe0b7b23edaf3697530152e1fbc0a74fa1",
+      "size": 9147546,
+      "date": "2026-10-31",
+      "note": "修复控制台内点击电池解容/PPS 打不开：页面改为按文件读取 + iframe srcdoc 渲染，命令经 postMessage 回到有 root 的父页执行"
+    },
     {
       "versionCode": 10,
       "versionName": "K2+BT3.9.6-build10",
