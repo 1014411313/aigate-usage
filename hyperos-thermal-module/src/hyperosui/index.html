@@ -2765,13 +2765,12 @@ function exec(cmd, timeoutMs){
 function toast(m){const s=document.getElementById('snackbar');s.textContent=m;s.classList.add('show');clearTimeout(s._t);s._t=setTimeout(()=>s.classList.remove('show'),2500);}
 
 // ===== 酷安名片 =====
-const AUTHOR_CARD = AUTHOR_BASE + 'XJ_card.png';
-const COOLAPK_SEARCH = 'https://www.coolapk.com/search?q=%E5%B0%8F%E7%B1%B3%E7%83%AD%E7%82%B8%E4%BA%86';
+const COOLAPK_HOME = 'https://www.coolapk.com/u/517965';
 
 async function openAuthorCard(){
   if(document.getElementById('cardWrap')) return;
   let src='';
-  try{ src=await fileToDataUrl(AUTHOR_CARD); }catch(e){}
+  try{ src=await fileToDataUrl(AUTHOR_BASE + 'XJ_card.png'); }catch(e){}
   const wrap=document.createElement('div');
   wrap.id='cardWrap';
   wrap.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;padding:22px;box-sizing:border-box;';
@@ -2794,7 +2793,7 @@ async function openAuthorCard(){
   btn.style.cssText='display:block;width:100%;margin-top:12px;padding:12px;border:0;border-radius:12px;background:#0aa06e;color:#fff;font-size:15px;';
   btn.onclick=function(ev){
     ev.stopPropagation();
-    exec('am start -a android.intent.action.VIEW -d "'+COOLAPK_SEARCH+'" >/dev/null 2>&1');
+    exec('am start -a android.intent.action.VIEW -d "'+COOLAPK_HOME+'" >/dev/null 2>&1');
     toast('已调用浏览器打开酷安');
   };
   box.appendChild(btn);

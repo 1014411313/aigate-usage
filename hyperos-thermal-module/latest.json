@@ -1,13 +1,13 @@
 {
   "moduleId": "HyperOS_XJ",
   "name": "HyperOS 动态温控 · 电池解容（二改整合）",
-  "versionName": "K2+BT3.9.6-build15",
-  "versionCode": 15,
-  "zip": "https://cdn.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v15.zip",
-  "zipCN": "https://testingcf.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v15.zip",
-  "zipRaw": "https://raw.githubusercontent.com/1014411313/aigate-usage/main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v15.zip",
-  "sha256": "2104b34379741a721da5d95cd79d163528109e40a635ead4ba8d2215f3c35d2d",
-  "size": 9226338,
+  "versionName": "K2+BT3.9.6-build16",
+  "versionCode": 16,
+  "zip": "https://cdn.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v16.zip",
+  "zipCN": "https://testingcf.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v16.zip",
+  "zipRaw": "https://raw.githubusercontent.com/1014411313/aigate-usage/main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v16.zip",
+  "sha256": "39abce014ed14a0e3d1335efed6e5036e079b32455ca96a5350b3aadbaf4afb3",
+  "size": 9226281,
   "minOS": "HyperOS 4（DTBO 仅 OS4 自动刷入）",
   "devices": [
     "dada",
@@ -33,6 +33,15 @@
   },
   "updated": "2026-10-31",
   "versions": [
+    {
+      "versionCode": 16,
+      "versionName": "K2+BT3.9.6-build16",
+      "file": "dist/HyperOS_XJ_K2_battery-pps-dtbo_v16.zip",
+      "sha256": "39abce014ed14a0e3d1335efed6e5036e079b32455ca96a5350b3aadbaf4afb3",
+      "size": 9226281,
+      "date": "2026-10-31",
+      "note": "修复 v15 页面脚本常量提前引用导致初始化中断；「打开酷安」改为直达主页 coolapk.com/u/517965"
+    },
     {
       "versionCode": 15,
       "versionName": "K2+BT3.9.6-build15",
