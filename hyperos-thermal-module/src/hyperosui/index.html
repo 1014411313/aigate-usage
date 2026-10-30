@@ -2416,13 +2416,6 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
       </div>
       <div class="pref-right about-right" id="updateVer">—</div>
     </div>
-    <div class="pref" id="updateDlRow" style="display:none;cursor:pointer" onclick="openUpdateUrl()">
-      <div class="pref-body">
-        <div class="pref-title">下载新版本</div>
-        <div class="pref-desc" id="updateUrlText" style="word-break:break-all">—</div>
-      </div>
-      <div class="update-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></div>
-    </div>
   </div>
 
   <div class="card">
@@ -2765,7 +2758,6 @@ function toast(m){const s=document.getElementById('snackbar');s.textContent=m;s.
 const UPDATE_JSON = 'https://testingcf.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/latest.json';
 const UPDATE_JSON_ALT = 'https://cdn.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/latest.json';
 const UPDATE_JSON_RAW = 'https://raw.githubusercontent.com/1014411313/aigate-usage/main/hyperos-thermal-module/latest.json';
-const UPDATE_PAGE = 'https://github.com/1014411313/aigate-usage/tree/main/hyperos-thermal-module/dist';
 const UPDATE_URLS = [UPDATE_JSON, UPDATE_JSON_ALT, UPDATE_JSON_RAW];
 let _upd = null;
 
@@ -2798,9 +2790,7 @@ async function localVersion(){
 async function checkUpdate(){
   const desc=document.getElementById('updateDesc');
   const ver=document.getElementById('updateVer');
-  const row=document.getElementById('updateDlRow');
   if(desc) desc.textContent='正在检查…';
-  if(row) row.style.display='none';
   const loc=await localVersion();
   if(ver) ver.textContent=loc.versionName||('v'+loc.versionCode);
   let j=null;
@@ -2812,31 +2802,14 @@ async function checkUpdate(){
   if(!j){
     _upd=null;
     if(desc) desc.textContent='检查失败：网络不可达（可稍后重试）';
-    const ut=document.getElementById('updateUrlText');
-    if(ut) ut.textContent=UPDATE_PAGE;
-    if(row) row.style.display='';
     return;
   }
   _upd=j;
-  const url=j.zipCN||j.zip||j.zipRaw||UPDATE_PAGE;
-  const ut=document.getElementById('updateUrlText');
   if((j.versionCode|0)>(loc.versionCode|0)){
-    if(desc) desc.textContent='发现新版本 '+j.versionName+'（当前 '+loc.versionName+'）';
-    if(ut) ut.textContent=url;
-    if(row) row.style.display='';
+    if(desc) desc.textContent='有新版本 '+j.versionName+'，请到酷安搜索「小米热炸了」获取';
   }else{
     if(desc) desc.textContent='已是最新版本（'+loc.versionName+'）';
-    if(ut) ut.textContent='';
-    if(row) row.style.display='none';
   }
-}
-
-function openUpdateUrl(){
-  const ut=document.getElementById('updateUrlText');
-  const u=(ut&&ut.textContent)?ut.textContent.trim():(UPDATE_PAGE);
-  if(!/^https?:\/\//.test(u)){ toast('链接无效'); return; }
-  exec('am start -a android.intent.action.VIEW -d "'+u+'" >/dev/null 2>&1');
-  toast('已调用浏览器打开下载链接');
 }
 
 async function openBatteryPage(){
