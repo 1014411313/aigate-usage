@@ -2764,7 +2764,9 @@ function toast(m){const s=document.getElementById('snackbar');s.textContent=m;s.
 // ===== 检查更新 =====
 const UPDATE_JSON = 'https://testingcf.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/latest.json';
 const UPDATE_JSON_ALT = 'https://cdn.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/latest.json';
+const UPDATE_JSON_RAW = 'https://raw.githubusercontent.com/1014411313/aigate-usage/main/hyperos-thermal-module/latest.json';
 const UPDATE_PAGE = 'https://github.com/1014411313/aigate-usage/tree/main/hyperos-thermal-module/dist';
+const UPDATE_URLS = [UPDATE_JSON, UPDATE_JSON_ALT, UPDATE_JSON_RAW];
 let _upd = null;
 
 async function fetchRemoteJson(url){
@@ -2773,19 +2775,14 @@ async function fetchRemoteJson(url){
     const r=await fetch(url,{cache:'no-store',signal:c.signal}); clearTimeout(t);
     if(r&&r.ok){ const j=await r.json(); if(j&&j.versionCode) return j; }
   }catch(e){}
-  const cmds=[
-    'curl -s --max-time 12 "'+url+'" 2>/dev/null',
-    '/system/bin/curl -s --max-time 12 "'+url+'" 2>/dev/null',
-    'toybox wget -q -O - "'+url+'" 2>/dev/null',
-    'busybox wget -q -O - "'+url+'" 2>/dev/null'
-  ];
-  for(const cmd of cmds){
-    try{
-      const r=await exec(cmd,20000);
-      const out=(r&&r.stdout)?String(r.stdout).trim():'';
-      if(out&&out.charAt(0)==='{'){ const j=JSON.parse(out); if(j&&j.versionCode) return j; }
-    }catch(e){}
-  }
+  const cmd='(command -v curl >/dev/null 2>&1 && curl -s --max-time 8 "'+url+'") || '
+           +'(command -v wget >/dev/null 2>&1 && wget -q -O - "'+url+'") || '
+           +'toybox wget -q -O - "'+url+'" 2>/dev/null';
+  try{
+    const r=await exec(cmd,20000);
+    const out=(r&&r.stdout)?String(r.stdout).trim():'';
+    if(out&&out.charAt(0)==='{'){ const j=JSON.parse(out); if(j&&j.versionCode) return j; }
+  }catch(e){}
   return null;
 }
 
@@ -2806,8 +2803,12 @@ async function checkUpdate(){
   if(row) row.style.display='none';
   const loc=await localVersion();
   if(ver) ver.textContent=loc.versionName||('v'+loc.versionCode);
-  let j=await fetchRemoteJson(UPDATE_JSON);
-  if(!j) j=await fetchRemoteJson(UPDATE_JSON_ALT);
+  let j=null;
+  for(const u of UPDATE_URLS){
+    const t=await fetchRemoteJson(u);
+    if(t && (!j || (t.versionCode|0)>(j.versionCode|0))) j=t;
+    if(j && (j.versionCode|0)>(loc.versionCode|0)) break;
+  }
   if(!j){
     _upd=null;
     if(desc) desc.textContent='检查失败：网络不可达（可稍后重试）';
