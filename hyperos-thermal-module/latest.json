@@ -46,7 +46,7 @@
     {
       "versionCode": 26,
       "versionName": "K2+BT3.9.6-build26",
-      "file": "dist/HyperOS_XJ_K2_battery-pps-dtbo_v26.zip",
+      "file": "dist/动态温控·解容工具箱_v26.zip",
       "sha256": "c7bad04eaeab288d9a57ef86d7bb04d05da00d65fef56fd020cd6b073083893d",
       "size": 5568815,
       "date": "2026-10-31",
@@ -55,146 +55,11 @@
     {
       "versionCode": 25,
       "versionName": "K2+BT3.9.6-build25",
-      "file": "dist/HyperOS_XJ_K2_battery-pps-dtbo_v25.zip",
+      "file": "dist/动态温控·解容工具箱_v25.zip",
       "sha256": "3281da4112a5def8a3ad07e48401e2842daf54b01f8cb1b0085e233952348b39",
       "size": 5568733,
       "date": "2026-10-31",
       "note": "充电时电流与功率按充电状态归正（部分机型 current_now 充电给负值）；控制台 APK 重复图标去重 2.35MB→259KB，包体积 9.1MB→5.6MB"
-    },
-    {
-      "versionCode": 24,
-      "versionName": "K2+BT3.9.6-build24",
-      "file": "dist/HyperOS_XJ_K2_battery-pps-dtbo_v24.zip",
-      "sha256": "8da916298a1899f766fd257f7f51f86681d02d6856d1b4f9b1fbfe215e500360",
-      "size": 5568603,
-      "date": "2026-10-31",
-      "note": "修复初始化中断导致所有数据不自动加载（残留的已删除函数调用）；默认壁纸重编码 1.71MB→191KB；删除未使用的作者头像图；包体积 9.1MB→5.6MB；控制台 APK 内 10 张重复图标去重 2.35MB→259KB"
-    },
-    {
-      "versionCode": 23,
-      "versionName": "K2+BT3.9.6-build23",
-      "file": "dist/HyperOS_XJ_K2_battery-pps-dtbo_v23.zip",
-      "sha256": "f732c312be7913411c3d89b567aba9a3a5df29a2fe87ea8b825544349f02c81a",
-      "size": 7510240,
-      "date": "2026-10-31",
-      "note": "修复初始化中断导致所有数据不自动加载（残留的已删除函数调用）；默认壁纸重编码 1.71MB→191KB；删除未使用的作者头像图；包体积 9.1MB→7.5MB"
-    },
-    {
-      "versionCode": 22,
-      "versionName": "K2+BT3.9.6-build22",
-      "file": "dist/HyperOS_XJ_K2_battery-pps-dtbo_v22.zip",
-      "sha256": "70d2523b6636287ca05ce6e02321be76895d6e43bbd3fd3a8f475a821ac10ed9",
-      "size": 9110500,
-      "date": "2026-10-31",
-      "note": "修复 BAA 载荷未按机型部署（实际全机型都用默认载荷）；放电时圆圈不显示功率；二改声明改为多行完整显示；删除主页重复功率格；欢迎弹窗改为使用说明+简短更新日志；清理头像模糊/头像图片死代码"
-    },
-    {
-      "versionCode": 21,
-      "versionName": "K2+BT3.9.6-build21",
-      "file": "dist/HyperOS_XJ_K2_battery-pps-dtbo_v21.zip",
-      "sha256": "3d460ea6b1928b7064e83a1f24c2a4c225082f18bc5f54a4ae88c4ef15c2b054",
-      "size": 9111488,
-      "date": "2026-10-31",
-      "note": "主页圆圈内改为显示功率；机型档案删除三个预设按钮；充电功率四档移到主页"
-    },
-    {
-      "versionCode": 20,
-      "versionName": "K2+BT3.9.6-build20",
-      "file": "dist/HyperOS_XJ_K2_battery-pps-dtbo_v20.zip",
-      "sha256": "9a8fc64c87e687f5d500cb56bece40a3d50aee18e53dbcbd5bd8208eb70723ab",
-      "size": 9111888,
-      "date": "2026-10-31",
-      "note": "电池数值（容量/健康度/电压/电流/功率/温度）移到主页实时面板内，场景页只保留开关、四档功率与 DTBO"
-    },
-    {
-      "versionCode": 19,
-      "versionName": "K2+BT3.9.6-build19",
-      "file": "dist/HyperOS_XJ_K2_battery-pps-dtbo_v19.zip",
-      "sha256": "22b1da2f5d39e3371ac18488432189b487dd951b36c94d47cd1c3afbe19c3a37",
-      "size": 9111862,
-      "date": "2026-10-31",
-      "note": "解容面板改为场景页原生排版（数据/开关/四档功率/DTBO），移除旧 iframe 面板与 chart 资源；关于页文案调整"
-    },
-    {
-      "versionCode": 18,
-      "versionName": "K2+BT3.9.6-build18",
-      "file": "dist/HyperOS_XJ_K2_battery-pps-dtbo_v18.zip",
-      "sha256": "14c750ec7bb2c03bd4e2c80895225039d42f86dfef6198b40f61587c8cf86726",
-      "size": 9227101,
-      "date": "2026-10-31",
-      "note": "控制台 APK 重打包：桌面名称改为 HyperOS - 动态温控·解容（新签名 hyperosxj）；升级需先卸载旧控制台再装"
-    },
-    {
-      "versionCode": 17,
-      "versionName": "K2+BT3.9.6-build17",
-      "file": "dist/HyperOS_XJ_K2_battery-pps-dtbo_v17.zip",
-      "sha256": "2c14debfb63187fda21ecfc4cde999bbd3d95a082b24981ef893b4b098600c38",
-      "size": 9226193,
-      "date": "2026-10-31",
-      "note": "界面统一改名 HyperOS - 动态温控·解容；作者改为小米热炸了、头像改为 MI；移除加入社区与关于模块入口；电池解容入口移入场景页"
-    },
-    {
-      "versionCode": 16,
-      "versionName": "K2+BT3.9.6-build16",
-      "file": "dist/HyperOS_XJ_K2_battery-pps-dtbo_v16.zip",
-      "sha256": "39abce014ed14a0e3d1335efed6e5036e079b32455ca96a5350b3aadbaf4afb3",
-      "size": 9226281,
-      "date": "2026-10-31",
-      "note": "修复 v15 页面脚本常量提前引用导致初始化中断；「打开酷安」改为直达主页 coolapk.com/u/517965"
-    },
-    {
-      "versionCode": 15,
-      "versionName": "K2+BT3.9.6-build15",
-      "file": "dist/HyperOS_XJ_K2_battery-pps-dtbo_v15.zip",
-      "sha256": "2104b34379741a721da5d95cd79d163528109e40a635ead4ba8d2215f3c35d2d",
-      "size": 9226338,
-      "date": "2026-10-31",
-      "note": "关于页加入酷安名片（点击查看二维码）与「打开酷安」跳转"
-    },
-    {
-      "versionCode": 14,
-      "versionName": "K2+BT3.9.6-build14",
-      "file": "dist/HyperOS_XJ_K2_battery-pps-dtbo_v14.zip",
-      "sha256": "09de14bbf047430645d46e689e6bfc499373f20aac31fadc6b052f7c67e12281",
-      "size": 9148546,
-      "date": "2026-10-31",
-      "note": "控制台内移除下载链接，有新版本仅提示到酷安搜索「小米热炸了」获取"
-    },
-    {
-      "versionCode": 13,
-      "versionName": "K2+BT3.9.6-build13",
-      "file": "dist/HyperOS_XJ_K2_battery-pps-dtbo_v13.zip",
-      "sha256": "9aa1d96922ccc15f32e1e3005ce0396b40719076b84cd919ab7898c7d52a62e7",
-      "size": 9148792,
-      "date": "2026-10-31",
-      "note": "检查更新改为多源（testingcf / cdn / raw）取最高版本，避免 CDN 缓存滞后漏报新版本"
-    },
-    {
-      "versionCode": 12,
-      "versionName": "K2+BT3.9.6-build12",
-      "file": "dist/HyperOS_XJ_K2_battery-pps-dtbo_v12.zip",
-      "sha256": "de983d2a1673447b24d92dc60e815de8f0e27fa874d31a5812185973e01baea4",
-      "size": 9148716,
-      "date": "2026-10-31",
-      "note": "新增控制台内检查更新与下载链接；卸载时归还被云控屏蔽隔离的 BAA 云端配置"
-    },
-    {
-      "versionCode": 11,
-      "versionName": "K2+BT3.9.6-build11",
-      "file": "dist/HyperOS_XJ_K2_battery-pps-dtbo_v11.zip",
-      "sha256": "7b361679ca5e8f8827478eaee88608fe0b7b23edaf3697530152e1fbc0a74fa1",
-      "size": 9147546,
-      "date": "2026-10-31",
-      "note": "修复控制台内点击电池解容/PPS 打不开：页面改为按文件读取 + iframe srcdoc 渲染，命令经 postMessage 回到有 root 的父页执行"
-    },
-    {
-      "versionCode": 10,
-      "versionName": "K2+BT3.9.6-build10",
-      "file": "dist/HyperOS_XJ_K2_battery-pps-dtbo_v10.zip",
-      "sha256": "f89449f36a566738d0196316fa13d7a221404657aee49697239e781bc13572d9",
-      "size": 9146685,
-      "date": "2026-10-29",
-      "note": "首个正式多版本留存；移除误打包的解密分析产物"
     }
   ]
 }
