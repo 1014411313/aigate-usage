@@ -1,13 +1,13 @@
 {
   "moduleId": "HyperOS_XJ",
   "name": "HyperOS - 动态温控·解容",
-  "versionName": "K2+BT3.9.6-build21",
-  "versionCode": 21,
-  "zip": "https://cdn.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v21.zip",
-  "zipCN": "https://testingcf.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v21.zip",
-  "zipRaw": "https://raw.githubusercontent.com/1014411313/aigate-usage/main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v21.zip",
-  "sha256": "3d460ea6b1928b7064e83a1f24c2a4c225082f18bc5f54a4ae88c4ef15c2b054",
-  "size": 9111488,
+  "versionName": "K2+BT3.9.6-build22",
+  "versionCode": 22,
+  "zip": "https://cdn.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v22.zip",
+  "zipCN": "https://testingcf.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v22.zip",
+  "zipRaw": "https://raw.githubusercontent.com/1014411313/aigate-usage/main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v22.zip",
+  "sha256": "70d2523b6636287ca05ce6e02321be76895d6e43bbd3fd3a8f475a821ac10ed9",
+  "size": 9110500,
   "minOS": "HyperOS 4（DTBO 仅 OS4 自动刷入）",
   "devices": [
     "dada",
@@ -34,6 +34,15 @@
   },
   "updated": "2026-10-31",
   "versions": [
+    {
+      "versionCode": 22,
+      "versionName": "K2+BT3.9.6-build22",
+      "file": "dist/HyperOS_XJ_K2_battery-pps-dtbo_v22.zip",
+      "sha256": "70d2523b6636287ca05ce6e02321be76895d6e43bbd3fd3a8f475a821ac10ed9",
+      "size": 9110500,
+      "date": "2026-10-31",
+      "note": "修复 BAA 载荷未按机型部署（实际全机型都用默认载荷）；放电时圆圈不显示功率；二改声明改为多行完整显示；删除主页重复功率格；欢迎弹窗改为使用说明+简短更新日志；清理头像模糊/头像图片死代码"
+    },
     {
       "versionCode": 21,
       "versionName": "K2+BT3.9.6-build21",

@@ -382,6 +382,32 @@ BATDIR="$MODPATH/battery"
 if [ -d "$BATDIR" ]; then
     frame_mid
     print " - 电池解容 / PPS：初始化"
+    # 按机型部署 BAA 载荷（与解容脚本的 dev_code 对应），未识别的机型沿用包内默认
+    if [ -d "$BATDIR/baa/pool" ]; then
+        _dev=$(getprop ro.product.device 2>/dev/null)
+        _vd=$(getprop ro.product.vendor.device 2>/dev/null)
+        _nm=$(getprop ro.product.name 2>/dev/null)
+        _code=""
+        for _c in xuanyuan dada haotian nezha myron annibale bixi onyx popsicle miro songyuan warsaw pudding pandora byron; do
+            if [ "$_dev" = "$_c" ] || [ "$_vd" = "$_c" ] || [ "$_nm" = "$_c" ]; then _code=$_c; break; fi
+        done
+        if [ -n "$_code" ] && [ -d "$BATDIR/baa/pool/$_code" ]; then
+            mkdir -p "$BATDIR/baa/modes" 2>/dev/null
+            for _f in normal.json normal_nocloud.json normal_plain.json normal_nocloud_plain.json; do
+                [ -f "$BATDIR/baa/pool/$_code/$_f" ] && cp -f "$BATDIR/baa/pool/$_code/$_f" "$BATDIR/baa/modes/" 2>/dev/null
+            done
+            cp -f "$BATDIR/baa/pool/$_code/payload_BAA_config_$_code.json" "$BATDIR/baa/" 2>/dev/null
+            cp -f "$BATDIR/baa/pool/$_code/stock_BAA_config_$_code.json" "$BATDIR/baa/" 2>/dev/null
+            for _oc in xuanyuan dada haotian nezha myron annibale bixi onyx popsicle miro songyuan warsaw pudding pandora byron; do
+                [ "$_oc" = "$_code" ] && continue
+                rm -f "$BATDIR/baa/payload_BAA_config_$_oc.json" "$BATDIR/baa/stock_BAA_config_$_oc.json" 2>/dev/null
+            done
+            print " - BAA：已部署 $_code 机型载荷"
+        else
+            print " - BAA：未找到 $_dev 机型载荷，沿用默认"
+        fi
+        rm -rf "$BATDIR/baa/pool" 2>/dev/null
+    fi
     mkdir -p "$BATDIR/state" 2>/dev/null
     chmod 0755 "$BATDIR/bin/freepps" 2>/dev/null
     for _s in "$BATDIR"/scripts/*.sh "$BATDIR"/post-fs-data.sh "$BATDIR"/service.sh "$BATDIR"/uninstall.sh; do

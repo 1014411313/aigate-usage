@@ -1027,56 +1027,6 @@ html[data-theme="dark"] body.glass .backup-stat {
 .author-avatar img.loaded { display: block; }
 
 
-.avatar-blur-panel {
-  position: fixed;
-  left: 50%;
-  bottom: 84px;
-  transform: translateX(-50%) translateY(12px);
-  width: min(320px, calc(100vw - 40px));
-  padding: 16px 18px 14px;
-  border-radius: var(--radius-xs, 16px);
-  background: var(--card, rgba(28,28,32,.95));
-  color: var(--font-card);
-  box-shadow: var(--elev-1, 0 12px 40px rgba(0,0,0,.4));
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
-  z-index: 9998;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .2s ease, transform .2s ease;
-}
-.avatar-blur-panel.show {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-  pointer-events: auto;
-}
-.abp-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-.abp-title {
-  font-size: calc(14.5px * var(--fs));
-  font-weight: 600;
-  letter-spacing: -.01em;
-}
-.abp-val {
-  font-size: calc(13px * var(--fs));
-  font-weight: 600;
-  color: var(--primary);
-  background: var(--primary-light);
-  padding: 2px 8px;
-  border-radius: 100px;
-  cursor: pointer;
-}
-.avatar-blur-panel input[type=range] { width: 100%; }
-.abp-hint {
-  margin-top: 8px;
-  font-size: calc(11.5px * var(--fs));
-  color: var(--font-desc);
-  text-align: center;
-}
 
 .author-info { flex: 1; min-width: 0; }
 .author-name {
@@ -1441,10 +1391,9 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
         <div class="mini"><div class="mini-val" id="pcHealth">--</div><div class="mini-lbl">健康度 %</div></div>
       </div>
 
-      <div class="mini-grid" style="grid-template-columns:repeat(4,1fr)">
+      <div class="mini-grid" style="grid-template-columns:repeat(3,1fr)">
         <div class="mini"><div class="mini-val" id="pcVolt">--</div><div class="mini-lbl">电压 V</div></div>
         <div class="mini"><div class="mini-val" id="pcCur">--</div><div class="mini-lbl">电流 A</div></div>
-        <div class="mini"><div class="mini-val" id="pcPow">--</div><div class="mini-lbl">功率 W</div></div>
         <div class="mini"><div class="mini-val" id="pcTemp">--</div><div class="mini-lbl">温度 ℃</div></div>
       </div>
     </div>
@@ -2421,21 +2370,11 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
     </div>
   </div>
 
-  <div class="avatar-blur-panel" id="avatarBlurPanel">
-    <div class="abp-head">
-      <span class="abp-title">头像模糊度</span>
-      <span class="abp-val" id="avbVal" onclick="editAvatarBlur()">0.20</span>
-    </div>
-    <input type="range" id="avbRange" min="0" max="30" step="0.01" value="0.2"
-           oninput="onAvatarBlurInput(this.value)">
-    <div class="abp-hint">拖动滑块或点击数值输入（支持两位小数 · 头像同步）</div>
-  </div>
-
   <div class="card">
     <div class="pref" style="cursor:default">
       <div class="pref-body">
         <div class="pref-title">二改声明</div>
-        <div class="pref-desc">本包由小米热炸了整合维护，合并电池解容 / 公版 PPS / DTBO，原作者为 Axiaojiux 与 听夜风1337</div>
+        <div class="pref-desc" style="white-space:normal;line-height:1.6">本包由小米热炸了整合维护，合并电池解容 / 公版 PPS / DTBO，原作者为 Axiaojiux 与 听夜风1337</div>
       </div>
     </div>
     <div class="pref" style="cursor:default">
@@ -2758,13 +2697,17 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
 <div class="notice-mask" id="noticeMask">
   <div class="notice-card" id="noticeCard">
     <div class="notice-title">欢迎使用 动态温控·解容</div>
-    <div class="notice-body">版本 K2 · 更新说明
-- 请查看模块内的更新日志.log
+    <div class="notice-body">使用说明
+- 首次开机自动完成初始化，无需手动操作
+- 主页查看电量、容量、健康度与实时数据，圆圈显示充电功率
+- 场景页切换解容、公版 PPS、云控屏蔽
+- 关于页可检查更新、查看酷安名片
 
-使用提示
-- 首次开机后自动完成初始化，无需手动操作
-- 档位切换、诊断与日志导出均在 WebUI 中完成
-- 遇到异常请先导出诊断日志再反馈
+本次更新
+- 主页圆圈改为显示充电功率（放电时不显示）
+- 充电功率四档移至主页
+- 解容功能并入场景页，删除旧面板
+- 修复控制台内解容页打不开
 
 2026年10月31日 · 小米热炸了</div>
     <button class="notice-btn" id="noticeBtn" disabled>我知道了（10）</button>
@@ -2951,9 +2894,8 @@ async function bkRefresh(){
     bkPair('Volt', (isFinite(uv) && uv > 0) ? (uv / 1000000).toFixed(3) : '--');
     const ma = parseFloat(kv.battery_current_ma);
     bkPair('Cur', isFinite(ma) ? (ma / 1000).toFixed(2) : '--');
-    const pw = kv.power_w || kv.battery_power_w;
-    bkPair('Pow', pw);
-    bkTxt('sPower', pw);
+    const charging = (kv.status === 'Charging' || kv.status === 'Full');
+    bkTxt('sPower', charging ? (kv.power_w || kv.battery_power_w) : '--');
     const tc = parseFloat(kv.temp_c);
     bkPair('Temp', isFinite(tc) ? (tc / 10).toFixed(1) : '--');
 
@@ -3017,10 +2959,15 @@ async function bkDtboFlash(){
   bkRefresh();
 }
 
+function bkShouldRefresh(){
+  const pc = document.getElementById('page-console');
+  const sc = document.getElementById('page-scene');
+  return (pc && pc.classList.contains('active')) || (sc && sc.classList.contains('active'));
+}
 setInterval(function(){
-  const pg = document.getElementById('page-scene');
-  if (pg && pg.classList.contains('active') && !document.getElementById('btWrap')) bkRefresh();
+  if (bkShouldRefresh()) bkRefresh();
 }, 6000);
+setTimeout(function(){ if (bkShouldRefresh()) bkRefresh(); }, 1500);
 
 function setTxt(id,v){const e=document.getElementById(id);if(e)e.textContent=(v===undefined||v===null||v==='')?'--':v;}
 
@@ -5451,10 +5398,7 @@ function showFirstNotice(){
 }
 
 
-const AUTHOR_FILES = { xj1: ['XJ1'] };
 const AUTHOR_BASE = '/data/adb/modules/HyperOS_XJ/hyperosui/.file/';
-const avatarIndex = { xj1: 0 };
-const avatarCache = { xj1: {} };
 
 async function fileToDataUrl(path){
   try {
@@ -5473,168 +5417,6 @@ async function fileToDataUrl(path){
     if (!b64 || b64.length < 20) return null;
     return `data:${mime};base64,${b64}`;
   } catch(e){ return null; }
-}
-async function loadAvatarByIndex(key, idx){
-  const file = AUTHOR_FILES[key][idx];
-  if (avatarCache[key][idx]) return avatarCache[key][idx];
-  const dataUrl = await fileToDataUrl(AUTHOR_BASE + file);
-  if (dataUrl) avatarCache[key][idx] = dataUrl;
-  return dataUrl;
-}
-async function showAvatar(key, idx){
-  const img = document.querySelector(`img[data-author="${key}"]`);
-  if (!img) return;
-  const dataUrl = await loadAvatarByIndex(key, idx);
-  if (dataUrl) {
-    img.onload = () => { img.classList.add('loaded'); };
-    img.onerror = () => { img.classList.remove('loaded'); };
-    img.src = dataUrl;
-  } else img.classList.remove('loaded');
-}
-async function initAuthorAvatars(){
-  Object.keys(AUTHOR_FILES).forEach(key => {
-    try {
-      const s = localStorage.getItem('ht_avatar_' + key);
-      if (s !== null) avatarIndex[key] = parseInt(s) || 0;
-    } catch(e){}
-    if (!(avatarIndex[key] >= 0) || avatarIndex[key] >= AUTHOR_FILES[key].length) avatarIndex[key] = 0;
-  });
-  bindAvatarGestures();
-  for (const key of Object.keys(AUTHOR_FILES)) await showAvatar(key, avatarIndex[key]);
-  initAvatarBlur();
-}
-function bindAvatarGestures(){
-  document.querySelectorAll('.author-avatar').forEach(el => {
-    if (el.dataset.bound) return;
-    el.dataset.bound = '1';
-    el.addEventListener('touchstart', onAvatarTouchStart, { passive: true });
-    el.addEventListener('touchmove', onAvatarTouchMove, { passive: false });
-    el.addEventListener('touchend', onAvatarTouchEnd, { passive: true });
-    el.addEventListener('touchcancel', onAvatarTouchCancel, { passive: true });
-    el.addEventListener('click', onAvatarClick);
-  });
-}
-
-
-async function openCoolapk(uid){
-  const url = 'https://www.coolapk.com/u/' + uid;
-  toast('正在跳转酷安主页');
-  try {
-    await exec(`am start -a android.intent.action.VIEW -d "${url}" >/dev/null 2>&1`);
-  } catch(e){
-    try { window.open(url, '_blank'); } catch(_){}
-  }
-}
-
-
-
-const AVATAR_BLUR_DEFAULT = 0.2;
-const AVATAR_BLUR_MIN = 0;
-const AVATAR_BLUR_MAX = 30;
-let avatarPressTimer = null;
-let avatarLongPressed = false;
-
-function getAvatarBlur(){
-  let v = AVATAR_BLUR_DEFAULT;
-  try {
-    const s = localStorage.getItem('ht_avatar_blur');
-    if (s !== null) v = parseFloat(s);
-    if (isNaN(v)) v = AVATAR_BLUR_DEFAULT;
-  } catch(e){}
-  return Math.min(AVATAR_BLUR_MAX, Math.max(AVATAR_BLUR_MIN, v));
-}
-function applyAvatarBlur(v){
-  const val = Number(v);
-  const px = (isNaN(val) ? AVATAR_BLUR_DEFAULT : val).toFixed(2);
-  document.documentElement.style.setProperty('--avatar-blur', px + 'px');
-}
-function refreshAvatarBlurUI(v){
-  const r = document.getElementById('avbRange');
-  const t = document.getElementById('avbVal');
-  const px = Number(v).toFixed(2);
-  if (r) r.value = v;
-  if (t) t.textContent = px;
-}
-function setAvatarBlur(v){
-  v = parseFloat(v);
-  if (isNaN(v)){ toast('请输入有效数值'); return; }
-  v = Math.min(AVATAR_BLUR_MAX, Math.max(AVATAR_BLUR_MIN, v));
-  applyAvatarBlur(v);
-  refreshAvatarBlurUI(v);
-  try { localStorage.setItem('ht_avatar_blur', String(v)); } catch(e){}
-}
-function onAvatarBlurInput(v){ setAvatarBlur(v); }
-function editAvatarBlur(){
-  const cur = getAvatarBlur();
-  const input = prompt('请输入 0 - 30 之间的数值（头像模糊度，支持两位小数）', cur.toFixed(2));
-  if (input === null) return;
-  setAvatarBlur(input);
-}
-function openAvatarBlurPanel(){
-  const p = document.getElementById('avatarBlurPanel');
-  if (!p) return;
-  refreshAvatarBlurUI(getAvatarBlur());
-  p.classList.add('show');
-}
-function closeAvatarBlurPanel(){
-  const p = document.getElementById('avatarBlurPanel');
-  if (p) p.classList.remove('show');
-}
-function initAvatarBlur(){
-  const v = getAvatarBlur();
-  applyAvatarBlur(v);
-  refreshAvatarBlurUI(v);
-  document.addEventListener('pointerdown', (e) => {
-    const p = document.getElementById('avatarBlurPanel');
-    if (!p || !p.classList.contains('show')) return;
-    if (p.contains(e.target)) return;
-    if (e.target.closest && e.target.closest('.author-avatar')) return;
-    p.classList.remove('show');
-  }, true);
-}
-
-
-let avatarTouchStartX = 0, avatarTouchStartY = 0, avatarTouchMoved = false;
-
-function onAvatarTouchStart(e){
-  e.stopPropagation();
-  avatarLongPressed = false;
-  avatarTouchMoved = false;
-  const t = e.touches && e.touches[0];
-  if (t){ avatarTouchStartX = t.clientX; avatarTouchStartY = t.clientY; }
-  clearTimeout(avatarPressTimer);
-  avatarPressTimer = setTimeout(() => {
-    avatarLongPressed = true;
-    openAvatarBlurPanel();
-  }, 480);
-}
-function onAvatarTouchMove(e){
-  e.stopPropagation();
-  if (avatarTouchMoved) return;
-  const t = e.touches && e.touches[0];
-  if (!t) return;
-  const dx = Math.abs(t.clientX - avatarTouchStartX);
-  const dy = Math.abs(t.clientY - avatarTouchStartY);
-  
-  if (dx > 10 || dy > 10){
-    avatarTouchMoved = true;
-    avatarLongPressed = false;
-    clearTimeout(avatarPressTimer);
-  }
-}
-function onAvatarTouchEnd(e){
-  e.stopPropagation();
-  clearTimeout(avatarPressTimer);
-}
-function onAvatarTouchCancel(e){
-  e.stopPropagation();
-  clearTimeout(avatarPressTimer);
-  avatarLongPressed = false;
-}
-function onAvatarClick(e){
-  
-  if (e && e.stopPropagation) e.stopPropagation();
-  avatarLongPressed = false;
 }
 
 
