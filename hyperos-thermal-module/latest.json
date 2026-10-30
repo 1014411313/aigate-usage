@@ -1,13 +1,13 @@
 {
   "moduleId": "HyperOS_XJ",
   "name": "HyperOS - 动态温控·解容",
-  "versionName": "K2+BT3.9.6-build26",
-  "versionCode": 26,
-  "zip": "https://cdn.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v26.zip",
-  "zipCN": "https://testingcf.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v26.zip",
-  "zipRaw": "https://raw.githubusercontent.com/1014411313/aigate-usage/main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v26.zip",
-  "sha256": "c7bad04eaeab288d9a57ef86d7bb04d05da00d65fef56fd020cd6b073083893d",
-  "size": 5568815,
+  "versionName": "K2+BT3.9.6-build27",
+  "versionCode": 27,
+  "zip": "https://cdn.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v27.zip",
+  "zipCN": "https://testingcf.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v27.zip",
+  "zipRaw": "https://raw.githubusercontent.com/1014411313/aigate-usage/main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v27.zip",
+  "sha256": "7239d21bf3ef302891d1e8ceb3562abdff48e6d6ce69da73324f1936dc1fde5e",
+  "size": 5568826,
   "minOS": "HyperOS 4（DTBO 仅 OS4 自动刷入）",
   "devices": [
     "dada",
@@ -34,6 +34,15 @@
   },
   "updated": "2026-10-31",
   "versions": [
+    {
+      "versionCode": 27,
+      "versionName": "K2+BT3.9.6-build27",
+      "file": "dist/HyperOS_XJ_K2_battery-pps-dtbo_v27.zip",
+      "sha256": "7239d21bf3ef302891d1e8ceb3562abdff48e6d6ce69da73324f1936dc1fde5e",
+      "size": 5568826,
+      "date": "2026-10-31",
+      "note": "修复 v26 控制台闪退：改 dex 后未重算 SHA-1 签名与 adler32 校验和；本次已按 dex 规范重算并通过校验"
+    },
     {
       "versionCode": 26,
       "versionName": "K2+BT3.9.6-build26",
