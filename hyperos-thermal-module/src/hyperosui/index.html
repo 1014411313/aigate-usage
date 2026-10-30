@@ -1423,8 +1423,8 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
     <div class="panel-body" id="panelBody">
       <div class="gauge" id="gaugeRing">
         <div class="gauge-hole">
-          <div class="gauge-temp" id="sTemp">--</div>
-          <div class="gauge-unit">°C</div>
+          <div class="gauge-temp" id="sPower">--</div>
+          <div class="gauge-unit">W</div>
         </div>
       </div>
 
@@ -1448,6 +1448,17 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
         <div class="mini"><div class="mini-val" id="pcTemp">--</div><div class="mini-lbl">温度 ℃</div></div>
       </div>
     </div>
+  </div>
+
+  <div class="small-title">充电功率</div>
+  <div class="card">
+    <div class="bk-power">
+      <button class="bk-pbtn" data-p="inf" onclick="bkSetPower('inf')">全速</button>
+      <button class="bk-pbtn" data-p="fast" onclick="bkSetPower('fast')">40W</button>
+      <button class="bk-pbtn" data-p="mid" onclick="bkSetPower('mid')">25W</button>
+      <button class="bk-pbtn" data-p="slow" onclick="bkSetPower('slow')">10W</button>
+    </div>
+    <div class="pref-desc" id="bkPowerDesc" style="margin-top:10px;text-align:center">读取中…</div>
   </div>
 
   <div class="panel">
@@ -1498,17 +1509,6 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
       </div>
       <div class="pref-right"><label class="hyper-switch"><input type="checkbox" id="bkCloud" onchange="bkSet('cloud',this.checked)"><span class="track"></span><span class="thumb"></span></label></div>
     </div>
-  </div>
-
-  <div class="small-title">充电功率</div>
-  <div class="card">
-    <div class="bk-power">
-      <button class="bk-pbtn" data-p="inf" onclick="bkSetPower('inf')">全速</button>
-      <button class="bk-pbtn" data-p="fast" onclick="bkSetPower('fast')">40W</button>
-      <button class="bk-pbtn" data-p="mid" onclick="bkSetPower('mid')">25W</button>
-      <button class="bk-pbtn" data-p="slow" onclick="bkSetPower('slow')">10W</button>
-    </div>
-    <div class="pref-desc" id="bkPowerDesc" style="margin-top:10px;text-align:center">读取中…</div>
   </div>
 
   <div class="card">
@@ -2951,7 +2951,9 @@ async function bkRefresh(){
     bkPair('Volt', (isFinite(uv) && uv > 0) ? (uv / 1000000).toFixed(3) : '--');
     const ma = parseFloat(kv.battery_current_ma);
     bkPair('Cur', isFinite(ma) ? (ma / 1000).toFixed(2) : '--');
-    bkPair('Pow', kv.power_w || kv.battery_power_w);
+    const pw = kv.power_w || kv.battery_power_w;
+    bkPair('Pow', pw);
+    bkTxt('sPower', pw);
     const tc = parseFloat(kv.temp_c);
     bkPair('Temp', isFinite(tc) ? (tc / 10).toFixed(1) : '--');
 
@@ -5815,34 +5817,6 @@ async function openProfileConf(){
     bodyEl.appendChild(wrap);
   });
   
-  const PRESET_VALS = {
-    saver:   { poll_interval:'8', foreground_interval:'4', bypass_current:'300', restart_cooldown:'10', enable_guard:'1', temp_guard:'43' },
-    balance: { poll_interval:'4', foreground_interval:'2', bypass_current:'500', restart_cooldown:'6',  enable_guard:'1', temp_guard:'45' },
-    turbo:   { poll_interval:'2', foreground_interval:'1', bypass_current:'800', restart_cooldown:'3',  enable_guard:'0', temp_guard:'48' }
-  };
-  const PRESET_NAMES = { saver:'省电', balance:'均衡', turbo:'激进' };
-  const presetRow = document.createElement('div');
-  presetRow.style.cssText = 'display:flex;gap:8px;margin-top:12px;';
-  Object.keys(PRESET_VALS).forEach(pid => {
-    const b = document.createElement('button');
-    b.className = 'btn secondary';
-    b.style.flex = '1';
-    b.style.fontSize = 'calc(12px * var(--fs))';
-    b.style.padding = '9px 0';
-    b.textContent = '预设·' + PRESET_NAMES[pid];
-    b.onclick = () => {
-      const cfg = PRESET_VALS[pid];
-      Object.keys(cfg).forEach(k => {
-        const ctl = inputs[k];
-        if(!ctl) return;
-        if(ctl.type === 'sw'){ ctl.set(cfg[k]); return; }
-        ctl.el.value = cfg[k];
-      });
-      toast('已套用「' + PRESET_NAMES[pid] + '」预设，点“保存”后生效');
-      logOp('机型档案套用预设：' + PRESET_NAMES[pid]);
-    };
-    presetRow.appendChild(b);
-  });
   const row = document.createElement('div');
   row.style.cssText = 'display:flex;gap:12px;margin-top:14px;';
   const saveB = document.createElement('button');
@@ -5852,7 +5826,7 @@ async function openProfileConf(){
   const defB = document.createElement('button');
   defB.className = 'btn secondary'; defB.style.flex = '1'; defB.textContent = '恢复默认';
   row.appendChild(defB); row.appendChild(saveB); row.appendChild(closeB);
-  box.appendChild(title); box.appendChild(sub); box.appendChild(bodyEl); box.appendChild(presetRow); box.appendChild(row);
+  box.appendChild(title); box.appendChild(sub); box.appendChild(bodyEl); box.appendChild(row);
   ov.appendChild(box); document.body.appendChild(ov);
   lockPageScroll();
   const done = () => { unlockPageScroll(); ov.remove(); };
@@ -7043,8 +7017,7 @@ async function refreshStatus(){
   const color = tc >= t2 ? highColor : tc >= t1 ? midColor : lowColor;
 
   const tempEl=document.getElementById('sTemp');
-  tempEl.textContent=tc.toFixed(1);
-  tempEl.style.color=color;
+  if(tempEl){ tempEl.textContent=tc.toFixed(1); tempEl.style.color=color; }
 
   const ring=document.getElementById('gaugeRing');
   if(ring){
