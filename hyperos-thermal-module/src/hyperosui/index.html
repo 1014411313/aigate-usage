@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
-<title>HyperOS - 动态温控</title>
+<title>HyperOS - 动态温控·解容</title>
 <style>
 :root {
   
@@ -1394,18 +1394,8 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
 
 <div class="page active" id="page-console">
   <div class="topbar">
-    <h1>HyperOS - 动态温控</h1>
+    <h1>HyperOS - 动态温控·解容</h1>
     <div class="subtitle">心之所向的你 是否也于我同频</div>
-  </div>
-
-  <div class="panel" onclick="openBatteryPage()">
-    <div class="panel-head">
-      <span style="flex:1">电池解容 · 公版 PPS · DTBO</span>
-      <span class="expand-arrow open"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></span>
-    </div>
-    <div class="panel-body" style="padding-top:2px">
-      <div style="font-size:12.5px;color:#9aa3b2;line-height:1.7">解容开关、充电功率档位、PPS 解锁与 DTBO 状态/刷入</div>
-    </div>
   </div>
 
   <div class="panel">
@@ -1455,6 +1445,16 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
   <div class="topbar">
     <h1>场景选择</h1>
     <div class="subtitle">控制 / 充电 / 游戏 / 旁路 / 功率</div>
+  </div>
+
+  <div class="panel" onclick="openBatteryPage()">
+    <div class="panel-head">
+      <span style="flex:1">电池解容 · 公版 PPS · DTBO</span>
+      <span class="expand-arrow open"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></span>
+    </div>
+    <div class="panel-body" style="padding-top:2px">
+      <div style="font-size:12.5px;color:#9aa3b2;line-height:1.7">解容开关、充电功率档位、PPS 解锁与 DTBO 状态/刷入</div>
+    </div>
   </div>
 
   <div class="small-title">控制</div>
@@ -2340,18 +2340,17 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
 <div class="page" id="page-about">
   <div class="topbar">
     <h1>关于</h1>
-    <div class="subtitle">HyperOS - 动态温控</div>
+    <div class="subtitle">HyperOS - 动态温控·解容</div>
   </div>
 
 
   <div class="card">
-    <div class="author" onclick="openCoolapk('36031150')" style="cursor:pointer">
+    <div class="author" onclick="openCoolapk('517965')" style="cursor:pointer">
       <div class="author-avatar" id="avatarXj1" oncontextmenu="return false">
-        <span>玖</span>
-        <img data-author="xj1" alt="小玖">
+        <span>MI</span>
       </div>
       <div class="author-info">
-        <div class="author-name">小玖</div>
+        <div class="author-name">小米热炸了</div>
         <div class="author-role">HyperOS 动态温控开发者</div>
       </div>
       <div class="update-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></div>
@@ -2372,7 +2371,7 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
     <div class="pref" style="cursor:default">
       <div class="pref-body">
         <div class="pref-title">二改声明</div>
-        <div class="pref-desc">本包为二改整合版本，在原作者基础上合并电池解容 / 公版 PPS / DTBO 刷入，非原作者官方发布</div>
+        <div class="pref-desc">本包由小米热炸了整合维护，合并电池解容 / 公版 PPS / DTBO，原作者为 Axiaojiux 与 听夜风1337</div>
       </div>
     </div>
     <div class="pref" style="cursor:default">
@@ -2425,26 +2424,6 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
         <div class="pref-desc" id="updateDesc">点击检查最新版本</div>
       </div>
       <div class="pref-right about-right" id="updateVer">—</div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="pref" onclick="openLink('https://t.me/HyperOSwk')" style="cursor:pointer">
-      <div class="pref-body">
-        <div class="pref-title">加入社区</div>
-        <div class="pref-desc">TG 频道 · t.me/HyperOSwk</div>
-      </div>
-      <div class="update-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="pref" onclick="goAboutModule()" style="cursor:pointer">
-      <div class="pref-body">
-        <div class="pref-title">关于模块</div>
-        <div class="pref-desc">HyperOS - 动态温控 · 模块说明</div>
-      </div>
-      <div class="update-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></div>
     </div>
   </div>
 
@@ -2714,7 +2693,7 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
 
 <div class="notice-mask" id="noticeMask">
   <div class="notice-card" id="noticeCard">
-    <div class="notice-title">欢迎使用 动态温控</div>
+    <div class="notice-title">欢迎使用 动态温控·解容</div>
     <div class="notice-body">版本 K2 · 更新说明
 - 请查看模块内的更新日志.log
 
@@ -2723,7 +2702,7 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
 - 档位切换、诊断与日志导出均在 WebUI 中完成
 - 遇到异常请先导出诊断日志再反馈
 
-2026年10月24日 · 小玖</div>
+2026年10月31日 · 小米热炸了</div>
     <button class="notice-btn" id="noticeBtn" disabled>我知道了（10）</button>
   </div>
 </div>

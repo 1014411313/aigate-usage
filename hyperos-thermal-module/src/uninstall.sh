@@ -5,7 +5,7 @@ CONFDIR="$MODDIR/config"
 say() { echo "$*"; }
 log() { say "$*"; }
 
-say "===== 开始卸载 HyperOS · 动态温控 ====="
+say "===== 开始卸载 HyperOS - 动态温控·解容 ====="
 say "模块目录：$MODDIR"
 say " "
 

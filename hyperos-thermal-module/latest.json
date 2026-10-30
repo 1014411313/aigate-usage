@@ -1,13 +1,13 @@
 {
   "moduleId": "HyperOS_XJ",
-  "name": "HyperOS 动态温控 · 电池解容（二改整合）",
-  "versionName": "K2+BT3.9.6-build16",
-  "versionCode": 16,
-  "zip": "https://cdn.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v16.zip",
-  "zipCN": "https://testingcf.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v16.zip",
-  "zipRaw": "https://raw.githubusercontent.com/1014411313/aigate-usage/main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v16.zip",
-  "sha256": "39abce014ed14a0e3d1335efed6e5036e079b32455ca96a5350b3aadbaf4afb3",
-  "size": 9226281,
+  "name": "HyperOS - 动态温控·解容",
+  "versionName": "K2+BT3.9.6-build17",
+  "versionCode": 17,
+  "zip": "https://cdn.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v17.zip",
+  "zipCN": "https://testingcf.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v17.zip",
+  "zipRaw": "https://raw.githubusercontent.com/1014411313/aigate-usage/main/hyperos-thermal-module/dist/HyperOS_XJ_K2_battery-pps-dtbo_v17.zip",
+  "sha256": "2c14debfb63187fda21ecfc4cde999bbd3d95a082b24981ef893b4b098600c38",
+  "size": 9226193,
   "minOS": "HyperOS 4（DTBO 仅 OS4 自动刷入）",
   "devices": [
     "dada",
@@ -27,12 +27,22 @@
     "onyx"
   ],
   "credits": {
+    "maintainer": "小米热炸了",
     "dynamic_thermal": "Axiaojiux（动态温控 K2）",
     "battery_toolbox": "听夜风1337（电池解容工具箱 v3.9.6）",
     "note": "二改整合版，非原作者官方发布"
   },
   "updated": "2026-10-31",
   "versions": [
+    {
+      "versionCode": 17,
+      "versionName": "K2+BT3.9.6-build17",
+      "file": "dist/HyperOS_XJ_K2_battery-pps-dtbo_v17.zip",
+      "sha256": "2c14debfb63187fda21ecfc4cde999bbd3d95a082b24981ef893b4b098600c38",
+      "size": 9226193,
+      "date": "2026-10-31",
+      "note": "界面统一改名 HyperOS - 动态温控·解容；作者改为小米热炸了、头像改为 MI；移除加入社区与关于模块入口；电池解容入口移入场景页"
+    },
     {
       "versionCode": 16,
       "versionName": "K2+BT3.9.6-build16",

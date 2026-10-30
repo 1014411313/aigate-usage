@@ -19,7 +19,7 @@ sanitize() {
 }
 
 frame_mid
-echo " - HyperOS · 动态温控  K2"
+echo " - HyperOS - 动态温控·解容"
 echo " - 诊断与日志打包（2026-10-24）"
 frame_mid
 

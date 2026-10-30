@@ -13,11 +13,12 @@ frame_mid() { print "------------------------------------------"; }
 clear
 
 frame_mid
-print " - HyperOS · 动态温控  K2 ｜ 电池解容 / PPS / DTBO 整合版"
+print " - HyperOS - 动态温控·解容 ｜ 电池解容 / PPS / DTBO"
 frame_mid
 print " - 二改声明：本包为二改整合版本，非原作者官方发布"
 print " - 动态温控作者：Axiaojiux"
 print " - 电池解容工具箱作者：听夜风1337"
+print " - 二改整合维护：小米热炸了"
 frame_mid
 print " - 过去不翻旧账 未来不空许诺"
 
