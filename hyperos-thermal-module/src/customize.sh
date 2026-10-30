@@ -171,6 +171,13 @@ install_apk() {
     pm install -r -d "$1" >/dev/null 2>&1 && return 0
     pm install -r --user 0 "$1" >/dev/null 2>&1 && return 0
     pm install -r "$1" >/dev/null 2>&1 && return 0
+    # 本版 APK 重新签过名，与旧版签名不同 → 覆盖安装会报签名冲突，
+    # 卸载旧版后再装（控制台无本地数据，卸载不损失配置）。
+    print " - 检测到签名变更，先卸载旧版控制台…"
+    pm uninstall --user 0 com.hyperos.xj >/dev/null 2>&1
+    pm uninstall com.hyperos.xj >/dev/null 2>&1
+    pm install -r "$1" >/dev/null 2>&1 && return 0
+    pm install "$1" >/dev/null 2>&1 && return 0
     return 1
 }
 if [ -f "$APK" ]; then
