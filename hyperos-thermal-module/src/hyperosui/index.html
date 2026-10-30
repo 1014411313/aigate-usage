@@ -2897,10 +2897,12 @@ async function bkRefresh(){
     // 部分机型充电时 current_now 给负数，界面按“充电为正、放电为负”统一
     if (charging && isFinite(ma) && ma < 0) ma = -ma;
     bkPair('Cur', isFinite(ma) ? (ma / 1000).toFixed(2) : '--');
-    let pw = kv.power_w || kv.battery_power_w;
-    const pwn = parseFloat(pw);
-    if (charging && isFinite(pwn) && pwn < 0) pw = Math.abs(pwn).toFixed(1);
-    bkTxt('sPower', charging ? pw : '--');
+    // status_kv 的 power_w 是档位名（inf/fast/mid/slow），不是瓦数；
+    // 真正的功率是 battery_power_w（电流×电压的绝对值），放电时补负号。
+    const bp = parseFloat(kv.battery_power_w);
+    let ptxt = '--';
+    if (isFinite(bp) && bp >= 0) ptxt = (charging ? bp : -bp).toFixed(1);
+    bkTxt('sPower', ptxt);
     const tc = parseFloat(kv.temp_c);
     bkPair('Temp', isFinite(tc) ? (tc / 10).toFixed(1) : '--');
 
