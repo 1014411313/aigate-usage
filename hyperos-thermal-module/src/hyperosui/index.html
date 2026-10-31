@@ -2444,6 +2444,16 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
   </div>
 
   <div class="card">
+    <div class="pref" onclick="openChangelog()" style="cursor:pointer">
+      <div class="pref-body">
+        <div class="pref-title">更新日志</div>
+        <div class="pref-desc">查看历次更新内容（随模块自动更新）</div>
+      </div>
+      <div class="update-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></div>
+    </div>
+  </div>
+
+  <div class="card">
     <div class="pref" onclick="checkUpdate()" style="cursor:pointer">
       <div class="pref-body">
         <div class="pref-title">检查更新</div>
@@ -2724,13 +2734,7 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
 - 首次开机自动完成初始化，无需手动操作
 - 主页查看电量、容量、健康度、循环次数、充电协议与实时数据
 - 场景页切换解容、公版 PPS、云控屏蔽、循环伪装与充电功率
-- 关于页可检查更新、查看酷安名片
-
-本次更新
-- 循环次数显示真实值，伪装次数单独一格
-- 未插充电器时充电协议显示「未插入充电器」
-- 循环次数伪装移到场景页
-- 修复 root 授权超时导致数据不加载、功率档点不动
+- 关于页可检查更新、查看更新日志与酷安名片
 
 2026年10月31日 · 小米热炸了</div>
     <button class="notice-btn" id="noticeBtn" disabled>我知道了（10）</button>
@@ -3082,6 +3086,55 @@ async function bkDtboFlash(){
     await showModal('刷入未完成', (fail || lines.slice(-1)[0] || '未取得执行结果，请重试').slice(0, 140), '知道了');
   }
   bkRefresh();
+}
+
+function fmtLog(text){
+  const esc = function(s){ return String(s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); };
+  return String(text || '').split(/\r?\n/).map(function(line){
+    const t = line.trim();
+    if (/^={5,}$/.test(t)) return '<div style="height:1px;background:var(--divider);margin:14px 0"></div>';
+    if (/^##\s+/.test(t)) return '<div style="font-weight:650;color:var(--text);margin:12px 0 6px;font-size:calc(13.5px * var(--fs))">' + esc(t.replace(/^##\s+/, '')) + '</div>';
+    if (/^-\s+/.test(t)) return '<div style="padding-left:12px;color:var(--text);opacity:.82;line-height:1.75;font-size:calc(12.5px * var(--fs))">· ' + esc(t.replace(/^-\s+/, '')) + '</div>';
+    if (/^更新日志|^HyperOS/.test(t)) return '<div style="font-weight:650;color:var(--text);margin:10px 0 4px">' + esc(t) + '</div>';
+    if (!t) return '<div style="height:7px"></div>';
+    return '<div style="color:var(--font-desc);line-height:1.75;font-size:calc(12.5px * var(--fs))">' + esc(t) + '</div>';
+  }).join('');
+}
+
+async function openChangelog(){
+  if (document.getElementById('changelogWrap')) return;
+  let txt = '';
+  try {
+    const r = await exec('cat "' + MODDIR + '/更新日志.log" 2>/dev/null', 12000);
+    txt = (r && r.stdout) ? r.stdout : '';
+  } catch(e){}
+  const mask = document.createElement('div');
+  mask.id = 'changelogWrap';
+  mask.className = 'notice-mask';
+  mask.style.zIndex = '100001';
+  const card = document.createElement('div');
+  card.className = 'notice-card';
+  card.style.maxWidth = '360px';
+  const _dark = document.documentElement.getAttribute('data-theme') === 'dark' ||
+    (!document.documentElement.getAttribute('data-theme') && window.matchMedia &&
+     window.matchMedia('(prefers-color-scheme: dark)').matches);
+  card.style.background = _dark ? 'rgba(28,28,30,.97)' : 'rgba(255,255,255,.97)';
+  const t = document.createElement('div');
+  t.className = 'notice-title';
+  t.textContent = '更新日志';
+  const b = document.createElement('div');
+  b.className = 'notice-body';
+  b.style.color = 'var(--text)';
+  b.innerHTML = txt ? fmtLog(txt) : '<div style="color:var(--font-desc)">未找到更新日志文件</div>';
+  const btn = document.createElement('button');
+  btn.className = 'notice-btn';
+  btn.textContent = '关闭';
+  btn.onclick = function(){ mask.classList.remove('show'); setTimeout(function(){ mask.remove(); }, 200); };
+  mask.addEventListener('click', function(e){ if (e.target === mask) btn.onclick(); });
+  card.appendChild(t); card.appendChild(b); card.appendChild(btn);
+  mask.appendChild(card);
+  document.body.appendChild(mask);
+  requestAnimationFrame(function(){ mask.classList.add('show'); });
 }
 
 async function bkCycleApply(){

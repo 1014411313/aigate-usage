@@ -1,13 +1,13 @@
 {
   "moduleId": "HyperOS_XJ",
   "name": "HyperOS - 动态温控·解容",
-  "versionName": "K2+BT3.9.6-build34",
-  "versionCode": 34,
-  "zip": "https://cdn.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/%E5%8A%A8%E6%80%81%E6%B8%A9%E6%8E%A7%C2%B7%E8%A7%A3%E5%AE%B9%E5%B7%A5%E5%85%B7%E7%AE%B1_v34.zip",
-  "zipCN": "https://testingcf.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/%E5%8A%A8%E6%80%81%E6%B8%A9%E6%8E%A7%C2%B7%E8%A7%A3%E5%AE%B9%E5%B7%A5%E5%85%B7%E7%AE%B1_v34.zip",
-  "zipRaw": "https://raw.githubusercontent.com/1014411313/aigate-usage/main/hyperos-thermal-module/dist/%E5%8A%A8%E6%80%81%E6%B8%A9%E6%8E%A7%C2%B7%E8%A7%A3%E5%AE%B9%E5%B7%A5%E5%85%B7%E7%AE%B1_v34.zip",
-  "sha256": "fbba6ca259a26abcfc4ebbf4d722ceaf291cca13a3afebcf44ed9a5455dfef48",
-  "size": 5573207,
+  "versionName": "K2+BT3.9.6-build35",
+  "versionCode": 35,
+  "zip": "https://cdn.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/%E5%8A%A8%E6%80%81%E6%B8%A9%E6%8E%A7%C2%B7%E8%A7%A3%E5%AE%B9%E5%B7%A5%E5%85%B7%E7%AE%B1_v35.zip",
+  "zipCN": "https://testingcf.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/%E5%8A%A8%E6%80%81%E6%B8%A9%E6%8E%A7%C2%B7%E8%A7%A3%E5%AE%B9%E5%B7%A5%E5%85%B7%E7%AE%B1_v35.zip",
+  "zipRaw": "https://raw.githubusercontent.com/1014411313/aigate-usage/main/hyperos-thermal-module/dist/%E5%8A%A8%E6%80%81%E6%B8%A9%E6%8E%A7%C2%B7%E8%A7%A3%E5%AE%B9%E5%B7%A5%E5%85%B7%E7%AE%B1_v35.zip",
+  "sha256": "4fcadab1d732cff60316a4a9fad60afde5c36eb2809b4fd2b8a6b1feea936a01",
+  "size": 5573817,
   "minOS": "HyperOS 4（DTBO 仅 OS4 自动刷入）",
   "devices": [
     "dada",
@@ -35,6 +35,15 @@
   "updated": "2026-10-31",
   "versions": [
     {
+      "versionCode": 35,
+      "versionName": "K2+BT3.9.6-build35",
+      "file": "dist/动态温控·解容工具箱_v35.zip",
+      "sha256": "4fcadab1d732cff60316a4a9fad60afde5c36eb2809b4fd2b8a6b1feea936a01",
+      "size": 5573817,
+      "date": "2026-10-31",
+      "note": ""
+    },
+    {
       "versionCode": 34,
       "versionName": "K2+BT3.9.6-build34",
       "file": "dist/动态温控·解容工具箱_v34.zip",
@@ -51,15 +60,6 @@
       "size": 5568826,
       "date": "2026-10-31",
       "note": ""
-    },
-    {
-      "versionCode": 27,
-      "versionName": "K2+BT3.9.6-build27",
-      "file": "dist/动态温控·解容工具箱_v27.zip",
-      "sha256": "7239d21bf3ef302891d1e8ceb3562abdff48e6d6ce69da73324f1936dc1fde5e",
-      "size": 5568826,
-      "date": "2026-10-31",
-      "note": "修复 v26 控制台闪退：改 dex 后未重算 SHA-1 签名与 adler32 校验和；本次已按 dex 规范重算并通过校验"
     }
   ]
 }
