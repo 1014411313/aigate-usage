@@ -251,6 +251,40 @@ if [ -n "$_LEGACY_ID" ] && [ "$LEGACY_DIR" != "$MODPATH" ] && [ -d "$LEGACY_DIR"
         print " - 已迁移旧版用户数据($_LEGACY_ID):${MIGRATED} 项"
     fi
 fi
+# 模块目录外备份恢复：管理器原地更新会替换整个模块目录（含 config/ 与 battery/config/），
+# 旧目录可能已不存在，光靠 LEGACY_DIR 迁移会丢设置。thermal_core 运行时会把用户设置
+# 备份到 /data/adb/HyperOS_XJ_data，升级时优先从这里恢复。
+XJ_DATA=/data/adb/HyperOS_XJ_data
+if [ -d "$XJ_DATA" ]; then
+    _REST=0
+    if [ ! -s "$CONFDIR/settings.json" ] || ! head -c 1 "$CONFDIR/settings.json" 2>/dev/null | grep -q '{'; then
+        if [ -s "$XJ_DATA/config/settings.json" ]; then
+            mkdir -p "$CONFDIR" 2>/dev/null
+            cp -f "$XJ_DATA/config/settings.json" "$CONFDIR/settings.json" 2>/dev/null && _REST=$((_REST+1))
+        fi
+    fi
+    for _f in bypass_manual current_mode; do
+        if [ ! -s "$CONFDIR/$_f" ] && [ -s "$XJ_DATA/config/$_f" ]; then
+            cp -f "$XJ_DATA/config/$_f" "$CONFDIR/$_f" 2>/dev/null && _REST=$((_REST+1))
+        fi
+    done
+    # 解容配置（功率档/满电电压/PPS/云控/循环伪装/APL 等）用户改过的值全在这里，整体覆盖默认
+    if [ -s "$XJ_DATA/battery/config/settings.conf" ]; then
+        mkdir -p "$MODPATH/battery/config" 2>/dev/null
+        cp -f "$XJ_DATA/battery/config/settings.conf" "$MODPATH/battery/config/settings.conf" 2>/dev/null && _REST=$((_REST+1))
+    fi
+    for _p in "$XJ_DATA"/profiles/*.conf; do
+        [ -f "$_p" ] || continue
+        _pn=$(basename "$_p")
+        [ "$_pn" = "default.conf" ] && continue
+        mkdir -p "$MODPATH/profiles" 2>/dev/null
+        cp -f "$_p" "$MODPATH/profiles/$_pn" 2>/dev/null
+    done
+    if [ "$_REST" -gt 0 ]; then
+        frame_mid
+        print " - 已从备份恢复用户设置:${_REST} 项"
+    fi
+fi
 NEED_DEFAULT=0
 if [ -s "$CONFDIR/settings.json" ]; then
     if head -c 1 "$CONFDIR/settings.json" 2>/dev/null | grep -q '{'; then

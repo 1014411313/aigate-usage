@@ -57,5 +57,10 @@
   ],
   "upstream": "电池解容工具箱 v3.12.6（基线 v3.9.6 → v3.12.6，见 upstream/manifest.json）：APL 自适应爬坡脚本 apl.sh/apl_ctl.sh 已引入但默认关闭（apl_enable=0），温控守护竞态与 BAA 空配置修复已随上游合并，nezha DTBO 已更新",
   "apl": "apl_enable=0 默认关；开启条件 power_limit=inf；scripts/apl_toggle.sh 1|0 停/起进程；status_kv 暴露 apl_alive/apl_target_ma/apl_cap_ma/apl_profile/apl_enable；UI 在电池页「自适应功率爬坡（APL）」",
-  "ownership": "充电归电池解容：温控非旁路不回写 chg_curr；旁路期间 direct_set_current_ma 见 config/bypass_active=1 直接让路，旁路结束温控调 charge_guard.sh once 交还"
+  "ownership": "充电归电池解容：温控非旁路不回写 chg_curr；旁路期间 direct_set_current_ma 见 config/bypass_active=1 直接让路，旁路结束温控调 charge_guard.sh once 交还",
+  "dtbo_voltage_limits": {
+    "haotian_rtx": "解包 src/battery/dtbo/haotian.img 得到：mca_strategy_quick_charge/max_vbat=4580（off 50188）、mca_strategy_quick_wireless_class/max_vbat=4580（off 59060）、mca_buckchg_jeita/jeita_para_ffc 各段=4580mV；普通 jeita_para 为 4530mV（≥57℃ 降 4060mV）",
+    "note": "fv_force 只改 BAA 载荷 vterm，充电策略仍按 DT 的 max_vbat 停；要真上 4600 必须同时改这三处 DTBO 再重刷+重启（用户 11-01 选择先不改）"
+  },
+  "fv_chain_test": "实测结论（2026-11-01）：① 原版 v3.12.6、无 fv_v 干预，95%~涓流充满：voltage_now=4.452V / current_now=21mA / status=Full；② 二改版 fv_v=4600 且 fv_force=1、载荷已改写（fv_force_applied=4600）：满电 4.446~4.511V，与原版持平。→ BAA 载荷 vterm 改写不会抬高实际满电电压，真正上限是 DT mca_strategy_quick_charge/max_vbat=4580（+硬件 OVP）。要提高必须改 DTBO 同三处并重刷重启。"
 }

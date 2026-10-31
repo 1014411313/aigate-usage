@@ -9,7 +9,7 @@ SRC = os.path.join(ROOT, 'src')
 DIST = os.path.join(ROOT, 'dist')
 
 EXEC = {'thermal_core.sh', 'service.sh', 'action.sh', 'uninstall.sh', 'customize.sh',
-        'post-fs-data.sh', 'diagnose.sh',
+        'post-fs-data.sh', 'diagnose.sh', 'config_backup.sh', 'snapshot_charge.sh',
         'battery/post-fs-data.sh', 'battery/service.sh', 'battery/uninstall.sh',
         'battery/bin/freepps'}
 EXEC_DIR_PREFIX = ('battery/scripts/',)

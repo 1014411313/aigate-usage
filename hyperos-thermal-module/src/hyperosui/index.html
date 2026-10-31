@@ -1679,9 +1679,16 @@ body[data-skin] .notice-card{
   border:1px solid var(--glass-border);
 }
 
+/* 长页面滚动优化：离屏卡片跳过 layout+paint（卡片高度较小，固有尺寸按 120px 估，避免滚动条抽动）
+   面板（首页仪表）常驻视口内，不做这项，免得进视口时重渲染闪一下 */
+.page > .card{
+  content-visibility: auto;
+  contain-intrinsic-size: auto 120px;
+}
+
 /* ===== DIY 外观扩展：背景层 ===== */
 /* 光斑尺寸、模糊、透明度、飘动幅度与速度 */
-.amb-blobs i{filter:blur(var(--blob-blur,100px));opacity:calc(var(--blob-op,.8) * var(--blob-user-op,1));
+.amb-blobs i{filter:blur(var(--blob-blur,72px));opacity:calc(var(--blob-op,.8) * var(--blob-user-op,1));
   animation:blobFloat var(--blob-speed,15s) infinite alternate cubic-bezier(.4,0,.2,1)}
 .amb-blobs .b1{width:calc(60vw * var(--blob-k,1));height:calc(60vw * var(--blob-k,1))}
 .amb-blobs .b2{width:calc(50vw * var(--blob-k,1));height:calc(50vw * var(--blob-k,1))}
@@ -1767,19 +1774,6 @@ body.floating .tabbar{
 .tab-ico svg{ width:var(--tab-icon,22px); height:var(--tab-icon,22px); }
 body.hide-tab-text .tab-ico svg{ width:calc(var(--tab-icon,22px) * 1.09); height:calc(var(--tab-icon,22px) * 1.09); }
 
-/* ===== DIY 外观扩展：卡片排序 ===== */
-body.diy-dragging{ overflow:hidden; }
-body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user-select:none; }
-.card.diy-drag,body[data-skin] .card.diy-drag{
-  position:fixed; z-index:9000; margin:0; transition:none;
-  box-shadow:0 18px 44px rgba(0,0,0,.34); opacity:.97;
-}
-.diy-placeholder{
-  margin:0 16px 12px; border-radius:var(--radius);
-  border:1px dashed rgba(var(--divider-line-rgb),.55);
-  background:rgba(var(--bar-rgb),.12);
-}
-
 /* 卡片内非 .pref 的直排内容（功率分段按钮、输入行、说明文字）补齐卡片内边距，
    否则按钮/输入框会直接贴到卡片边缘，看起来像被裁切 */
 .card > div:not(.pref):not(.expand-body):not(.author){
@@ -1799,6 +1793,33 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
   margin-right: calc(20px * var(--cs) * var(--card-pad,1)) !important;
 }
 
+/* 备注/说明文字允许换行，不再被单行省略号裁掉 */
+.pref-desc{
+  white-space:normal;
+  overflow:visible;
+  text-overflow:clip;
+  line-height:1.45;
+  word-break:break-word;
+}
+.pref-title{ white-space:normal; word-break:break-word; }
+
+/* ===== 流畅模式：关闭最吃 GPU 的几项 ===== */
+body.fx-lite .amb-blobs i{ animation:none !important; filter:blur(56px) !important; }
+body.fx-lite .amb-blobs .b2,body.fx-lite .amb-blobs .b3{ display:none !important; }
+body.fx-lite .amb-grad{ animation:none !important; }
+body.fx-lite .amb-noise{ display:none !important; }
+body.fx-lite .amb-blobs{ filter:none !important; }
+body.fx-lite .card,body.fx-lite .panel,body.fx-lite .mini,body.fx-lite .tabbar{
+  -webkit-backdrop-filter:none !important;
+  backdrop-filter:none !important;
+}
+body.fx-lite .gauge-glow{ animation:none !important; }
+body.fx-lite .fluid-blob{ animation:none !important; filter:blur(8px) !important; }
+body.fx-lite .gauge-wave-inner,body.fx-lite .gauge-wave svg{ animation:none !important; }
+body.fx-lite .page.active{ animation:none !important; }
+body.fx-lite .live-dot{ animation:none !important; }
+body.fx-lite .card,body.fx-lite .panel,body.fx-lite .mini{ box-shadow:0 4px 16px var(--shadow-color) !important; }
+
 </style>
 </head>
 <body>
@@ -1816,7 +1837,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
     <div class="subtitle">心之所向的你 是否也于我同频</div>
   </div>
 
-  <div class="panel">
+  <div class="panel" data-diy-id="console-1">
     <div class="panel-head" onclick="togglePanel()">
       <span class="live-dot"></span>
       <span style="flex:1">实时运行面板</span>
@@ -1890,7 +1911,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
   </div>
 
   <div class="small-title">充电功率</div>
-  <div class="card">
+  <div class="card" data-diy-id="console-2">
     <div class="bk-power">
       <button class="bk-pbtn" data-p="inf" onclick="bkSetPower('inf')">全速</button>
       <button class="bk-pbtn" data-p="fast" onclick="bkSetPower('fast')">40W</button>
@@ -1900,7 +1921,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
     <div class="pref-desc" id="bkPowerDesc" style="margin-top:10px;text-align:center">读取中…</div>
   </div>
 
-  <div class="panel">
+  <div class="panel" data-diy-id="console-3">
     <div class="panel-head" onclick="toggleDeviceInfo()">
       <span style="flex:1">设备信息</span>
       <span class="expand-arrow open" id="arrow-devinfo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></span>
@@ -1927,7 +1948,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
   </div>
 
   <div class="small-title">温控档位</div>
-  <div class="card">
+  <div class="card" data-diy-id="thermal-1">
     <div class="pref" onclick="toggleExpand('default')">
       <div class="pref-body">
         <div class="pref-title">普通场景温控</div>
@@ -1944,7 +1965,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
   </div>
 
   <div class="small-title">场景</div>
-  <div class="card">
+  <div class="card" data-diy-id="thermal-2">
     <div class="pref" onclick="toggleExpand('charge')">
       <div class="pref-body">
         <div class="pref-title">充电场景</div>
@@ -1979,7 +2000,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" data-diy-id="thermal-3">
     <div class="pref" onclick="toggleExpand('game')">
       <div class="pref-body">
         <div class="pref-title">游戏场景</div>
@@ -2011,7 +2032,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
   </div>
 
   <div class="small-title">游戏加速</div>
-  <div class="card">
+  <div class="card" data-diy-id="thermal-4">
     <div class="pref" onclick="document.getElementById('hyperos4').click()">
       <div class="pref-body">
         <div class="pref-title">HyperOS 游戏三倍速</div>
@@ -2027,7 +2048,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
   </div>
 
   <div class="small-title">高温保护</div>
-  <div class="card">
+  <div class="card" data-diy-id="thermal-5">
     <div class="pref" onclick="document.getElementById('no_hitemp_stop').click()">
       <div class="pref-body">
         <div class="pref-title">解除系统高温停充</div>
@@ -2048,7 +2069,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
   </div>
 
   <div class="small-title">旁路供电</div>
-  <div class="card">
+  <div class="card" data-diy-id="thermal-6">
     <div class="pref" onclick="toggleExpand('bypass')">
       <div class="pref-body">
         <div class="pref-title">旁路供电设置</div>
@@ -2085,7 +2106,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
   </div>
 
   <div class="small-title">电池解容</div>
-  <div class="card">
+  <div class="card" data-diy-id="battery-1">
     <div class="pref">
       <div class="pref-body">
         <div class="pref-title">电池解容</div>
@@ -2123,7 +2144,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" data-diy-id="battery-2">
     <div class="pref" onclick="bkDtboFlash()">
       <div class="pref-body">
         <div class="pref-title">DTBO</div>
@@ -2134,7 +2155,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
   </div>
 
   <div class="small-title">循环次数伪装</div>
-  <div class="card">
+  <div class="card" data-diy-id="battery-3">
     <div class="pref" style="cursor:default">
       <div class="pref-body">
         <div class="pref-title">伪装循环次数</div>
@@ -2151,7 +2172,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
   </div>
 
   <div class="small-title">电池电压</div>
-  <div class="card">
+  <div class="card" data-diy-id="battery-4">
     <div class="pref" style="cursor:default">
       <div class="pref-body">
         <div class="pref-title">满电电压</div>
@@ -2201,7 +2222,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
 
   <div class="small-title">主题</div>
 
-  <div class="card">
+  <div class="card" data-diy-id="appearance-1">
     <div class="pref" onclick="toggleExpand('skin')">
       <div class="pref-body">
         <div class="pref-title">主题预设</div>
@@ -2217,7 +2238,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" data-diy-id="appearance-2">
     <div class="pref" onclick="toggleExpand('theme')">
       <div class="pref-body">
         <div class="pref-title">主题模式</div>
@@ -2232,7 +2253,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" data-diy-id="appearance-3">
     <div class="pref" onclick="toggleExpand('accent')">
       <div class="pref-body">
         <div class="pref-title">强调色</div>
@@ -2247,9 +2268,42 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
     </div>
   </div>
 
+  <div class="card" data-diy-id="appearance-lite">
+    <div class="pref" onclick="document.getElementById('fx_lite').click()">
+      <div class="pref-body">
+        <div class="pref-title">流畅模式</div>
+        <div class="pref-desc" id="fxLiteSub">关闭光斑漂移、玻璃模糊与波浪动画，界面更跟手</div>
+      </div>
+      <div class="pref-right">
+        <label class="hyper-switch" onclick="event.stopPropagation()">
+          <input type="checkbox" id="fx_lite" onchange="diySwitchChange('lite', this.checked); diySyncLiteUI();">
+          <span class="track"></span><span class="thumb"></span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-diy-id="appearance-refresh">
+    <div class="pref" onclick="toggleExpand('refresh')">
+      <div class="pref-body">
+        <div class="pref-title">数据刷新</div>
+        <div class="pref-desc" id="bkRefreshSub">1 秒 · 主页数据更新频率</div>
+      </div>
+      <div class="pref-right"><span class="expand-arrow" id="arrow-refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></span></div>
+    </div>
+    <div class="expand-body" id="expand-refresh">
+      <div class="expand-inner">
+        <div class="field-label" style="margin-top:0">主页数据多久刷新一次</div>
+        <div class="chips" id="bkIntervalChips" style="display:grid;grid-template-columns:repeat(3,1fr)"></div>
+        <button class="btn secondary" style="width:100%;margin-top:12px" onclick="bkRefresh(true)">立即刷新</button>
+        <div class="field-label" id="bkRefreshHint" style="margin-top:12px;opacity:.78">间隔越短越及时，但每次刷新要跑一次状态脚本；滑动发瑟时调大间隔</div>
+      </div>
+    </div>
+  </div>
+
   <div class="small-title">缩放</div>
 
-  <div class="card">
+  <div class="card" data-diy-id="appearance-4">
     <div class="pref" onclick="toggleExpand('scale')">
       <div class="pref-body">
         <div class="pref-title">缩放控制</div>
@@ -2287,7 +2341,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" data-diy-id="appearance-5">
     <div class="pref" onclick="toggleExpand('easing')">
       <div class="pref-body">
         <div class="pref-title">页面切换动效</div>
@@ -2316,7 +2370,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
 
   <div class="small-title">质感</div>
 
-  <div class="card">
+  <div class="card" data-diy-id="appearance-6">
     <div class="pref" onclick="toggleExpand('glass')">
       <div class="pref-body">
         <div class="pref-title">玻璃卡片质感</div>
@@ -2344,7 +2398,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" data-diy-id="appearance-7">
     <div class="pref" onclick="toggleExpand('switchglass')">
       <div class="pref-body">
         <div class="pref-title">开关按钮玻璃质感</div>
@@ -2397,7 +2451,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" data-diy-id="appearance-8">
     <div class="pref" onclick="toggleExpand('floatbar')">
       <div class="pref-body">
         <div class="pref-title">悬浮底栏</div>
@@ -2544,7 +2598,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" data-diy-id="appearance-9">
     <div class="pref" onclick="toggleExpand('wallpaper')">
       <div class="pref-body">
         <div class="pref-title">自定义背景</div>
@@ -2597,7 +2651,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
 
   <div class="small-title">颜色</div>
 
-  <div class="card">
+  <div class="card" data-diy-id="appearance-10">
     <div class="pref" onclick="toggleExpand('fontcolor')">
       <div class="pref-body">
         <div class="pref-title">修改字体颜色</div>
@@ -2645,7 +2699,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" data-diy-id="appearance-11">
     <div class="pref" onclick="toggleExpand('fontstyle')">
       <div class="pref-body">
         <div class="pref-title">修改字体样式</div>
@@ -2662,7 +2716,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" data-diy-id="appearance-12">
     <div class="pref" onclick="toggleExpand('tempcolor')">
       <div class="pref-body">
         <div class="pref-title">调节温度圆圈颜色</div>
@@ -2704,7 +2758,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" data-diy-id="appearance-13">
     <div class="pref" onclick="toggleExpand('indicator')">
       <div class="pref-body">
         <div class="pref-title">调节底栏指示气泡</div>
@@ -2749,7 +2803,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" data-diy-id="appearance-14">
     <div class="pref" onclick="toggleExpand('divider')">
       <div class="pref-body">
         <div class="pref-title">分割线颜色</div>
@@ -2778,7 +2832,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
 
   <div class="small-title">显示</div>
 
-  <div class="card">
+  <div class="card" data-diy-id="appearance-15">
     <div class="pref" onclick="toggleExpand('fontDisplay')">
       <div class="pref-body">
         <div class="pref-title">界面字体显示</div>
@@ -2830,7 +2884,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
 
   <div class="small-title">发光</div>
 
-  <div class="card">
+  <div class="card" data-diy-id="appearance-16">
     <div class="pref" onclick="toggleExpand('cardglow')">
       <div class="pref-body">
         <div class="pref-title">卡片边缘发光</div>
@@ -2860,7 +2914,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" data-diy-id="appearance-17">
     <div class="pref" onclick="toggleExpand('btnglow')">
       <div class="pref-body">
         <div class="pref-title">按钮发光</div>
@@ -2904,7 +2958,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
   </div>
   <div class="small-title">DIY 美化</div>
 
-  <div class="card" data-diy-keep="1">
+  <div class="card" data-diy-id="appearance-18" data-diy-keep="1">
     <div class="pref" onclick="toggleExpand('diybg')">
       <div class="pref-body">
         <div class="pref-title">背景光斑与噪点</div>
@@ -2924,7 +2978,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
     </div>
   </div>
 
-  <div class="card" data-diy-keep="1">
+  <div class="card" data-diy-id="appearance-19" data-diy-keep="1">
     <div class="pref" onclick="toggleExpand('diygauge')">
       <div class="pref-body">
         <div class="pref-title">能量光环</div>
@@ -2948,7 +3002,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
     </div>
   </div>
 
-  <div class="card" data-diy-keep="1">
+  <div class="card" data-diy-id="appearance-20" data-diy-keep="1">
     <div class="pref" onclick="toggleExpand('diycard')">
       <div class="pref-body">
         <div class="pref-title">卡片与文字尺寸</div>
@@ -2961,7 +3015,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
     </div>
   </div>
 
-  <div class="card" data-diy-keep="1">
+  <div class="card" data-diy-id="appearance-21" data-diy-keep="1">
     <div class="pref" onclick="toggleExpand('diybar')">
       <div class="pref-body">
         <div class="pref-title">底栏尺寸</div>
@@ -2974,7 +3028,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
     </div>
   </div>
 
-  <div class="card" data-diy-keep="1">
+  <div class="card" data-diy-id="appearance-22" data-diy-keep="1">
     <div class="pref" onclick="toggleExpand('diylayout')">
       <div class="pref-body">
         <div class="pref-title">主页字段与卡片显隐</div>
@@ -2991,14 +3045,13 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
         <div class="field-label" style="margin-top:18px">面板默认状态</div>
         <div class="chips" id="diyPanelChips" style="display:grid;grid-template-columns:repeat(3,1fr)"></div>
         <div class="field-label" style="margin-top:18px">卡片显隐</div>
-        <div class="field-label" style="margin-top:0;font-size:calc(12px * var(--fs));opacity:.75">长按任意卡片 0.45 秒可拖动排序；隐藏的卡片不会参与拖动</div>
         <div id="diyCardVisList"></div>
         <button class="btn secondary" style="width:100%;margin-top:12px" onclick="diyResetLayout()">恢复默认布局</button>
       </div>
     </div>
   </div>
 
-  <div class="card" data-diy-keep="1">
+  <div class="card" data-diy-id="appearance-23" data-diy-keep="1">
     <div class="pref" onclick="toggleExpand('diyscheme')">
       <div class="pref-body">
         <div class="pref-title">外观方案与自定义 CSS</div>
@@ -3035,7 +3088,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
   </div>
 
 
-  <div class="card">
+  <div class="card" data-diy-id="about-1">
     <div class="author" onclick="openCoolapk('517965')" style="cursor:pointer">
       <div class="author-avatar" oncontextmenu="return false"><span>热</span></div>
       <div class="author-info">
@@ -3062,7 +3115,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" data-diy-id="about-2">
     <div class="pref" style="cursor:default">
       <div class="pref-body">
         <div class="pref-title">二改声明</div>
@@ -3071,7 +3124,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" data-diy-id="about-3">
     <div class="pref" onclick="openQGroup('thermal')" style="cursor:pointer">
       <div class="pref-body">
         <div class="pref-title">动态温控 QQ 群</div>
@@ -3088,7 +3141,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" data-diy-id="about-4">
     <div class="pref" style="cursor:default">
       <div class="pref-body"><div class="pref-title">设备型号</div></div>
       <div class="pref-right about-right" id="aboutDevice">--</div>
@@ -3107,7 +3160,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" data-diy-id="about-5">
     <div class="pref" onclick="openChangelog()" style="cursor:pointer">
       <div class="pref-body">
         <div class="pref-title">更新日志</div>
@@ -3117,7 +3170,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" data-diy-id="about-6">
     <div class="pref" onclick="checkUpdate()" style="cursor:pointer">
       <div class="pref-body">
         <div class="pref-title">检查更新</div>
@@ -3127,8 +3180,18 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
     </div>
   </div>
 
+  <div class="card" data-diy-id="about-usage">
+    <div class="pref" onclick="openUsage()">
+      <div class="pref-body">
+        <div class="pref-title">使用说明</div>
+        <div class="pref-desc">全部功能怎么用，按页面分组；新增功能会同步补进来</div>
+      </div>
+      <div class="pref-right about-right">查看</div>
+    </div>
+  </div>
+
   <div class="small-title">日志</div>
-  <div class="card">
+  <div class="card" data-diy-id="about-7">
     <div class="pref" onclick="viewLog()">
       <div class="pref-body">
         <div class="pref-title">查看日志文件</div>
@@ -3139,7 +3202,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
   </div>
 
   <div class="small-title">机型档案</div>
-  <div class="card">
+  <div class="card" data-diy-id="about-8">
     <div class="pref" onclick="openProfileConf()">
       <div class="pref-body">
         <div class="pref-title">配置档案</div>
@@ -3150,7 +3213,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
   </div>
 
   <div class="small-title">工具</div>
-  <div class="card">
+  <div class="card" data-diy-id="about-9">
     <div class="pref" onclick="runDiagnoseScript()" style="cursor:pointer">
       <div class="pref-body">
         <div class="pref-title">诊断与日志打包</div>
@@ -3165,6 +3228,20 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
       </div>
       <div class="pref-right"><span class="expand-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></span></div>
     </div>
+    <div class="pref" onclick="takeChargeSnapshot('mod')" style="cursor:pointer">
+      <div class="pref-body">
+        <div class="pref-title">采集充电快照（二改版）</div>
+        <div class="pref-desc">记录当前所有充电/电池节点，用于与原版解容对比</div>
+      </div>
+      <div class="pref-right"><span class="expand-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></span></div>
+    </div>
+    <div class="pref" onclick="takeChargeSnapshot('stock')" style="cursor:pointer">
+      <div class="pref-body">
+        <div class="pref-title">采集充电快照（原版解容）</div>
+        <div class="pref-desc">装了原版电池解容工具箱时用，采同一台设备的基准数据</div>
+      </div>
+      <div class="pref-right"><span class="expand-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></span></div>
+    </div>
   </div>
 
 </div>
@@ -3176,7 +3253,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
     <div class="modal-x" onclick="closeAboutModuleModal()">✕</div>
   </div>
 
-  <div class="card">
+  <div class="card" data-diy-id="aboutmodule-1">
     <div class="pref" onclick="toggleExpand('thanks')">
       <div class="pref-body">
         <div class="pref-title">特别鸣谢</div>
@@ -3198,7 +3275,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" data-diy-id="aboutmodule-2">
     <div class="pref" onclick="toggleExpand('notice')">
       <div class="pref-body">
         <div class="pref-title">注意事项</div>
@@ -3220,7 +3297,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" data-diy-id="aboutmodule-3">
     <div class="pref" onclick="toggleExpand('help')">
       <div class="pref-body">
         <div class="pref-title">使用帮助与指南</div>
@@ -3308,7 +3385,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
   </div>
 
   
-  <div class="card">
+  <div class="card" data-diy-id="aboutmodule-4">
     <div class="pref" onclick="toggleExpand('backup')">
       <div class="pref-body">
         <div class="pref-title">备份与恢复</div>
@@ -3326,6 +3403,11 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
           <span class="backup-stat-lbl">数据大小</span>
           <span class="backup-stat-val" id="backupSize">0 B</span>
         </div>
+
+        <div class="field-label" style="margin-top:18px">同步模块设置（升级自动恢复）</div>
+        <button class="btn secondary" style="width:100%;margin-bottom:8px" onclick="syncSettingsBackup()">立即备份当前设置</button>
+        <div class="field-label" style="margin-top:0;opacity:.78">把功率档 / 满电电压 / PPS / 循环伪装 / APL / 温控配置同步到模块目录外；
+          之后升级或重装模块会自动恢复。改设置时也会自动同步，这里是手动再补一次。"</div>
 
         <div class="field-label" style="margin-top:18px">保存路径</div>
         <input type="text" id="backupPath" placeholder="/sdcard/Download/"
@@ -3362,7 +3444,7 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" data-diy-id="aboutmodule-5">
     <div class="pref" onclick="toggleExpand('update')">
       <div class="pref-body">
         <div class="pref-title">获取更新</div>
@@ -3440,14 +3522,48 @@ body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user
 <div class="notice-mask" id="noticeMask">
   <div class="notice-card" id="noticeCard">
     <div class="notice-title">欢迎使用 动态温控·解容</div>
-    <div class="notice-body">使用说明
-- 首次开机自动完成初始化，无需手动操作
-- 主页查看电量、容量、健康度、循环次数、充电协议与实时数据
-- 温控页设置各场景档位、游戏加速与旁路供电
-- 电池页管理解容、公版 PPS、云控屏蔽、循环伪装与电池电压
-- 关于页可检查更新、查看更新日志，点作者卡片直达酷安主页
+    <div class="notice-body">使用说明（按页面看）
 
-2026年10月31日 · 小米热炸了</div>
+【主页】
+· 顶部光环：中间是实时充电功率（W），液面高度 = 电量，充电时光晕亮起
+· 数据格：电量 / 状态 / 设计容量 / 满充容量 / 健康度 / 电压 / 电流 / 温度 / 循环 / 伪装 / 充电协议
+· 充电功率：全速（不限流）/ 40W / 25W / 10W。无线充电发热大，温度高时建议降一档
+
+【温控】
+· 温控档位：无限制或一~五档，数字越大温度越低（对应 26~58℃ 区间）
+· 场景：亮屏充电 / 息屏 / 时间段分别设档位
+· 游戏加速：指定应用内切到游戏档位；HyperOS 三倍速可单独开
+· 高温保护：解除系统高温停充，避免高温时被系统强制停充
+· 旁路供电：达到设定温度或电量时转为旁路供电，减少边充边放发热
+
+【电池】
+· 电池解容（挂载 BAA，防低电量锁容）/ 公版 PPS 解锁 / 云控屏蔽
+· 自适应功率爬坡（APL）：全速档按实测硬件上限动态上探，默认关闭，需要全速档
+· 温控守护：显示解容侧守护进程是否真的在跑（默认不启用）
+· DTBO：刷入内置的本机解容 DTBO（刷前自动备份）
+· 循环次数伪装、电池电压（满电电压 / 关机电压）
+
+【外观】
+· 主题预设 6 套、强调色、字体与卡片缩放、玻璃质感、颜色与发光
+· 流畅模式：卡顿时打开，关掉光斑漂移 / 玻璃模糊 / 波浪动画
+· 数据刷新：主页数据间隔 0.5 / 1（默认）/ 2 / 3 / 5 秒或关闭，可看耗时、可手动刷新
+· DIY 美化：背景光斑与噪点、能量光环（环宽/发光/波浪/液面高度）、卡片与文字尺寸、
+  底栏尺寸、主页字段与卡片显隐、外观方案（可导入导出）与自定义 CSS
+
+【关于】
+· 检查更新、更新日志、作者与 QQ 群
+· 工具：日志 / 机型档案 / 诊断包（反馈问题前请先导一份诊断包）
+· 备份与恢复：普通备份只含界面设置，完整备份包含 config 与 profiles
+· 恢复默认配置：清空外观设置
+
+常见提示
+· 模块更新会自动保留你的设置（含解容配置），无需重新配置
+· 某页卡片不见了：外观页 →「主页字段与卡片显隐」→「恢复默认布局」
+· 数据不刷新：先看关于页「运行环境」是否识别到 root 通道
+
+完整使用说明：关于页 →「使用说明」（新增功能会同步补进去）
+
+2026年11月1日 · 小米热炸了</div>
     <button class="notice-btn" id="noticeBtn" disabled>我知道了（10）</button>
   </div>
 </div>
@@ -3508,6 +3624,169 @@ function __kexec(cmd, timeoutMs){
   });
 }
 function toast(m){const s=document.getElementById('snackbar');s.textContent=m;s.classList.add('show');clearTimeout(s._t);s._t=setTimeout(()=>s.classList.remove('show'),2500);}
+
+const USAGE_TEXT = `使用说明（按页面看）
+
+━━ 主页 ━━
+
+· 能量光环
+  中间大字是实时充电功率（W），液面高度 = 当前电量，弧线进度也是电量。
+  充电时环外出现光晕与波纹，放电时不显示光晕。
+· 档位标识
+  光环下方的胶囊显示当前生效的温控档位（无限制 / 一档…五档 / 旁路）。
+· 数据格
+  电量、状态、设计容量、满充容量、健康度、电压、电流、温度、循环次数、伪装次数、充电协议。
+  显示哪些格子、几列排布、顺序，都在「外观 → DIY 美化 → 主页字段与卡片显隐」里改。
+· 充电功率
+  全速（不限流）/ 40W / 25W / 10W 四档，改的是电池解容的供电档位。
+  无线充电发热大，温度高时建议降到 25W 或 10W。
+· 设备信息
+  模块版本、构建日期、机型、系统、Root 方案、运行环境。数据不刷新时先看「运行环境」有没有识别到命令通道。
+
+━━ 温控 ━━
+
+· 温控档位
+  无限制 / 一档 ~ 五档。数字越大温度上限越低（26~58℃ 区间，档位按钮上有小字标注）。
+  「无限制」= 不改温控表，等于放行。
+· 场景
+  亮屏充电、息屏充电、指定时间段，分别用哪个档位；时间段的开始/结束小时可填。
+· 游戏加速
+  为指定应用设置独立档位；可限制帧率；可让游戏时走旁路供电；
+  「HyperOS 三倍速」单独开关，只对支持的机型生效，开启后立即生效并随模块开机自动执行。
+· 高温保护
+  「解除系统高温停充」：把 persist.vendor.high_temp_stop_charge 置 false，
+  避免温度偏高时被系统直接停止充电。开关下面会显示该属性的实际值，显示 false 才算生效。
+  说明：这是系统层开关，无线充电器自身的过热保护、芯片级保护无法从软件关闭。
+· 旁路供电
+  达到设定温度或电量时转为旁路供电（充电器供电、电池不充），减少边充边放发热。
+  可设旁路电流；也可以手动开关。
+  旁路期间充电电流由温控接管，电池解容会主动让路，关闭旁路后自动交还。
+
+━━ 电池 ━━
+
+· 电池解容
+  挂载 BAA 配置，防止低电量被系统锁容。开关即开即生效。
+· 公版 PPS 解锁
+  第三方充电头功率上不去时开启，开启后拔插一次充电器。
+· 云控屏蔽
+  拦截 BAA 云端下发与巡检隔离，避免云端把解容参数改回去。
+· 自适应功率爬坡（APL）
+  全速档下按实测硬件上限动态上探/退让，不再写死电流上限。
+  默认关闭；需要功率档为「全速」才真正运行。开关状态与当前目标电流会在描述里显示。
+· 温控守护
+  解容侧的自定义温度上限守护，默认不启用（降功率统一交给温控档位）。
+  右侧显示「未启用 / 运行中 / 已停止（异常）」，异常时说明开关是开但进程没在跑。
+· DTBO
+  刷入内置的本机解容 DTBO（刷前自动整分区备份、写入后校验），**重启后生效**。
+  安装模块时会自动刷一次（仅 OS4 且机型在支持列表内）；卡片右侧会显示结果：
+  「已刷入」（带时间，可点击重刷）/「失败」（带原因）；分区已是该镜像时显示「已刷入 · 无需重复刷入」。
+· 循环次数伪装
+  输入目标次数后点「应用」，把电池循环次数显示为设定值，重启后仍生效；「清除」恢复真实值。
+· 电池电压
+  满电电压（4300~4600mV）、关机电压（2800~3500mV），可只填一项。
+  满电电压超过原厂上限时需打开「强制覆盖原厂上限」（改写 BAA 载荷 vterm 并重新加密挂载）。
+  卡片副标题会直接显示是否生效：已生效会写「载荷 vterm 已改写为 xxxx mV」，
+  未生效会告诉你原因（超过上限且未开强制覆盖 / 正在应用）。
+  · 注意：充满后停充、电压回落到 4.4V 左右是正常现象（静置电压），不代表没生效，
+    以副标题里的「已生效 vterm」为准
+  关机电压是模块软件检测：电量耗尽到该值以下执行关机，充电中不触发。
+
+━━ 外观 ━━
+
+· 主题预设
+  六套液态玻璃皮肤：极光浅色、全息流体、暗黑霓虹、幻彩极光、赛博霓虹、熔岩鎏金。
+  选中会同步切换深浅模式，强调色跟随该套主题。
+· 主题模式 / 强调色
+  跟随系统或固定浅色/深色；强调色影响按钮、开关、圆环、图标。
+· 流畅模式
+  卡顿时打开：关掉光斑漂移、玻璃模糊、波浪与页面切换动画。开关即时生效。
+· 数据刷新
+  主页数据多久拉一次：0.5 秒 / 1 秒（默认）/ 2 秒 / 3 秒 / 5 秒 / 关闭。
+  高频刷新走轻量脚本（一次 awk 读 5 个节点），不会因为刷新而卡；面板里会显示「上次耗时 xx ms」。
+  选「关闭」后可用「立即刷新」手动取数。
+· 缩放
+  界面字体缩放、卡片缩放、卡片圆角，都即时生效。
+· 页面切换动效
+  切换曲线、淡入淡出强度、切换时模糊度。
+· 质感
+  玻璃卡片质感（透明度、毛玻璃）、开关按钮玻璃质感（模糊、开启/关闭透明度、颜色）、
+  悬浮底栏（宽度、高度、透明度、纯色、模糊、扭曲、隐藏文字、跟随卡片透明度、图标优化、滑动方向）。
+· 自定义背景
+  选一张图片做背景，可调背景模糊；卡片可选毛玻璃。
+· 颜色
+  分类字体、卡片字体、说明字体各自的颜色与透明度；字体族；
+  温度圈低温/中温/高温配色与阈值；分割线颜色；底栏指示气泡的宽高、颜色、透明度。
+· 显示
+  界面字体是否生效、卡片分类标题、卡片注释、顶部注释的显隐。
+· 发光
+  卡片边缘发光、按钮发光、指示气泡发光，各自可调强度与颜色。
+· DIY 美化
+  ① 背景光斑与噪点：光斑数量 0~3、大小、模糊、透明度、飘动幅度与速度、背景模糊/饱和度、
+     自动变色周期、噪点开关与强度、三个光斑各自换色。
+  ② 能量光环：圆环粗细、轨道可见度、进度弧发光强度与颜色、末端亮点大小与脉冲速度、
+     中心数字字号与粗细、波浪层数/起伏/速度、液面高度（按电量/固定高度/常亮满格）、
+     光晕强度与呼吸速度、光晕是否常驻。
+  ③ 卡片与文字尺寸：卡片间距、内边距、毛玻璃模糊与饱和度、标题字号、数据格字号、
+     卡片/面板/数据格三种圆角。
+  ④ 底栏尺寸：悬浮底栏圆角、距底部距离、左右留白、图标大小。
+  ⑤ 主页字段与卡片显隐：数据格列数（自动/2/3）、11 个字段逐项显隐、面板默认状态、
+     每张卡片逐项显隐（开关式，不涉及拖动）、恢复默认布局。
+  ⑥ 外观方案与自定义 CSS：把当前外观存成方案随时切换，方案可导入导出；也能直接贴一段 CSS。
+
+━━ 关于 ━━
+
+· 作者卡片
+  三张卡片分别是维护者、动态温控作者、解容工具箱作者，点击直达酷安主页。
+· 检查更新
+  多源比对最新版本，有新版会给出下载入口。
+· 更新日志
+  查看各版本改动。
+· 工具
+  运行日志、机型档案、诊断包（反馈问题前先导一份诊断包，里面包含温控、电池、无线与 dmesg 现场）。
+  「采集充电快照」分两项：二改版 / 原版解容。会把当前所有充电与电池节点（power_supply、xm_power、
+  BAA 载荷、device-tree 充电参数、温控表）写成一个 txt 到 Download，用于两个版本逐项对比。
+  两种测法：① 先装原版工具箱采一份 stock，卸掉再装二改版采一份 mod（同电量、同充电方式）；
+  ② 不换装，把「电池解容」「云控屏蔽」关掉采一份当基准，再打开采一份当对比。
+  采集脚本不依赖模块目录，也可以拷到 /data/local/tmp 手动跑：sh snapshot_charge.sh （自动识别环境）。
+· 备份与恢复
+  普通备份只含界面设置；完整备份包含 config/ 与 profiles/，可跨版本迁移。
+  「立即备份当前设置」：把功率档 / 满电电压 / PPS / 循环伪装 / APL / 温控配置同步到模块目录外，
+  之后升级或重装模块会自动恢复；改设置时也会自动同步，这里是手动再补一次。
+  也可以通过提示框粘贴 JSON 直接恢复界面设置。
+· 恢复默认配置
+  清空外观相关设置（主题、缩放、质感、颜色、DIY 等），模块运行参数不受影响。
+
+━━ 其他提示 ━━
+
+· 模块更新会自动保留你的设置（含解容配置与电压档位），无需重新配置。
+· 某页卡片不见了：外观 → DIY 美化 → 主页字段与卡片显隐 → 恢复默认布局。
+· 读不到数据：先看关于页「运行环境」，确认命令通道被识别；仍失败可重启管理器或重新授权。
+· 反馈问题请附：机型、系统版本、模块版本、诊断包。
+
+2026年11月1日 · 小米热炸了`;
+
+function openUsage(){
+  let mask = document.getElementById('usageMask');
+  if(!mask){
+    mask = document.createElement('div');
+    mask.className = 'notice-mask';
+    mask.id = 'usageMask';
+    mask.style.zIndex = '100001';
+    mask.innerHTML = '<div class="notice-card"><div class="notice-title">使用说明</div>'
+      + '<div class="notice-body" id="usageBody"></div>'
+      + '<button class="notice-btn" id="usageBtn">我知道了</button></div>';
+    document.body.appendChild(mask);
+    mask.addEventListener('click', function(e){ if(e.target === mask) closeUsage(); });
+    mask.querySelector('#usageBtn').addEventListener('click', closeUsage);
+  }
+  const body = mask.querySelector('#usageBody');
+  if(body){ body.textContent = USAGE_TEXT; body.scrollTop = 0; }
+  mask.style.display = 'flex';
+}
+function closeUsage(){
+  const m = document.getElementById('usageMask');
+  if(m) m.style.display = 'none';
+}
 
 // ===== 酷安主页跳转 =====
 function openCoolapk(uid){
@@ -3623,10 +3902,81 @@ window.__bkPauseUntil = 0;
 
 function bkResetGuard(){ window.__bkFail = 0; window.__bkPauseUntil = 0; }
 
-async function bkRefresh(){
+function bkApplyFast(kv){
+  const stMap = { Charging: '充电中', Discharging: '放电中', Full: '已充满', 'Not charging': '未充电' };
+  // 满电维持时（100%、电流已为负）系统 status 节点会在 Charging/Discharging 之间抖，
+  // 连续两次采样一致才切换显示，避免状态来回跳
+  const rawSt = kv.status || '';
+  if (window.__stShown === undefined) { window.__stShown = rawSt; window.__stPending = rawSt; }
+  else if (rawSt !== window.__stShown) {
+    if (rawSt === window.__stPending) window.__stShown = rawSt;
+    else window.__stPending = rawSt;
+  }
+  const stCn = stMap[window.__stShown] || window.__stShown;
+  bkPair('Soc', kv.soc);
+  bkPair('St', stCn);
+  bkTxt('sCapacity', kv.soc);
+  bkTxt('sStatus', stCn);
+  const ringEl = document.getElementById('gaugeRing');
+  if (ringEl) {
+    ringEl.classList.toggle('charg', window.__stShown === 'Charging');
+    ringEl.classList.toggle('dischg', window.__stShown === 'Discharging');
+    const socPct = parseFloat(kv.soc);
+    if (isFinite(socPct)) ringEl.style.setProperty('--p', Math.max(0, Math.min(100, socPct)).toFixed(2));
+  }
+  const uv = parseFloat(kv.voltage_uv);
+  bkPair('Volt', (isFinite(uv) && uv > 0) ? (uv / 1000000).toFixed(3) : '--');
+  const charging = (kv.status === 'Charging' || kv.status === 'Full');
+  let ma = parseFloat(kv.battery_current_ma);
+  // 部分机型充电时 current_now 给负数，界面按“充电为正、放电为负”统一
+  if (charging && isFinite(ma) && ma < 0) ma = -ma;
+  bkPair('Cur', isFinite(ma) ? (ma / 1000).toFixed(2) : '--');
+  // status_kv 的 power_w 是档位名（inf/fast/mid/slow），不是瓦数；
+  // 真正的功率是 battery_power_w（电流×电压的绝对值），放电时补负号。
+  const bp = parseFloat(kv.battery_power_w);
+  let ptxt = '--';
+  if (isFinite(bp) && bp >= 0) ptxt = (charging ? bp : -bp).toFixed(1);
+  bkTxt('sPower', ptxt);
+  const tc = parseFloat(kv.temp_c);
+  bkPair('Temp', isFinite(tc) ? (tc / 10).toFixed(1) : '--');
+}
+
+/* 高频刷新只跑 status_fast.sh（一次 awk，几十毫秒），慢变字段交给定期完整刷新 */
+async function bkRefreshFast(){
   if (bkBusy) return;
   if (Date.now() < window.__bkPauseUntil) return;
   bkBusy = true;
+  const _now = () => ((window.performance && performance.now) ? performance.now() : Date.now());
+  const _t0 = _now();
+  try {
+    const raw = await bkSh(BK_DIR + '/status_fast.sh');
+    const kv = bkKV(raw);
+    if (!raw || !kv.soc) return;
+    window.__bkFresh = Date.now();
+    bkApplyFast(kv);
+  } catch(e) {
+  } finally {
+    bkBusy = false;
+    window.__bkLastMs = Math.round(_now() - _t0);
+    if (typeof diyUpdateRefreshUI === 'function') diyUpdateRefreshUI();
+  }
+}
+
+/* 每拍走快速刷新，每 6 拍补一次完整刷新（容量/健康度/循环/协议/APL/温控守护等） */
+let _bkPollN = 0;
+async function bkPoll(){
+  if (!bkShouldRefresh()) return;
+  _bkPollN++;
+  if (_bkPollN % 6 === 0 || _bkPollN === 1) await bkRefresh(true);
+  else await bkRefreshFast();
+}
+
+async function bkRefresh(force){
+  if (bkBusy) return;
+  if (!force && Date.now() < window.__bkPauseUntil) return;
+  bkBusy = true;
+  const _now = () => ((window.performance && performance.now) ? performance.now() : Date.now());
+  const _t0 = _now();
   try {
     const raw = await bkSh(BK_DIR + '/status_kv.sh');
     const kv = bkKV(raw);
@@ -3642,49 +3992,19 @@ async function bkRefresh(){
       return;
     }
     window.__bkFail = 0;
-    const stMap = { Charging: '充电中', Discharging: '放电中', Full: '已充满', 'Not charging': '未充电' };
-    // 满电维持时（100%、电流已为负）系统 status 节点会在 Charging/Discharging 之间抖，
-    // 连续两次采样一致才切换显示，避免状态来回跳
-    const rawSt = kv.status || '';
-    if (window.__stShown === undefined) { window.__stShown = rawSt; window.__stPending = rawSt; }
-    else if (rawSt !== window.__stShown) {
-      if (rawSt === window.__stPending) window.__stShown = rawSt;
-      else window.__stPending = rawSt;
-    }
-    const stCn = stMap[window.__stShown] || window.__stShown;
-    bkPair('Soc', kv.soc);
-    bkPair('St', stCn);
-    bkTxt('sCapacity', kv.soc);
-    bkTxt('sStatus', stCn);
-    const ringEl = document.getElementById('gaugeRing');
-    if (ringEl) {
-      ringEl.classList.toggle('charg', window.__stShown === 'Charging');
-      ringEl.classList.toggle('dischg', window.__stShown === 'Discharging');
-      const socPct = parseFloat(kv.soc);
-      if (isFinite(socPct)) ringEl.style.setProperty('--p', Math.max(0, Math.min(100, socPct)).toFixed(2));
-    }
-    bkPair('Des', kv.charge_design_mah);
-    bkPair('Full', kv.charge_full_mah);
-    const d = parseFloat(kv.charge_design_mah), f = parseFloat(kv.charge_full_mah);
-    bkPair('Health', (d > 0 && f > 0) ? Math.round(f / d * 100) : '--');
-    const uv = parseFloat(kv.voltage_uv);
-    bkPair('Volt', (isFinite(uv) && uv > 0) ? (uv / 1000000).toFixed(3) : '--');
-    const charging = (kv.status === 'Charging' || kv.status === 'Full');
-    let ma = parseFloat(kv.battery_current_ma);
-    // 部分机型充电时 current_now 给负数，界面按“充电为正、放电为负”统一
-    if (charging && isFinite(ma) && ma < 0) ma = -ma;
-    bkPair('Cur', isFinite(ma) ? (ma / 1000).toFixed(2) : '--');
-    // status_kv 的 power_w 是档位名（inf/fast/mid/slow），不是瓦数；
-    // 真正的功率是 battery_power_w（电流×电压的绝对值），放电时补负号。
-    const bp = parseFloat(kv.battery_power_w);
-    let ptxt = '--';
-    if (isFinite(bp) && bp >= 0) ptxt = (charging ? bp : -bp).toFixed(1);
-    bkTxt('sPower', ptxt);
-    const tc = parseFloat(kv.temp_c);
-    bkPair('Temp', isFinite(tc) ? (tc / 10).toFixed(1) : '--');
+    bkApplyFast(kv);
+
+    // 慢变字段只在完整刷新时更新（status_fast.sh 不提供这几项）；读空时沿用上次值，避免闪成 --
+    if (kv.charge_design_mah) window.__lastDes = kv.charge_design_mah;
+    if (kv.charge_full_mah) window.__lastFull = kv.charge_full_mah;
+    bkPair('Des', window.__lastDes || '');
+    bkPair('Full', window.__lastFull || '');
+    const _d = parseFloat(window.__lastDes), _f = parseFloat(window.__lastFull);
+    bkPair('Health', (_d > 0 && _f > 0) ? Math.round(_f / _d * 100) : '');
 
     const u = document.getElementById('bkUnlock'); if (u) u.checked = (kv.unlock === '1');
-    const ap = document.getElementById('bkApl'); if (ap) ap.checked = (kv.apl_enable === '1');
+    const ap = document.getElementById('bkApl');
+    if (ap && kv.apl_enable !== undefined) ap.checked = (kv.apl_enable === '1');
     const apd = document.getElementById('bkAplDesc');
     if (apd) {
       if (kv.apl_alive === '1') apd.textContent = '运行中 · 目标 ' + (kv.apl_target_ma || '--') + 'mA / 上限 ' + (kv.apl_cap_ma || '--') + 'mA';
@@ -3720,20 +4040,47 @@ async function bkRefresh(){
     bkTxt('pcProto', plugged ? (protoMap[(kv.charge_proto || '').toUpperCase()] || kv.charge_proto || '--') : '未插入充电器');
     bkTxt('bkCycleNow', kv.cycle_fake ? ('当前伪装 ' + kv.cycle_fake) : '未启用');
     bkTxt('voltFvNow', kv.fv_v ? (kv.fv_v + ' mV') : '未设置');
+    // 满电电压是否真的生效：设置值 vs 当前加载的 vterm 上限
+    const _fvSet = parseInt(kv.fv_set || kv.fv_v || 0, 10) || 0;
+    const _fvVt = parseInt(kv.fv_vterm || 0, 10) || 0;
+    const _fvAp = parseInt(kv.fv_applied || 0, 10) || 0;
+    const fvd = document.getElementById('voltFvDesc');
+    if (fvd) {
+      if (!_fvSet) fvd.textContent = '4300~4600 mV，超过原厂上限需开强制覆盖';
+      else if (_fvAp && _fvAp === _fvSet) fvd.textContent = '已生效 · 载荷 vterm 已改写为 ' + _fvAp + ' mV（重启后仍保持）';
+      else if (_fvVt && _fvSet > _fvVt) fvd.textContent = '未生效 · 设定 ' + _fvSet + ' mV 超过当前上限 ' + _fvVt + ' mV，需开启「强制覆盖原厂上限」';
+      else if (_fvVt && _fvSet <= _fvVt) fvd.textContent = '已写入节点 · 设定 ' + _fvSet + ' mV（当前上限 ' + _fvVt + ' mV）';
+      else fvd.textContent = '设定 ' + _fvSet + ' mV · 正在应用…';
+    }
     bkTxt('voltTermNow', kv.term_v ? (kv.term_v + ' mV') : '未设置');
-    bkTxt('voltFvDesc', kv.vterm_max ? ('4300~4600 mV，原厂上限 ' + kv.vterm_max + ' mV') : '4300~4600 mV，超过原厂上限需开强制覆盖');
+    // 副标题由上面的生效状态逻辑负责（这行旧文案会把「已生效」盖掉）
     bkTxt('bkCycleDesc', kv.cycle ? ('真实循环 ' + kv.cycle + ' 次，可改为任意显示值') : '把电池循环次数显示为设定值');
     const hasImg = (kv.dtbo_local === '1') ? 'yes' : 'no';
     const has = hasImg;
     if (has === 'yes') {
-      bkTxt('bkDtboState', '可刷入');
-      bkTxt('bkDtboDesc', '点击刷入内置的本机解容 DTBO（刷前自动备份）');
+      const _df = (kv.dtbo_flash || '').trim();
+      const _dt = (kv.dtbo_flash_time || '').trim();
+      if (_df === 'OK') {
+        bkTxt('bkDtboState', '已刷入');
+        bkTxt('bkDtboDesc', '最近刷入 ' + (_dt || '') + ' · 校验一致，重启后生效；点击可重新刷入');
+      } else if (_df === 'SKIP') {
+        bkTxt('bkDtboState', '已刷入');
+        bkTxt('bkDtboDesc', '当前槽已是内置解容 DTBO（' + (_dt || '') + '），无需重复刷入；点击可强制重刷');
+      } else if (_df === 'FAIL') {
+        bkTxt('bkDtboState', '失败');
+        bkTxt('bkDtboDesc', '上次刷入 ' + (_df || '') + '（' + (_dt || '') + '），点击重试或看诊断包');
+      } else {
+        bkTxt('bkDtboState', '可刷入');
+        bkTxt('bkDtboDesc', '点击刷入内置的本机解容 DTBO（刷前自动备份）');
+      }
     } else {
       bkTxt('bkDtboState', '--');
       bkTxt('bkDtboDesc', '未找到本机镜像，可在 KernelSU 管理器中重装模块');
     }
   } finally {
     bkBusy = false;
+    window.__bkLastMs = Math.round(_now() - _t0);
+    if (typeof diyUpdateRefreshUI === 'function') diyUpdateRefreshUI();
   }
 }
 
@@ -3755,10 +4102,22 @@ async function bkSet(kind, on){
 
 async function bkAplToggle(on){
   bkResetGuard();
+  const el = document.getElementById('bkApl');
+  const want = on ? '1' : '0';
   toast(on ? '正在开启 APL…' : '正在关闭 APL…');
-  const out = await bkSh(BK_DIR + '/scripts/apl_toggle.sh ' + (on ? 1 : 0));
-  const tail = (out || '').trim().split(/\r?\n/).slice(-1)[0];
-  if (tail) toast(tail.slice(0, 60));
+  const out = await bkSh(BK_DIR + '/apl_toggle.sh ' + want);
+  const text = (out || '').trim();
+  const tail = text.split(/\r?\n/).filter(Boolean).slice(-1)[0] || '';
+  // 回读校验：脚本没写进去（或报错）时把开关拨回原位，别让界面“看着开了其实没开”
+  const chk = await bkSh(BK_DIR + '/cfg_cli.sh get apl_enable 0');
+  const got = (chk || '').trim().split(/\r?\n/).pop() || '';
+  if (got !== want) {
+    if (el) el.checked = !on;
+    toast('开启失败：' + (tail || text || '脚本无输出') + '（当前=' + (got || '空') + '）');
+  } else {
+    if (tail) toast(tail.slice(0, 60));
+    else toast(on ? 'APL 已开启' : 'APL 已关闭');
+  }
   setTimeout(bkRefresh, 900);
 }
 
@@ -3829,7 +4188,9 @@ function showModal(title, body, okText, cancelText){
 
 async function bkDtboFlash(){
   const st = document.getElementById('bkDtboState');
-  if (!st || st.textContent !== '可刷入') { toast('本机没有可刷入的镜像'); return; }
+  const kv = window.__bkKv || {};
+  // 只看镜像是否存在（已刷入也要能重刷），不再用文字判断
+  if (!st || kv.dtbo_local !== '1') { toast('本机没有可刷入的镜像'); return; }
   const go = await showModal(
     '刷入解容 DTBO',
     '将把内置的本机解容 DTBO 写入当前槽。\n\n刷写前会自动整分区备份到 Download/dtbo_backup，写入后按整分区校验；重启后生效。',
@@ -3979,9 +4340,6 @@ function bkShouldRefresh(){
     return el && el.classList.contains('active');
   });
 }
-setInterval(function(){
-  if (bkShouldRefresh()) bkRefresh();
-}, 6000);
 setTimeout(function(){ if (bkShouldRefresh()) bkRefresh(); }, 1500);
 
 function setTxt(id,v){const e=document.getElementById(id);if(e)e.textContent=(v===undefined||v===null||v==='')?'--':v;}
@@ -4299,6 +4657,17 @@ function _fullTs(){
 function _badPath(p){
   return !p || /['"`$\n\r\t]/.test(p);
 }
+async function syncSettingsBackup(){
+  toast('正在同步设置…');
+  let out = '';
+  try{
+    const r = await __kexec(`sh ${MODDIR}/config_backup.sh 2>&1`);
+    out = ((r && r.stdout) || '').trim().split(/\r?\n/).filter(Boolean).pop() || '';
+  }catch(e){ out = ''; }
+  toast(out || '已同步');
+  logOp('设置备份｜' + (out || '已同步'));
+}
+
 async function saveFullBackup(){
   const def = getBackupPath();
   let dir = String(prompt('完整备份保存目录：', def) || '').trim();
@@ -7338,6 +7707,26 @@ function _barAscent(pv, from, cap, stepMs){
   return function(){ clearInterval(t); };
 }
 
+async function takeChargeSnapshot(tag){
+  const t = (tag === 'stock') ? 'stock' : 'mod';
+  const label = t === 'stock' ? '原版解容' : '二改版';
+  toast('正在采集充电快照（' + label + '）…');
+  const r = await __kexec(`sh ${MODDIR}/snapshot_charge.sh ${t} 2>&1`);
+  const out = ((r && r.stdout) || '').trim();
+  const path = (out.match(/^PATH=(.+)$/m) || [])[1] || '';
+  logOp('充电快照｜' + label + '｜' + (path || '无输出'));
+  if (!path) {
+    await showModal('采集未完成', (out || '未取得结果，请重试或检查 root 通道').slice(0, 160), '知道了');
+    return;
+  }
+  await showModal('快照已生成',
+    '已采集【' + label + '】的充电节点快照：\n' + path
+    + '\n\n同一台设备、相近电量、同一种充电方式（有线/无线）各采一次；'
+    + '两个版本都采完把两份文件发我即可。\n'
+    + '只装了某个模块时，标签只影响文件名，采集内容一样。',
+    '知道了');
+}
+
 async function runDiagnoseScript(){
   const cf = _mkModal('诊断与日志打包', '将执行 diagnose.sh：\n\n· 采集温控 / 电量 / 机型 / 进程 / dmesg 等现场信息\n· 配置文件按白名单采集，敏感信息（序列号 / IMEI / MAC / 手机号）自动脱敏\n· 打包为 HyperOS_XJ_diag_<时间戳>.tar.gz\n· 保存到 /sdcard/Download/\n\n共 8 个步骤，过程中会有十几秒无响应，确定继续吗？');
   document.body.appendChild(cf);
@@ -7757,6 +8146,8 @@ async function saveImpl(){
     logOp(`保存设置｜默认=${out.default_mode} 充电=${out.charge_mode?1:0}/${out.charge_level} 息屏=${out.sleep_level} 游戏=${out.game_mode?1:0}/${out.game_level} 旁路温=${out.bypass_temp_on}/${out.bypass_temp_off} 旁路电=${out.bypass_level} 三倍速=${out.hyperos4?1:0}`);
     updateSubs();
     toast('已保存');
+    // 同步一份到模块目录外，升级/重装时自动恢复
+    try{ __kexec(`mkdir -p /data/adb/HyperOS_XJ_data/config 2>/dev/null; cp -f '${CONF}' /data/adb/HyperOS_XJ_data/config/settings.json 2>/dev/null; true`); }catch(e){}
     return true;
   }catch(e){
     toast('保存异常：'+String(e));
@@ -7963,6 +8354,72 @@ async function refreshStatus(){
 /* 约定：数值型设置走 CSS 变量（挂在 :root），皮肤色类覆盖挂在 body，
    0 或空字符串表示「跟随主题」，对应变量会被移除，回落到皮肤自带的值 */
 
+/* 轮询定时器统一在这里建：主页数据间隔由「数据刷新」设置控制 */
+let _diyBkTimer = null, _diyStTimer = null;
+const DIY_BK_OPTIONS = [
+  { id: '500', l: '0.5 秒' },
+  { id: '1000', l: '1 秒' },
+  { id: '2000', l: '2 秒' },
+  { id: '3000', l: '3 秒' },
+  { id: '5000', l: '5 秒' },
+  { id: '0', l: '关闭' }
+];
+function diyBkInterval(){
+  const v = parseFloat(diyLS('ht_bk_interval', '1000'));
+  if(!isFinite(v) || v < 0) return 1000;
+  return Math.min(30000, v);
+}
+/* 旧版默认是 2 秒；升级后未手动选过的统一提到 1 秒（只做一次） */
+function diyBkMigrate(){
+  try{
+    if(localStorage.getItem('ht_bk_migrated') === '1') return;
+    const cur = localStorage.getItem('ht_bk_interval');
+    if(cur === null || cur === '2000') localStorage.setItem('ht_bk_interval', '1000');
+    localStorage.setItem('ht_bk_migrated', '1');
+  }catch(e){}
+}
+function diyRestartPolling(){
+  if(_diyBkTimer){ clearInterval(_diyBkTimer); _diyBkTimer = null; }
+  if(_diyStTimer){ clearInterval(_diyStTimer); _diyStTimer = null; }
+  const lite = diyFlag('ht_fx_lite', false);
+  const iv = diyBkInterval();
+  if(iv > 0){
+    _diyBkTimer = setInterval(function(){
+      try{ bkPoll(); }catch(e){}
+    }, iv);
+  }
+  _diyStTimer = setInterval(function(){
+    try{ safeInit('refreshStatus', refreshStatus); }catch(e){}
+  }, lite ? 6000 : 3000);
+  diyUpdateRefreshUI();
+}
+function diyRenderBkChips(){
+  if(typeof renderChips !== 'function') return;
+  renderChips('bkIntervalChips', DIY_BK_OPTIONS, String(diyBkInterval()), 'diySetBkInterval');
+}
+function diySetBkInterval(id){
+  diySave('ht_bk_interval', id);
+  diyRestartPolling();
+  diyRenderBkChips();
+  diyUpdateRefreshUI();
+  toast(id === '0' ? '已关闭自动刷新（可用「立即刷新」手动取数）' : '刷新间隔已设为 ' + (DIY_BK_OPTIONS.find(x => x.id === id) || {}).l);
+}
+function diyUpdateRefreshUI(){
+  const sub = document.getElementById('bkRefreshSub');
+  const iv = diyBkInterval();
+  const opt = DIY_BK_OPTIONS.find(x => x.id === String(iv)) || {};
+  if(sub) sub.textContent = iv === 0 ? '已关闭自动刷新 · 可手动刷新' : (opt.l || (iv / 1000 + ' 秒')) + ' · 主页数据更新频率';
+  const hint = document.getElementById('bkRefreshHint');
+  if(hint){
+    const ms = window.__bkLastMs;
+    let t = '间隔越短越及时，但每次刷新要跑一次状态脚本；滑动发涩时调大间隔';
+    if(ms && ms > 0){
+      t += '（上次耗时 ' + ms + 'ms' + (ms > iv && iv > 0 ? '，已超过间隔，建议调大一档' : '') + '）';
+    }
+    hint.textContent = t;
+  }
+}
+
 function diyLS(key, def){ try{ const s = localStorage.getItem(key); return (s === null || s === '') ? def : s; }catch(e){ return def; } }
 function diyNum(key, def){ const v = parseFloat(diyLS(key, def)); return isNaN(v) ? def : v; }
 function diyFlag(key, def){ return diyLS(key, def ? '1' : '0') === '1'; }
@@ -7981,7 +8438,7 @@ function diyVivid(){ const s = SKINS.find(x => x.id === skinId) || {}; return !!
 const DIY_SLIDERS = {
   /* 背景 */
   blobSize:  { label:'光斑大小',     key:'ht_diy_blob_k',      min:40,  max:170, step:5,    def:100, fmt:v=>v+'%',        apply:v=>diyVar('--blob-k', (v/100).toFixed(2)) },
-  blobBlur:  { label:'光斑模糊度',   key:'ht_diy_blob_blur',   min:20,  max:200, step:5,    def:100, fmt:v=>v+'px',       apply:v=>diyVar('--blob-blur', v+'px') },
+  blobBlur:  { label:'光斑模糊度',   key:'ht_diy_blob_blur',   min:20,  max:200, step:5,    def:72,  fmt:v=>v+'px',       apply:v=>diyVar('--blob-blur', v+'px') },
   blobOp:    { label:'光斑透明度',   key:'ht_diy_blob_op',     min:0.2, max:1.6, step:0.05, def:1,   fmt:v=>v.toFixed(2)+'×', apply:v=>diyVar('--blob-user-op', v) },
   blobDrift: { label:'飘动幅度',     key:'ht_diy_blob_drift',  min:0,   max:40,  step:1,    def:15,  fmt:v=>v+'%',
                apply:v=>{ diyVar('--blob-dx', (v * 0.67).toFixed(1) + '%'); diyVar('--blob-dy', v + '%'); } },
@@ -8032,6 +8489,8 @@ const DIY_SLIDERS = {
 const DIY_SWITCHES = {
   noise:      { label:'噪点纹理',   desc:'背景叠一层细噪点',        key:'ht_diy_noise',       def:false, apply:on=>document.body.classList.toggle('noise-on', on) },
   bgHue:      { label:'背景自动变色', desc:'光斑颜色缓慢循环',      key:'ht_diy_bg_hue',      def:false, apply:on=>document.body.classList.toggle('bg-hue', on) },
+  lite:       { label:'流畅模式',   desc:'关掉光斑漂移、玻璃模糊、波浪动画，界面滑动更跟手', key:'ht_fx_lite', def:false,
+                apply:on=>{ document.body.classList.toggle('fx-lite', on); if(typeof diyRestartPolling === 'function') diyRestartPolling(); } },
   glowAlways: { label:'光晕常驻',   desc:'关闭后仅在充电时出现',    key:'ht_diy_glow_always', def:false, apply:on=>document.body.classList.toggle('glow-always', on) }
 };
 
@@ -8113,6 +8572,15 @@ function diySwitchChange(id, on){
   diySave(d.key, on ? '1' : '0');
   d.apply(on);
   diyUpdateSubs();
+}
+function diySyncLiteUI(){
+  const el = document.getElementById('fx_lite');
+  const sub = document.getElementById('fxLiteSub');
+  const on = diyFlag(DIY_SWITCHES.lite.key, false);
+  if(el) el.checked = on;
+  if(sub) sub.textContent = on
+    ? '已开启 · 已停止光斑漂移/玻璃模糊/波浪动画，轮询降频'
+    : '关闭光斑漂移、玻璃模糊与波浪动画，界面更跟手';
 }
 function diySetColor(id, color){
   const d = DIY_COLORS[id];
@@ -8274,13 +8742,60 @@ function diyCardTitle(card){
   const t = card.querySelector('.pref-title') || card.querySelector('.panel-head');
   return t ? t.textContent.replace(/\s+/g, ' ').trim() : '';
 }
+function diyCardIdOf(card){
+  if(!card) return '?';
+  const did = card.getAttribute && card.getAttribute('data-diy-id');
+  if(did) return did;
+  const page = card.closest ? card.closest('.page') : null;
+  return (page ? page.id : '?') + '|' + (diyCardTitle(card) || '?');
+}
 function diyCardKey(page, card, i){
-  const t = diyCardTitle(card);
-  return page.id + '|' + (t || ('#' + i));
+  return diyCardIdOf(card) || (page.id + '|#' + i);
 }
 function diyHiddenCards(){ return diyJson('ht_diy_hidden_cards', []); }
+/* 旧版卡片标识是「pageId|卡片标题」，标题会随行排序改变；现在用固定的 data-diy-id。
+   这里把旧键一次性映射过去，避免升级后隐藏设置与卡片顺序看起来“丢了”。 */
+function diyMigrateList(list){
+  if(!Array.isArray(list) || !list.length) return { list: list || [], changed: false };
+  let changed = false;
+  const out = list.map(function(k){
+    if(!k || k.indexOf('|') < 0) return k;
+    const i = k.indexOf('|');
+    const pg = document.getElementById(k.slice(0, i));
+    if(!pg) return k;
+    const title = k.slice(i + 1);
+    const hit = Array.prototype.slice.call(pg.children).filter(function(el){
+      return el.classList && (el.classList.contains('card') || el.classList.contains('panel'));
+    }).find(function(c){ return diyCardTitle(c) === title; });
+    const did = hit ? hit.getAttribute('data-diy-id') : null;
+    if(did){ changed = true; return did; }
+    return k;
+  });
+  return { list: out, changed: changed };
+}
+/* 自愈：某一页的卡片被“全部隐藏”（且至少 3 张）时，一定是脏数据，直接放开。
+   曾出现过：卡片顺序迁移时误写进隐藏列表，导致整页卡片消失。 */
+function diyAutoHealHidden(hidden){
+  let changed = false;
+  Array.prototype.forEach.call(document.querySelectorAll('.page'), function(page){
+    const cards = Array.prototype.slice.call(page.children).filter(function(el){
+      return el.classList && (el.classList.contains('card') || el.classList.contains('panel')) && !el.hasAttribute('data-diy-keep');
+    });
+    if(cards.length < 3) return;
+    const ids = cards.map(function(c){ return c.getAttribute('data-diy-id'); }).filter(Boolean);
+    if(ids.length < 3) return;
+    const hid = ids.filter(function(id){ return hidden.indexOf(id) >= 0; }).length;
+    if(hid >= ids.length){
+      ids.forEach(function(id){ const i = hidden.indexOf(id); if(i >= 0){ hidden.splice(i, 1); changed = true; } });
+    }
+  });
+  if(changed) diySaveJson('ht_diy_hidden_cards', hidden);
+  return hidden;
+}
 function diyApplyHiddenCards(){
-  const hidden = diyHiddenCards();
+  const mig = diyMigrateList(diyHiddenCards());
+  if(mig.changed) diySaveJson('ht_diy_hidden_cards', mig.list);
+  const hidden = diyAutoHealHidden(mig.list.slice());
   Array.prototype.forEach.call(document.querySelectorAll('.page'), page => {
     diyCards(page).forEach((card, i) => {
       const k = diyCardKey(page, card, i);
@@ -8321,127 +8836,19 @@ function diyToggleCard(encKey){
   diyApplyHiddenCards(); diyRenderCardVis(); diyUpdateSubs();
 }
 
-let diyDrag = null, diyDragTimer = null;
-function diyEnsurePlaceholder(){}
-function diyPointerDown(e){
-  if(diyDrag || e.button > 0) return;
-  const t = e.target;
-  if(t && t.closest && t.closest('input, textarea, .hyper-switch, .swatches, .btn, button')) return;
-  const card = t && t.closest ? t.closest('.page > .card, .page > .panel') : null;
-  if(!card || card.hasAttribute('data-diy-keep') || card.style.display === 'none') return;
-  const x = e.clientX, y = e.clientY;
-  const cancel = () => { clearTimeout(diyDragTimer); window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', cancel); window.removeEventListener('pointercancel', cancel); };
-  const move = ev => { if(Math.abs(ev.clientX - x) > 8 || Math.abs(ev.clientY - y) > 8) cancel(); };
-  diyDragTimer = setTimeout(() => {
-    cancel();
-    diyDragStart(card, y);
-  }, 450);
-  window.addEventListener('pointermove', move, { passive:true });
-  window.addEventListener('pointerup', cancel, { passive:true });
-  window.addEventListener('pointercancel', cancel, { passive:true });
-}
-function diyDragStart(card, y){
-  const r = card.getBoundingClientRect();
-  const ph = document.createElement('div');
-  ph.className = 'diy-placeholder';
-  ph.style.height = Math.max(24, r.height) + 'px';
-  card.parentNode.insertBefore(ph, card);
-  diyDrag = { card, ph, offsetY: y - r.top, height: r.height };
-  card.classList.add('diy-drag');
-  card.style.width = r.width + 'px';
-  card.style.left = r.left + 'px';
-  card.style.top = r.top + 'px';
-  document.body.classList.add('diy-dragging');
-  window.addEventListener('pointermove', diyPointerMove, { passive:false });
-  window.addEventListener('pointerup', diyPointerUp);
-  window.addEventListener('pointercancel', diyPointerUp);
-  try{ if(navigator.vibrate) navigator.vibrate(12); }catch(e){}
-}
-function diySegBounds(page, node){
-  const kids = Array.prototype.slice.call(page.children);
-  const i = kids.indexOf(node);
-  let start = null, end = null;
-  for(let k = i - 1; k >= 0; k--){ if(kids[k].classList.contains('small-title')){ start = kids[k]; break; } }
-  for(let k = i + 1; k < kids.length; k++){ if(kids[k].classList.contains('small-title')){ end = kids[k]; break; } }
-  return { start, end };
-}
-function diyPointerMove(ev){
-  if(!diyDrag) return;
-  ev.preventDefault();
-  const card = diyDrag.card, ph = diyDrag.ph;
-  card.style.top = (ev.clientY - diyDrag.offsetY) + 'px';
-  const page = ph.parentNode;
-  const kids = Array.prototype.slice.call(page.children);
-  const bounds = diySegBounds(page, ph);
-  const from = bounds.start ? kids.indexOf(bounds.start) + 1 : 0;
-  const to = bounds.end ? kids.indexOf(bounds.end) : kids.length;
-  let placed = false;
-  for(let i = from; i < to; i++){
-    const el = kids[i];
-    if(el === card || el === ph) continue;
-    if(!(el.classList.contains('card') || el.classList.contains('panel')) || el.style.display === 'none') continue;
-    const r = el.getBoundingClientRect();
-    if(ev.clientY < r.top + r.height / 2){ page.insertBefore(ph, el); placed = true; break; }
-  }
-  if(!placed){
-    if(bounds.end) page.insertBefore(ph, bounds.end);
-    else page.appendChild(ph);
-  }
-}
-function diyPointerUp(){
-  if(!diyDrag) return;
-  const card = diyDrag.card, ph = diyDrag.ph;
-  if(ph.parentNode) ph.parentNode.replaceChild(card, ph);
-  card.classList.remove('diy-drag');
-  card.style.width = ''; card.style.left = ''; card.style.top = '';
-  document.body.classList.remove('diy-dragging');
-  window.removeEventListener('pointermove', diyPointerMove);
-  window.removeEventListener('pointerup', diyPointerUp);
-  window.removeEventListener('pointercancel', diyPointerUp);
-  diyDrag = null;
-  diySaveOrder(card.closest('.page'));
-  diyRenderCardVis();
-}
-function diySaveOrder(page){
-  if(!page) return;
-  const keys = diyCards(page).map((c, i) => diyCardKey(page, c, i));
-  diySaveJson('ht_diy_order_' + page.id, keys);
-}
-function diyApplyOrder(page){
-  const order = diyJson('ht_diy_order_' + page.id, []);
-  if(!order.length) return;
-  const keyed = new Map();
-  diyCards(page).forEach((c, i) => keyed.set(c, diyCardKey(page, c, i)));
-  const rank = el => { const i = order.indexOf(keyed.get(el)); return i < 0 ? 9999 : i; };
-  const kids = Array.prototype.slice.call(page.children);
-  const segs = [];
-  let cur = null;
-  kids.forEach(el => {
-    if(el.classList.contains('small-title')){
-      if(cur){ cur.to = el; segs.push(cur); cur = null; }
-    } else if(el.classList.contains('card') || el.classList.contains('panel')){
-      if(!cur) cur = { cards: [], to: null };
-      cur.cards.push(el);
-    }
-  });
-  if(cur){ cur.to = null; segs.push(cur); }
-  segs.forEach(seg => {
-    if(seg.cards.length < 2) return;
-    const sorted = seg.cards.slice().sort((a, b) => rank(a) - rank(b));
-    if(sorted.every((el, i) => el === seg.cards[i])) return;
-    for(let i = 0; i < sorted.length; i++) page.insertBefore(sorted[i], seg.to);
-  });
-}
-
 function diyResetLayout(){
   try{
     localStorage.removeItem('ht_diy_hidden_cards');
     localStorage.removeItem('ht_diy_home_hidden');
     localStorage.removeItem('ht_diy_home_cols');
+    localStorage.removeItem('ht_diy_home_order');
     localStorage.removeItem('ht_diy_panel');
-    Array.prototype.forEach.call(document.querySelectorAll('.page'), p => {
-      try{ localStorage.removeItem('ht_diy_order_' + p.id); }catch(e){}
-    });
+    const drop = [];
+    for(let i = 0; i < localStorage.length; i++){
+      const k = localStorage.key(i);
+      if(k && (k.indexOf('ht_diy_order_') === 0 || k.indexOf('ht_diy_rows_') === 0)) drop.push(k);
+    }
+    drop.forEach(k => { try{ localStorage.removeItem(k); }catch(e){} });
   }catch(e){}
   toast('布局已恢复默认，正在刷新');
   setTimeout(() => { try{ location.reload(); }catch(e){} }, 600);
@@ -8575,6 +8982,7 @@ function diyUpdateSubs(){
 
 /* ---------- 初始化 ---------- */
 function initDIY(){
+  diyBkMigrate();
   diyRenderSliders('diyBgSliders', ['blobSize','blobBlur','blobOp','blobDrift','blobSpeed','bgBlur','bgSat','bgHueDur','noiseOp']);
   diyRenderSwitches('diyBgSwitches', ['noise','bgHue']);
   diyRender('diyBgColors', ['b1','b2','b3'].map(diyColorHtml).join(''));
@@ -8598,15 +9006,18 @@ function initDIY(){
   diyApplyAll();
   diyApplyHiddenCards();
 
-  Array.prototype.forEach.call(document.querySelectorAll('.page'), diyApplyOrder);
 
   const cssBox = document.getElementById('diyCssBox');
   if(cssBox) cssBox.value = diyLS('ht_diy_css', '');
   diyApplyCss();
   diyRenderSchemes();
+  diySyncLiteUI();
+  diyRenderBkChips();
+  diyUpdateRefreshUI();
   diyUpdateSubs();
 
-  document.addEventListener('pointerdown', diyPointerDown, { passive:true });
+  diyBkMigrate();
+  diyRestartPolling();
 }
 
 function safeInit(name, fn){
@@ -8652,7 +9063,6 @@ safeInit('initPanelState', initPanelState);
 safeInit('initBackup', initBackup);
 safeInit('load', load);
 safeInit('refreshStatus', refreshStatus);
-setInterval(() => safeInit('refreshStatus', refreshStatus), 3000);
 
 requestAnimationFrame(() => {
   const activePage = document.querySelector('.page.active');

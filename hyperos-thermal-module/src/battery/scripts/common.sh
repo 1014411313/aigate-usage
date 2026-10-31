@@ -297,6 +297,11 @@ cfg_set() {
   else
     echo "${_k}=${_v}" >> "$CONF"
   fi
+  # 同步一份到模块目录外：模块更新会整体替换目录，靠这份备份在安装时恢复。
+  # 放在 cfg_set 里而不是定时任务，保证用户改完立刻就有备份（不等 60 秒）。
+  _xj_bak=/data/adb/HyperOS_XJ_data/battery/config
+  [ -d "$_xj_bak" ] || mkdir -p "$_xj_bak" 2>/dev/null
+  cp -f "$CONF" "$_xj_bak/settings.conf" 2>/dev/null
 }
 
 # 机型参数取用（必须在 cfg_get/cfg_set 定义之后解析，否则函数尚未定义会取到空值）

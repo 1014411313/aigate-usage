@@ -214,6 +214,34 @@ if [ -s "$MODDIR/config/stop_charge.log" ]; then
         | sanitize > "$WORK/stop_charge.txt" 2>/dev/null
 fi
 
+{
+    echo "=== 解容配置关键项（battery/config/settings.conf）==="
+    grep -E '^(dev_code|unlock|power_limit|freepps|cloud|cycle_fake|thermal_guard|thermal_limit|thermal_action|fv_v|term_v|fv_force|apl_enable)=' \
+        "$MODDIR/battery/config/settings.conf" 2>/dev/null
+    echo
+    echo "=== 满电电压（fv）现场 ==="
+    for f in fv_force_applied fv_vterm_orig fv_force_fail volt_fv_node; do
+        [ -f "$MODDIR/battery/state/$f" ] && echo "$f=$(cat "$MODDIR/battery/state/$f" 2>/dev/null)"
+    done
+    [ -f "$MODDIR/battery/state/volt_orig.txt" ] && { echo "--- volt_orig.txt"; cat "$MODDIR/battery/state/volt_orig.txt" 2>/dev/null; }
+    echo "constant_charge_voltage=$(cat /sys/class/power_supply/battery/constant_charge_voltage 2>/dev/null || echo 不存在)"
+    echo "voltage_now=$(cat /sys/class/power_supply/battery/voltage_now 2>/dev/null)"
+    echo
+    echo "=== DTBO ==="
+    if [ -f "$MODDIR/battery/dtbo/local.img" ]; then
+        ls -l "$MODDIR/battery/dtbo/local.img" 2>/dev/null
+        _l=$(ls "$MODDIR/battery/dtbo"/*.img 2>/dev/null | wc -l)
+        echo "dtbo 目录镜像数：$_l（正常应只有 local.img）"
+    else
+        echo "local.img 不存在（未刷入或安装时被跳过）"
+    fi
+    echo "--- manifest 最近 5 条 ---"
+    tail -n 5 /sdcard/Download/dtbo_backup/manifest.txt 2>/dev/null
+    _slot=$(getprop ro.boot.slot_suffix); _slot=${_slot#_}; [ -z "$_slot" ] && _slot=b
+    echo "当前槽：$_slot"
+    echo "dtbo_${_slot} 前 1MB md5：$(dd if=/dev/block/by-name/dtbo_$_slot bs=1M count=1 2>/dev/null | md5sum 2>/dev/null | cut -d' ' -f1)"
+} > "$WORK/battery_state.txt" 2>/dev/null
+
 ls -l "$MODDIR" > "$WORK/module_files.txt" 2>/dev/null
 [ -f "$MODDIR/thermal_core.sh" ] && md5sum "$MODDIR/thermal_core.sh" >> "$WORK/module_files.txt" 2>/dev/null
 cp -f "$MODDIR/module.prop" "$WORK/" 2>/dev/null

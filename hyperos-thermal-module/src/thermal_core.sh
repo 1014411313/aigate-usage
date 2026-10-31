@@ -789,7 +789,7 @@ charge_tail_sample() {
     printf '%s' "$now" > "$CONFDIR/.chg_tail_ts" 2>/dev/null
     local t="$BAT_TEMP"
     case "$t" in ''|*[!0-9]*) t=0 ;; esac
-    echo "$(date '+%H:%M:%S') st=$BAT_STATUS cap=$BAT_CAP% batt=$((t / 10)).$((t % 10))C cur=${BAT_CUR}uA wls=$wls die=$(cat /sys/class/xm_power/wireless_master/wls_die_temp 2>/dev/null) rx_iout=$(cat /sys/class/xm_power/wireless_master/rx_iout 2>/dev/null)" \
+    echo "$(date '+%H:%M:%S') st=$BAT_STATUS cap=$BAT_CAP% batt=$((t / 10)).$((t % 10))C cur=${BAT_CUR}uA wls=$wls die=$(cat /sys/class/xm_power/wireless_master/wls_die_temp 2>/dev/null) rx_iout=$(cat /sys/class/xm_power/wireless_master/rx_iout 2>/dev/null) wls_curr=$(cat /sys/class/power_supply/wireless/current_now 2>/dev/null)" \
         >> "$CONFDIR/.chg_tail" 2>/dev/null
     tail -n 12 "$CONFDIR/.chg_tail" > "$CONFDIR/.chg_tail.tmp" 2>/dev/null && mv -f "$CONFDIR/.chg_tail.tmp" "$CONFDIR/.chg_tail" 2>/dev/null
     return 0
@@ -807,7 +807,13 @@ stop_charge_watch() {
     local ac=$(cat /sys/class/power_supply/ac/online 2>/dev/null)
     local usb=$(cat /sys/class/power_supply/usb/online 2>/dev/null)
     local wls=$(cat /sys/class/power_supply/wireless/online 2>/dev/null)
-    case "$ac$usb$wls" in *1*) ;; *) return 0 ;; esac
+    local plug=0
+    case "$ac$usb$wls" in *1*) plug=1 ;; esac
+    # 无线停充时 RX 会先把 wireless/online 置 0，本次插着电的标志会跟着丢；
+    # 所以用上一拍的插件状态判定，否则真停充反而记不下来。
+    local prev_plug=$(cat "$CONFDIR/.last_plugged" 2>/dev/null)
+    printf '%s' "$plug" > "$CONFDIR/.last_plugged" 2>/dev/null
+    [ "$plug" = "1" ] || [ "$prev_plug" = "1" ] || return 0
     local t="$BAT_TEMP"
     case "$t" in ''|*[!0-9]*) t=0 ;; esac
     local f="$CONFDIR/stop_charge.log"
@@ -817,7 +823,8 @@ stop_charge_watch() {
         echo "在线       : ac=$ac usb=$usb wireless=$wls"
         echo "高温停充   : high_temp_stop_charge=$(getprop persist.vendor.high_temp_stop_charge 2>/dev/null)"
         echo "内核旋钮   : wired_rm=$(cat /sys/class/xm_power/charger/charger_thermal/wired_thermal_remove 2>/dev/null) wireless_rm=$(cat /sys/class/xm_power/charger/charger_thermal/wireless_thermal_remove 2>/dev/null) ctrl=$(cat /sys/class/xm_power/charger/charger_thermal/wired_ctrl_limit 2>/dev/null) curr=$(cat /sys/class/xm_power/charger/charger_thermal/wired_chg_curr 2>/dev/null)"
-        echo "无线节点   : die_temp=$(cat /sys/class/xm_power/wireless_master/wls_die_temp 2>/dev/null) rx_iout=$(cat /sys/class/xm_power/wireless_master/rx_iout 2>/dev/null) rx_vout=$(cat /sys/class/xm_power/wireless_master/rx_vout 2>/dev/null)"
+        echo "无线节点   : die_temp=$(cat /sys/class/xm_power/wireless_master/wls_die_temp 2>/dev/null) rx_iout=$(cat /sys/class/xm_power/wireless_master/rx_iout 2>/dev/null) rx_vout=$(cat /sys/class/xm_power/wireless_master/rx_vout 2>/dev/null) wls_curr=$(cat /sys/class/power_supply/wireless/current_now 2>/dev/null)"
+        echo "无线限流   : chg_curr=$(cat /sys/class/xm_power/charger/charger_thermal/wireless_chg_curr 2>/dev/null) quick_ctl=$(cat /sys/class/xm_power/charger/charger_thermal/wls_quick_chg_control_limit 2>/dev/null) mag_ctl=$(cat /sys/class/xm_power/charger/charger_thermal/wireless_mag_ctrl_limit 2>/dev/null)"
         echo "功率档     : power_limit=$(grep -a '^power_limit=' /data/adb/modules/HyperOS_XJ/battery/config/settings.conf 2>/dev/null | cut -d= -f2) apl_enable=$(grep -a '^apl_enable=' /data/adb/modules/HyperOS_XJ/battery/config/settings.conf 2>/dev/null | cut -d= -f2)"
         echo "温控档位   : $(cat "$CONFDIR/current_mode" 2>/dev/null)"
         echo "--- 停充前 12 次采样（每 10s）---"
@@ -830,6 +837,30 @@ stop_charge_watch() {
         tail -n 240 "$f" > "$f.tmp" 2>/dev/null && mv -f "$f.tmp" "$f" 2>/dev/null
     fi
     log "检测到停充：$prev -> $cur（温度 $((t / 10)).$((t % 10))℃，已记入 stop_charge.log）"
+}
+
+# 启动时从模块目录外的备份恢复一次：customize.sh 的恢复如果没跑到（部分管理器的更新路径），
+# 这里可以兜住。备份由 cfg_set / UI 保存实时同步，内容不同就以备份为准（新版本新增的键由脚本默认值兜底）。
+restore_from_backup() {
+    local bak=/data/adb/HyperOS_XJ_data
+    [ -d "$bak" ] || return 0
+    local cur="$MODDIR/battery/config/settings.conf"
+    local bf="$bak/battery/config/settings.conf"
+    if [ -s "$bf" ]; then
+        if [ ! -s "$cur" ] || ! cmp -s "$bf" "$cur" 2>/dev/null; then
+            mkdir -p "$MODDIR/battery/config" 2>/dev/null
+            cp -f "$bf" "$cur" 2>/dev/null && log "已从备份恢复解容配置（功率档/电压/PPS/循环/APL）"
+        fi
+    fi
+    local cfg="$CONFDIR/settings.json"
+    local bcfg="$bak/config/settings.json"
+    if [ -s "$bcfg" ]; then
+        if [ ! -s "$cfg" ] || ! cmp -s "$bcfg" "$cfg" 2>/dev/null; then
+            mkdir -p "$CONFDIR" 2>/dev/null
+            cp -f "$bcfg" "$cfg" 2>/dev/null && log "已从备份恢复温控配置"
+        fi
+    fi
+    return 0
 }
 
 tick() {
@@ -1124,6 +1155,7 @@ bootstrap || exit 1
 save_charge_orig
 factory_backup
 refresh_thermal_list
+restore_from_backup
 rm -f "$CONFDIR/.heal" 2>/dev/null
 LAST_RESTART=0
 log "thermal_core 启动 daemon=$THERMAL_DAEMON path=$THERMAL_PATH"

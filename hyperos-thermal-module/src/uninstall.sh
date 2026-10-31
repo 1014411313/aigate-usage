@@ -159,7 +159,8 @@ case "$MODDIR" in
     /data/adb/modules/*|/data/adb/modules_update/*)
         find "$MODDIR" -mindepth 1 -maxdepth 1 ! -name 'uninstall.sh' -exec rm -rf {} + 2>/dev/null
         ( sleep 2; rm -rf "$MODDIR" ) >/dev/null 2>&1 &
-        say "[OK] 已清理模块目录：$MODDIR"
+        # 保留 /data/adb/HyperOS_XJ_data：用户常常「删了重装」，删掉就等于把设置一起清了
+        say "- 已清理模块目录：$MODDIR（用户设置备份保留在 /data/adb/HyperOS_XJ_data，重装后自动恢复）"
         ;;
     *)
         say "! 非标准模块目录，跳过目录清理：$MODDIR"

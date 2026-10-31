@@ -8,15 +8,29 @@ _nodes=$(direct_current_nodes)
 _node=$(echo "$_nodes" | head -n 1)
 _v=$(read_voltage_uv)
 _target=$(target_current_ma "$_v")
-_ma_raw=$(cat "$BAT/current_now" 2>/dev/null)
-_soc=$(cat "$BAT/capacity" 2>/dev/null)
-_st=$(cat "$BAT/status" 2>/dev/null)
-_tmp=$(cat "$BAT/temp" 2>/dev/null)
-_cfull=$(cat "$BAT/charge_full" 2>/dev/null)
-_cdes=$(cat "$BAT/charge_full_design" 2>/dev/null)
-_health=$(cat "$BAT/health" 2>/dev/null)
-_cycle=$(cat /sys/class/xm_power/fg_master/cyclecount 2>/dev/null)
-[ -z "$_cycle" ] && _cycle=$(cat "$BAT/cycle_count" 2>/dev/null)
+# 一次 awk 读完这批节点（原来是 9 次 cat，每次刷新都要 fork 9 次；
+# 1 秒一刷时这部分开销直接体现为界面发滞）
+_kv_files=""
+for _x in "$BAT/current_now" "$BAT/capacity" "$BAT/status" "$BAT/temp" \
+          "$BAT/charge_full" "$BAT/charge_full_design" "$BAT/health" \
+          /sys/class/xm_power/fg_master/cyclecount "$BAT/cycle_count"; do
+    [ -f "$_x" ] && _kv_files="$_kv_files $_x"
+done
+if [ -n "$_kv_files" ]; then
+    eval "$(awk 'FNR==1 { n=split(FILENAME,p,"/"); printf "kv_%s=\"%s\"\n", p[n], $0 }' $_kv_files 2>/dev/null)"
+fi
+_ma_raw="$kv_current_now"
+_soc="$kv_capacity"
+_st="$kv_status"
+_tmp="$kv_temp"
+_cfull="$kv_charge_full"
+_cdes="$kv_charge_full_design"
+_health="$kv_health"
+_cycle="$kv_cyclecount"
+[ -z "$_cycle" ] && _cycle="$kv_cycle_count"
+# 慢变节点偶发读到空行（驱动瞬时报错）时重试一次，降低 UI 闪成 -- 的机率
+if [ -z "$_cfull" ] && [ -f "$BAT/charge_full" ]; then _cfull=$(cat "$BAT/charge_full" 2>/dev/null); fi
+if [ -z "$_cdes" ] && [ -f "$BAT/charge_full_design" ]; then _cdes=$(cat "$BAT/charge_full_design" 2>/dev/null); fi
 # µAh -> mAh
 case "$_cfull" in ''|*[!0-9]*) _cfull_mah="" ;; *) _cfull_mah=$(awk -v x="$_cfull" 'BEGIN{printf "%d", x/1000}') ;; esac
 case "$_cdes"  in ''|*[!0-9]*) _cdes_mah=""  ;; *) _cdes_mah=$(awk -v x="$_cdes" 'BEGIN{printf "%d", x/1000}') ;; esac
@@ -127,6 +141,22 @@ echo "apl_enable=$(cfg_get apl_enable 0)"
 echo "cycle_fake=$(cfg_get cycle_fake '')"
 echo "cycle_real=$(cycle_real_read)"
 if [ -f "$XBT/dtbo/local.img" ]; then echo "dtbo_local=1"; else echo "dtbo_local=0"; fi
+# DTBO 刷入结果：安装脚本写 install_flash_*，界面刷入写 flash_OK / auto_before_flash，两种都要认
+_dm=/sdcard/Download/dtbo_backup/manifest.txt
+_dl=$(grep -aE 'install_flash_OK|install_flash_SKIP|install_flash_.*FAIL|flash_OK|auto_before_flash' "$_dm" 2>/dev/null | tail -n 1)
+case "$_dl" in
+    *flash_OK*) echo "dtbo_flash=OK" ;;
+    *SKIP*)     echo "dtbo_flash=SKIP" ;;
+    *_FAIL*|*ABORT*) echo "dtbo_flash=FAIL" ;;
+    *)          echo "dtbo_flash=" ;;
+esac
+echo "dtbo_flash_time=$(echo "$_dl" | cut -d' ' -f1-2)"
+# 满电电压生效状态：载荷改写标记 + 当前加载的 vterm 上限
+echo "fv_force=$(cfg_get fv_force 0)"
+echo "fv_set=$(cfg_get fv_v '')"
+echo "fv_applied=$(cat "$XBT/state/fv_force_applied" 2>/dev/null)"
+echo "fv_vterm=$(get_vterm_max 2>/dev/null)"
+echo "fv_vterm_orig=$(cat "$XBT/state/fv_vterm_orig" 2>/dev/null)"
 _proto=""
 for _p in /sys/class/power_supply/usb/real_type \
           /sys/class/xm_power/charger/charger_common/real_type \

@@ -28,7 +28,14 @@
     "design-ref 是手机壳样机：.app-container 的边框/阴影/固定尺寸/status-bar/theme-switcher 不要搬进 WebUI，只搬玻璃卡、底栏、圆环、光斑与变量",
     "背景渐变用 inset:-25% 再把 background-size 设 200% 会把渐变放大到只剩一小段颜色（看起来像纯色）；渐变层要铺满视口",
     "截图验证 WebUI 时：主页 JS 会按定时器把皮肤/数值刷回真实值，evaluate 改的样式可能在截图前被覆盖（看起来像「截图是缓存帧」）；要预置皮肤就复制一份 index.html，把 data-skin 与 --p 直接写进首屏，另存新文件名开新标签页截图",
-    "断充/停充排查：现场靠 thermal_core 的 stop_charge_watch 落到 config/stop_charge.log（状态从 Charging 掉下来的瞬间抓属性/旋钮/无线节点/dmesg），诊断包会打包成 stop_charge.txt；只凭用户一句话「还是断充」定位不了是哪一层（HAL 属性 / charger_thermal / 无线 IC 自身保护）"
+    "断充/停充排查：现场靠 thermal_core 的 stop_charge_watch 落到 config/stop_charge.log（状态从 Charging 掉下来的瞬间抓属性/旋钮/无线节点/dmesg），诊断包会打包成 stop_charge.txt；只凭用户一句话「还是断充」定位不了是哪一层（HAL 属性 / charger_thermal / 无线 IC 自身保护）",
+    "无线停充的真实触发可以是 RX 芯片自己断电：dmesg 里 mca_basic_wireless 的 RX_INT_POWER_OFF err_code:0xa1 + strategy_wireless_power_good_off，此时 persist.vendor.high_temp_stop_charge 已是 false、wireless_thermal_remove=1 也没用；而且 RX 断电时 wireless/online 会先变 0，停充取证要用「上一拍的插件状态」判断，否则记不下来",
+    "BK_DIR 已经是 MODDIR/battery/scripts，调脚本时不要再拼 /scripts（APL 开关曾因此报 No such file）",
+    "卡片标识从「标题」换成 data-diy-id 时，迁移函数不能自己写死保存键：曾把卡片顺序迁移结果写进 ht_diy_hidden_cards，导致整页卡片被当成隐藏而消失；现在迁移只返回结果，并加了「整页全隐藏自动放开」的自愈",
+    "WebUI 里的自定义拖拽（长按卡片再拖）在真机上不稳定：长按会被文本选择/系统手势接管，pointercancel 把拖动打断。折腾多版仍不行，已整块移除，排序改由「卡片显隐」开关 + 恢复默认布局代替；不要再往页面里加 pointer 拖拽",
+    "把刷新拆成快/慢两条路后，慢字段（设计容量/满充/健康度）必须留在完整刷新里：快速脚本不输出这些键，若在快速路径里更新会把它们刷成空 → 界面闪成 --。改快速路径时先确认字段来源脚本确实提供该键",
+    "模块更新保留设置的三件套缺一不可：① 写在模块目录外（/data/adb/HyperOS_XJ_data）② 写入即同步（cfg_set / UI 保存时 cp，别等定时任务）③ 卸载不要删这个目录（用户常“删了重装”）③.5 customize.sh 恢复 + thermal_core 启动兜底恢复",
+    "DTBO 刷入记录有两套前缀：安装期 install_flash_OK/install_flash_SKIP，界面刷入写 flash_OK/auto_before_flash（都在 Download/dtbo_backup/manifest.txt）；只认一种会误判「可刷入」。另：DTBO 刷完必须重启才生效，诊断里看 flash_OK 只能证明写进分区"
   ],
   "decisions": [
     "状态栏/取消全屏：用户确认不是必须，放弃改 dex",
