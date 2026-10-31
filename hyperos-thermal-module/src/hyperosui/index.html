@@ -217,10 +217,6 @@ body.frost .mini {
   backdrop-filter: blur(22px) saturate(180%);
   -webkit-backdrop-filter: blur(22px) saturate(180%);
 }
-body.frost .gauge::after {
-  backdrop-filter: blur(22px) saturate(170%);
-  -webkit-backdrop-filter: blur(22px) saturate(170%);
-}
 
 
 body.switch-glass .hyper-switch input:not(:checked) + .track {
@@ -409,47 +405,80 @@ body.wallpaper .topbar { background: transparent; }
 .gauge {
   --p: 0;
   --ring-color: var(--primary);
+  --ring-mid: var(--ring-color);
+  --ring-hi: var(--ring-color);
+  --ring-glow: rgba(56, 220, 255, .55);
   position: relative;
   isolation: isolate;
   width: 198px; height: 198px;
   margin: 18px auto 0;
-  border-radius: 50%;
-  background: transparent;
   display: grid; place-items: center;
 }
-.gauge::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: conic-gradient(from -90deg, var(--ring-color) calc(var(--p) * 1%), var(--divider) 0);
-  -webkit-mask: radial-gradient(circle at center, transparent 66%, #000 67%);
-  mask: radial-gradient(circle at center, transparent 66%, #000 67%);
-  transition: background .55s ease;
-  z-index: 2;
-}
-.gauge::after {
-  content: '';
-  position: absolute;
-  inset: 15px;
-  border-radius: 50%;
-  background: var(--gauge-fill);
-  transition: background .3s;
-  z-index: 1;
-}
-body.glass .gauge::after {
-  background: rgba(255,255,255, calc(var(--card-alpha, 0.55) * 0.55));
-}
-@media (prefers-color-scheme: dark) {
-  html:not([data-theme="light"]) body.glass .gauge::after {
-    background: rgba(20,20,24, calc(var(--card-alpha, 0.55) * 0.65));
+@supports (color: color-mix(in srgb, red 50%, blue)) {
+  .gauge {
+    --ring-mid: color-mix(in srgb, var(--ring-color) 58%, #ffffff);
+    --ring-hi: color-mix(in srgb, var(--ring-color) 26%, #ffffff);
+    --ring-glow: color-mix(in srgb, var(--ring-color) 60%, transparent);
   }
 }
-html[data-theme="dark"] body.glass .gauge::after {
-  background: rgba(20,20,24, calc(var(--card-alpha, 0.55) * 0.65));
+/* 圆环用 SVG 描边绘制：进度按电量截断，末端带一个亮点；
+   发光走 SVG 内部 drop-shadow，不再用 mask，避开 mask 被 filter 弄失效的坑 */
+.gauge-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  z-index: 2;
+}
+.gauge-track {
+  fill: none;
+  stroke: var(--divider);
+  stroke-width: 12;
+  opacity: .55;
+}
+.gauge-arc {
+  fill: none;
+  stroke: url(#gaugeGrad);
+  stroke-width: 12;
+  stroke-linecap: round;
+  stroke-dasharray: 100;
+  stroke-dashoffset: calc(100 - var(--p));
+  filter: drop-shadow(0 0 5px var(--ring-glow));
+  transition: stroke-dashoffset .6s ease;
+}
+.gauge-spark {
+  fill: none;
+  stroke: var(--ring-hi);
+  stroke-width: 12;
+  stroke-linecap: round;
+  stroke-dasharray: .01 99.99;
+  stroke-dashoffset: calc(100 - var(--p));
+  opacity: .85;
+  filter: drop-shadow(0 0 6px var(--ring-hi));
+}
+.gauge.charg .gauge-spark { animation: gaugeSpark 1.9s ease-in-out infinite; }
+@keyframes gaugeSpark {
+  0%, 100% { stroke-width: 11; opacity: .7; }
+  50%      { stroke-width: 15; opacity: 1; }
 }
 
 .gauge-hole { position: relative; z-index: 3; text-align: center; }
+/* 充电时中心闪电：只是透明度 / 缩放的脉动，不用 filter（filter 会让环的 mask 失效） */
+.gauge-bolt {
+  width: calc(18px * var(--fs));
+  height: calc(18px * var(--fs));
+  margin: 0 auto 5px;
+  color: var(--ring-color);
+  opacity: 0;
+  transform: translateY(3px) scale(.85);
+  transition: opacity .3s ease, transform .3s ease;
+}
+.gauge-bolt svg { width: 100%; height: 100%; display: block; fill: currentColor; }
+.gauge.charg .gauge-bolt {
+  opacity: 1;
+  transform: none;
+}
 .gauge-temp {
   font-size: calc(48px * var(--fs));
   font-weight: 700;
@@ -1381,7 +1410,22 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
 
     <div class="panel-body" id="panelBody">
       <div class="gauge" id="gaugeRing">
+        <svg class="gauge-svg" viewBox="0 0 240 240" aria-hidden="true">
+          <defs>
+            <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:var(--ring-color)"/>
+              <stop offset="55%" style="stop-color:var(--ring-mid)"/>
+              <stop offset="100%" style="stop-color:var(--ring-hi)"/>
+            </linearGradient>
+          </defs>
+          <circle class="gauge-track" cx="120" cy="120" r="100"></circle>
+          <circle class="gauge-arc" cx="120" cy="120" r="100" pathLength="100" transform="rotate(-90 120 120)"></circle>
+          <circle class="gauge-spark" cx="120" cy="120" r="100" pathLength="100" transform="rotate(-90 120 120)"></circle>
+        </svg>
         <div class="gauge-hole">
+          <div class="gauge-bolt" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M13 2 4.6 13.4h6.1l-1 8.6 8.7-11.6H13z"/></svg>
+          </div>
           <div class="gauge-temp" id="sPower">--</div>
           <div class="gauge-unit">W</div>
         </div>
@@ -2974,6 +3018,7 @@ async function bkRefresh(){
     const raw = await bkSh(BK_DIR + '/status_kv.sh');
     const kv = bkKV(raw);
     window.__bkKv = kv;
+    if (raw && kv.soc) window.__bkFresh = Date.now();
     if (!raw || !kv.soc) {
       window.__bkFail++;
       // 取不到数据多半是 root 授权未通过，退避 30 秒，避免 KernelSU 反复弹窗
@@ -2985,11 +3030,26 @@ async function bkRefresh(){
     }
     window.__bkFail = 0;
     const stMap = { Charging: '充电中', Discharging: '放电中', Full: '已充满', 'Not charging': '未充电' };
-    const stCn = stMap[kv.status] || kv.status;
+    // 满电维持时（100%、电流已为负）系统 status 节点会在 Charging/Discharging 之间抖，
+    // 连续两次采样一致才切换显示，避免状态来回跳
+    const rawSt = kv.status || '';
+    if (window.__stShown === undefined) { window.__stShown = rawSt; window.__stPending = rawSt; }
+    else if (rawSt !== window.__stShown) {
+      if (rawSt === window.__stPending) window.__stShown = rawSt;
+      else window.__stPending = rawSt;
+    }
+    const stCn = stMap[window.__stShown] || window.__stShown;
     bkPair('Soc', kv.soc);
     bkPair('St', stCn);
     bkTxt('sCapacity', kv.soc);
     bkTxt('sStatus', stCn);
+    const ringEl = document.getElementById('gaugeRing');
+    if (ringEl) {
+      ringEl.classList.toggle('charg', window.__stShown === 'Charging');
+      ringEl.classList.toggle('dischg', window.__stShown === 'Discharging');
+      const socPct = parseFloat(kv.soc);
+      if (isFinite(socPct)) ringEl.style.setProperty('--p', Math.max(0, Math.min(100, socPct)).toFixed(2));
+    }
     bkPair('Des', kv.charge_design_mah);
     bkPair('Full', kv.charge_full_mah);
     const d = parseFloat(kv.charge_design_mah), f = parseFloat(kv.charge_full_mah);
@@ -6045,6 +6105,9 @@ let installedAppsCache = null;
 let appPickerOpen = false;
 let appLabelState = 'idle';
 let appLabelBusy = false;
+let appLabelProgress = { done: 0, total: 0 };
+// 本次会话内解析失败的应用不再重复读（失败原因多为 APK 过大/权限），重启后再试
+const APP_LABEL_FAIL = new Set();
 function parseAppLine(line){
   if(!line) return null;
   line = String(line).replace(/\r/g, '');
@@ -6127,8 +6190,10 @@ async function enrichInstalledApps(arr){
       }
     });
     const todo = arr.filter(function(a){
-      return a && a.apk && (!a.name || a.name === a.pkg) && APP_LABEL_CACHE[a.pkg] === undefined;
+      return a && a.apk && (!a.name || a.name === a.pkg)
+        && APP_LABEL_CACHE[a.pkg] === undefined && !APP_LABEL_FAIL.has(a.pkg);
     });
+    appLabelProgress = { done: 0, total: todo.length };
     if(todo.length) scheduleAppLabelRepaint();
     let idx = 0;
     const worker = async function(){
@@ -6140,11 +6205,11 @@ async function enrichInstalledApps(arr){
           a.name = nm;
           APP_LABEL_CACHE[a.pkg] = nm;
           appLabelDirty = true;
-          scheduleAppLabelRepaint();
         } else {
-          APP_LABEL_CACHE[a.pkg] = '';
-          appLabelDirty = true;
+          APP_LABEL_FAIL.add(a.pkg);
         }
+        appLabelProgress.done++;
+        scheduleAppLabelRepaint();
       }
     };
     const W = Math.min(4, todo.length || 1);
@@ -6194,7 +6259,7 @@ async function openAppPicker(){
   sysRow.appendChild(sysLb);
   const search = document.createElement('input');
   search.type = 'text';
-  search.placeholder = '搜索应用名或包名';
+  search.placeholder = '搜索桌面应用名或包名';
   search.style.cssText = 'width:100%;box-sizing:border-box;margin-bottom:10px;';
   const list = document.createElement('div');
   list.style.cssText = 'flex:1;overflow:auto;-webkit-overflow-scrolling:touch;';
@@ -6231,10 +6296,16 @@ async function openAppPicker(){
       if(!q) return true;
       return a.name.toLowerCase().indexOf(q) >= 0 || a.pkg.toLowerCase().indexOf(q) >= 0;
     });
+    title.textContent = (appLabelState === 'loading' && appLabelProgress.total)
+      ? '选择已安装应用 · 读取应用名 ' + appLabelProgress.done + '/' + appLabelProgress.total
+      : '选择已安装应用';
     ok.textContent = '添加所选 (' + sel.size + ')';
     ok.disabled = sel.size === 0;
     if(!rows.length){
-      list.innerHTML = '<div class="game-app-empty">' + (all.length ? '无匹配应用' : '未读取到已安装应用<br>可继续用包名手动添加') + '</div>';
+      const tip = (all.length && appLabelState === 'loading')
+        ? '未匹配到，应用名还在读取（' + appLabelProgress.done + '/' + appLabelProgress.total + '）<br>可先按包名搜索'
+        : (all.length ? '无匹配应用' : '未读取到已安装应用<br>可继续用包名手动添加');
+      list.innerHTML = '<div class="game-app-empty">' + tip + '</div>';
       return;
     }
     list.innerHTML = '';
@@ -7119,17 +7190,29 @@ async function refreshStatus(){
 
   const ring=document.getElementById('gaugeRing');
   if(ring){
-    const pct=Math.max(0,Math.min(100,((tc-20)/40)*100));
-    ring.style.setProperty('--p', pct.toFixed(2));
+    // 环的百分比按电量显示（由 bkRefresh 用实时 soc 更新，此处不写，避免两源抖动）；
+    // 这里只负责温度配色，实时取数持续失败时才用 status.json 的电量兜底
     ring.style.setProperty('--ring-color', color);
+    if(!window.__bkFresh || Date.now() - window.__bkFresh > 12000){
+      const capPct = parseFloat(s.capacity);
+      if(isFinite(capPct)) ring.style.setProperty('--p', Math.max(0, Math.min(100, capPct)).toFixed(2));
+    }
   }
 
-  document.getElementById('sCapacity').textContent=s.capacity;
+  // 主页电量/状态以 status_kv 实时值为准；status.json 是守护进程的轮询快照（可能滞后或被卡住），
+  // 只在实时取数接连失败时兜底，否则两个来源交替写同一元素会来回跳
   document.getElementById('sMode').textContent=MODE_NAMES[s.mode]||s.mode||'--';
-
-  const st = s.status==='Charging'?'充电中':s.status==='Full'?'已充满':'放电中';
-  const sStatusEl=document.getElementById('sStatus');
-  if(sStatusEl) sStatusEl.textContent=st;
+  if (!window.__bkFresh || Date.now() - window.__bkFresh > 12000){
+    document.getElementById('sCapacity').textContent=s.capacity;
+    const st = s.status==='Charging'?'充电中':s.status==='Full'?'已充满':'放电中';
+    const sStatusEl=document.getElementById('sStatus');
+    if(sStatusEl) sStatusEl.textContent=st;
+    const ringEl = document.getElementById('gaugeRing');
+    if(ringEl){
+      ringEl.classList.toggle('charg', s.status==='Charging');
+      ringEl.classList.toggle('dischg', s.status==='Discharging');
+    }
+  }
 }
 
 

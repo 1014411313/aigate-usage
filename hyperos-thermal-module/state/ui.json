@@ -29,11 +29,21 @@
     "switches": "满电电压输入 + 「强制覆盖原厂上限」开关（voltForce → voltForceToggle）+ 关机电压输入 + 应用/关闭",
     "force_off": "关闭开关：cfg_cli.sh set fv_force 0 → volt_guard.sh restore_force（只还原载荷，不关掉电压功能）"
   },
+  "app_picker": {
+    "flow": "fetchInstalledApps(pm list packages -f) → enrichInstalledApps 解 APK label → paint 搜索匹配 name/pkg",
+    "cache": "APP_LABEL_CACHE 存 localStorage（只存成功结果）；失败项进会话内 APP_LABEL_FAIL，不写空值（否则该应用永远显示包名）",
+    "ui": "标题显示读取进度 x/y；应用名未读完时搜索无结果会提示先用包名搜"
+  },
   "removed": [
     "hyperosui/battery.html（旧 iframe 面板）",
     "hyperosui/assets/chart.min.js",
     "头像模糊面板",
     "作者头像图 XJ1",
     "捐赠码与内嵌公告"
-  ]
+  ],
+  "gauge": {
+    "effect": "SVG 描边圆环：.gauge-track（灰轨道）+ .gauge-arc（linearGradient 渐变进度，按电量截断，stroke-dashoffset=100-var(--p)）+ .gauge-spark（进度末端亮点，充电时脉动）",
+    "colors": "渐变三个 stop 用 var(--ring-color)/--ring-mid/--ring-hi（后两个由 @supports color-mix 提亮），仍受外观页温度配色控制",
+    "trap": "CSS mask 与 filter 互斥（会糊成实心盘）；改用 SVG 后发光走 SVG 内部 drop-shadow，不再涉及 mask"
+  }
 }

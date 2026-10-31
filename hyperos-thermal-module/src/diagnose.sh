@@ -110,6 +110,11 @@ for _lf in "$MODDIR"/log/*.log "$MODDIR"/*.log "$CONFDIR"/log/*.log; do
     tail -n 300 "$_lf" 2>/dev/null > "$WORK/log/$_base"
     _n=$((_n+1))
 done
+# 解容子模块的日志写在 /data/local/tmp（不在模块目录），单独收集，否则排障看不到它
+if [ -f /data/local/tmp/xt_toolbox.log ]; then
+    tail -n 300 /data/local/tmp/xt_toolbox.log > "$WORK/log/battery_toolbox.log" 2>/dev/null
+    _n=$((_n+1))
+fi
 echo " - 已采集日志: $_n 个"
 [ "$_n" -eq 0 ] && echo "本次运行时没有产生日志（模块可能刚启动或未运行）" > "$WORK/log/README.txt"
 
