@@ -413,6 +413,13 @@ if [ -d "$BATDIR" ]; then
     for _s in "$BATDIR"/scripts/*.sh "$BATDIR"/post-fs-data.sh "$BATDIR"/service.sh "$BATDIR"/uninstall.sh; do
         [ -f "$_s" ] && chmod 0755 "$_s" 2>/dev/null
     done
+    # 恢复电池健康度显示：解容默认会禁用 PSS 导致「电池健康度」不显示，
+    # 这里在刷入时启用一次并重启 batteryantiaging（只做这一步，不动解容本身）。
+    pm enable com.miui.securitycenter >/dev/null 2>&1
+    pm enable "com.miui.securitycenter/com.miui.powercenter.provider.PowerSaveService" >/dev/null 2>&1
+    setprop ctl.restart batteryantiaging >/dev/null 2>&1
+    print " - 已启用 PSS 并重启 batteryantiaging（恢复健康度显示）"
+
     _dbg="$BATDIR/scripts/install_dtbo.sh"
     if [ -f "$_dbg" ]; then
         print " - DTBO：校验系统版本与分区后刷入"

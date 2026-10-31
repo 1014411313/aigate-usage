@@ -69,6 +69,11 @@ xbt_kill 'HyperOS_XJ/battery/scripts/cloud_guard\.sh'    'HyperOS_XJ/battery/scr
 xbt_kill 'HyperOS_XJ/battery/scripts/diag_log\.sh'       'HyperOS_XJ/battery/scripts/diag_log.sh'
 xbt_kill 'HyperOS_XJ/battery/scripts/fv_guard\.sh'       'HyperOS_XJ/battery/scripts/fv_guard.sh'
 xbt_kill 'HyperOS_XJ/battery/scripts/fv_handler\.sh'     'HyperOS_XJ/battery/scripts/fv_handler.sh'
+# 电压守护：先停进程再还原被改写的电压节点 / BAA 载荷
+if [ -f "$XBT/scripts/volt_guard.sh" ]; then
+  sh "$XBT/scripts/volt_guard.sh" stop >/dev/null 2>&1
+fi
+xbt_kill 'HyperOS_XJ/battery/scripts/volt_guard\.sh' 'HyperOS_XJ/battery/scripts/volt_guard.sh'
 # 3c) 归还被云控屏蔽隔离的云端配置：隔离区在模块目录内，必须先归还再删模块目录，
 #     否则这些文件随目录一起消失，系统会少掉云端下发的配置。
 if [ -f "$XBT/scripts/cloud_guard.sh" ]; then

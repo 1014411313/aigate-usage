@@ -135,6 +135,15 @@ if [ -n "$CF" ]; then
 else
   sh $XBT/scripts/cycle_guard.sh stop >>"$LOG" 2>&1
 fi
+# 5d. 自定义电池电压（满电电压 / 关机电压；仅当设置了任一项）
+FV_V_CFG=$(cfg_get fv_v "")
+TERM_V_CFG=$(cfg_get term_v "")
+if [ -n "$FV_V_CFG" ] || [ -n "$TERM_V_CFG" ]; then
+  sh $XBT/scripts/volt_guard.sh start >>"$LOG" 2>&1
+  log "service: volt_guard 已启动 (fv_v=${FV_V_CFG:-关} term_v=${TERM_V_CFG:-关})"
+else
+  sh $XBT/scripts/volt_guard.sh stop >>"$LOG" 2>&1
+fi
 # 6. 更新模块描述
 BAT=/sys/class/power_supply/battery
 _HEALTH=$(awk -v c="$(cat $BAT/charge_full 2>/dev/null || echo 0)" -v d="$(cat $BAT/charge_full_design 2>/dev/null || echo 0)" 'BEGIN{ if (d>0) printf "%.1f", c/d*100; else printf "?" }')

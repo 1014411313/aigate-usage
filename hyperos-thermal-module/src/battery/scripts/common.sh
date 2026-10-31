@@ -1356,3 +1356,29 @@ baa_detect_target() {
 
 # 加载时若当前目标不存在，自动探测一次（仅在缺失时执行，开销可忽略）
 [ -f "$BAA_TGT" ] || baa_detect_target 2>/dev/null
+
+# ---- 原厂满充电压上限（vterm）----
+# volt_guard 用它判断用户设定值是否超过原厂上限；来源优先级：
+#   state/fv_vterm_orig（fv_force 首次应用前锁定）→ stock 原厂备份 → fv_force_backup → 内置载荷
+get_vterm_max() {
+  for _src in "$XBT/state/fv_vterm_orig" \
+              "$XBT/baa/stock_BAA_config_$DEV_CODE.json" \
+              "$XBT/state/fv_force_backup/normal_plain.json"; do
+    [ -f "$_src" ] || continue
+    _mx=""
+    if grep -qE '^[0-9]+$' "$_src" 2>/dev/null; then
+      _mx=$(cat "$_src" 2>/dev/null)
+    else
+      _mx=$(grep -oE '"vterm"[[:space:]]*:[[:space:]]*[0-9]+' "$_src" 2>/dev/null \
+            | grep -oE '[0-9]+$' | sort -n | tail -n 1)
+    fi
+    case "$_mx" in ''|0) continue ;; *) echo "$_mx"; return 0 ;; esac
+  done
+  _src="$XBT/baa/modes/normal_plain.json"
+  [ -f "$_src" ] || _src="$XBT/baa/modes/normal_nocloud_plain.json"
+  if [ -f "$_src" ]; then
+    _mx=$(grep -oE '"vterm"[[:space:]]*:[[:space:]]*[0-9]+' "$_src" 2>/dev/null \
+          | grep -oE '[0-9]+$' | sort -n | tail -n 1)
+  fi
+  case "$_mx" in ''|0) echo "" ;; *) echo "$_mx" ;; esac
+}

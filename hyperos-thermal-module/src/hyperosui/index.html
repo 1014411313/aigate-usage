@@ -1493,6 +1493,39 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
     </div>
   </div>
 
+  <div class="small-title">电池电压</div>
+  <div class="card">
+    <div class="pref" style="cursor:default">
+      <div class="pref-body">
+        <div class="pref-title">满电电压</div>
+        <div class="pref-desc" id="voltFvDesc">4300~4600 mV，超过原厂上限需开强制覆盖</div>
+      </div>
+      <div class="pref-right" style="font-size:calc(13px * var(--fs));color:var(--text)" id="voltFvNow">未设置</div>
+    </div>
+    <input id="voltFv" type="number" inputmode="numeric" placeholder="输入满电电压，如 4450（mV）"
+      style="width:100%;height:44px;padding:0 14px;box-sizing:border-box;margin-top:12px;border:1px solid var(--divider);border-radius:12px;background:var(--input-bg);color:var(--text);font-family:inherit;font-size:calc(14px * var(--fs))">
+    <div class="pref" style="cursor:default;margin-top:16px">
+      <div class="pref-body">
+        <div class="pref-title">关机电压</div>
+        <div class="pref-desc" id="voltTermDesc">2800~3500 mV，低于此值由模块执行关机</div>
+      </div>
+      <div class="pref-right" style="font-size:calc(13px * var(--fs));color:var(--text)" id="voltTermNow">未设置</div>
+    </div>
+    <input id="voltTerm" type="number" inputmode="numeric" placeholder="输入关机电压，如 3200（mV）"
+      style="width:100%;height:44px;padding:0 14px;box-sizing:border-box;margin-top:12px;border:1px solid var(--divider);border-radius:12px;background:var(--input-bg);color:var(--text);font-family:inherit;font-size:calc(14px * var(--fs))">
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn" style="flex:1;height:44px;border-radius:12px" onclick="voltApply()">应用</button>
+      <button class="btn secondary" style="flex:1;height:44px;border-radius:12px" onclick="voltDisable()">关闭</button>
+    </div>
+    <div class="pref-desc" style="margin-top:16px;line-height:1.75;white-space:normal;text-align:left">
+      · 使用范围：满电电压 4300~4600 mV，关机电压 2800~3500 mV；两项可只填一项，留空即关闭该项<br>
+      · 满电电压超过原厂上限时不会生效（上方会显示原厂上限值），硬件 OVP 是物理保护，超过也会被拦截<br>
+      · 满电电压调得越高，充电越满、电池老化越快，日常建议不超过原厂上限<br>
+      · 关机电压为软件检测：电量耗尽到该值以下由模块执行关机；充电中不会触发，避免误判<br>
+      · 应用后由守护进程维持，被系统改回会重新写入；点「关闭」或卸载时自动还原原始值
+    </div>
+  </div>
+
   <div class="small-title">控制</div>
   <div class="card">
     <div class="pref" onclick="document.getElementById('enabled').click()">
@@ -2969,6 +3002,9 @@ async function bkRefresh(){
     const plugged = (kv.status === 'Charging' || kv.status === 'Full' || kv.status === 'Not charging');
     bkTxt('pcProto', plugged ? (protoMap[(kv.charge_proto || '').toUpperCase()] || kv.charge_proto || '--') : '未插入充电器');
     bkTxt('bkCycleNow', kv.cycle_fake ? ('当前伪装 ' + kv.cycle_fake) : '未启用');
+    bkTxt('voltFvNow', kv.fv_v ? (kv.fv_v + ' mV') : '未设置');
+    bkTxt('voltTermNow', kv.term_v ? (kv.term_v + ' mV') : '未设置');
+    bkTxt('voltFvDesc', kv.vterm_max ? ('4300~4600 mV，原厂上限 ' + kv.vterm_max + ' mV') : '4300~4600 mV，超过原厂上限需开强制覆盖');
     bkTxt('bkCycleDesc', kv.cycle ? ('真实循环 ' + kv.cycle + ' 次，可改为任意显示值') : '把电池循环次数显示为设定值');
     const hasImg = (kv.dtbo_local === '1') ? 'yes' : 'no';
     const has = hasImg;
@@ -3135,6 +3171,33 @@ async function openChangelog(){
   mask.appendChild(card);
   document.body.appendChild(mask);
   requestAnimationFrame(function(){ mask.classList.add('show'); });
+}
+
+async function voltApply(){
+  bkResetGuard();
+  const fv = ((document.getElementById('voltFv') || {}).value || '').trim();
+  const tv = ((document.getElementById('voltTerm') || {}).value || '').trim();
+  if (fv && !(parseInt(fv, 10) >= 4300 && parseInt(fv, 10) <= 4600)) { toast('满电电压需在 4300~4600 mV'); return; }
+  if (tv && !(parseInt(tv, 10) >= 2800 && parseInt(tv, 10) <= 3500)) { toast('关机电压需在 2800~3500 mV'); return; }
+  if (!fv && !tv) { toast('至少填一项'); return; }
+  toast('正在应用…');
+  await bkSh(BK_DIR + '/cfg_cli.sh set fv_v ' + fv);
+  await bkSh(BK_DIR + '/cfg_cli.sh set term_v ' + tv);
+  await bkSh(BK_DIR + '/volt_guard.sh start');
+  const el1 = document.getElementById('voltFv'); if (el1) el1.value = '';
+  const el2 = document.getElementById('voltTerm'); if (el2) el2.value = '';
+  toast('已提交，守护进程会在 30 秒内生效');
+  bkRefresh();
+}
+
+async function voltDisable(){
+  bkResetGuard();
+  toast('正在关闭…');
+  await bkSh(BK_DIR + '/cfg_cli.sh set fv_v ');
+  await bkSh(BK_DIR + '/cfg_cli.sh set term_v ');
+  await bkSh(BK_DIR + '/volt_guard.sh stop');
+  toast('已关闭并还原电压');
+  bkRefresh();
 }
 
 async function bkCycleApply(){

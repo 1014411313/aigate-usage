@@ -97,3 +97,7 @@ done
 echo "charge_proto=$_proto"
 _pmax=$(cat /sys/class/xm_power/charger/charger_common/power_max 2>/dev/null)
 case "$_pmax" in ''|*[!0-9]*) ;; *) echo "power_max_w=$((_pmax / 1000000))" ;; esac
+echo "fv_v=$(cfg_get fv_v '')"
+echo "term_v=$(cfg_get term_v '')"
+echo "fv_force=$(cfg_get fv_force 0)"
+echo "vterm_max=$(get_vterm_max)"
