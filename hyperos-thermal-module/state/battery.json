@@ -54,5 +54,8 @@
     "status_kv.sh",
     "install_dtbo.sh",
     "dtbo.sh"
-  ]
+  ],
+  "upstream": "电池解容工具箱 v3.12.6（基线 v3.9.6 → v3.12.6，见 upstream/manifest.json）：APL 自适应爬坡脚本 apl.sh/apl_ctl.sh 已引入但默认关闭（apl_enable=0），温控守护竞态与 BAA 空配置修复已随上游合并，nezha DTBO 已更新",
+  "apl": "apl_enable=0 默认关；开启条件 power_limit=inf；scripts/apl_toggle.sh 1|0 停/起进程；status_kv 暴露 apl_alive/apl_target_ma/apl_cap_ma/apl_profile/apl_enable；UI 在电池页「自适应功率爬坡（APL）」",
+  "ownership": "充电归电池解容：温控非旁路不回写 chg_curr；旁路期间 direct_set_current_ma 见 config/bypass_active=1 直接让路，旁路结束温控调 charge_guard.sh once 交还"
 }

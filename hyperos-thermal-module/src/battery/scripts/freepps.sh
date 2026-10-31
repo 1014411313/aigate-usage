@@ -97,7 +97,7 @@ restore_node() {
 
 kill_legacy() {
   if command -v pgrep >/dev/null 2>&1; then
-    for _k in $(pgrep -f 'FreePPS/bin/[F]reePPS' 2>/dev/null); do
+    for _k in $(timeout 5 pgrep -f 'FreePPS/bin/[F]reePPS' 2>/dev/null); do
       kill -9 "$_k" 2>/dev/null
     done
     return

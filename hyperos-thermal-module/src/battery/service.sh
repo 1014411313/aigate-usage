@@ -28,7 +28,7 @@ if [ "$UNLOCK" = "1" ]; then
   _st=$(sh $XBT/scripts/baa_ops.sh check 2>/dev/null)
   case "$_st" in
     active) log "service: baa active" ;;
-    skipped) log "service: baa skipped (target empty)" ;;
+    skipped) log "service: baa skipped (target empty) [v3.9.9 起此分支已不产生，空BAA会照常挂载]" ;;
     *)
       log "service: baa state=$_st, retry mount"
       baa_refresh_src >/dev/null 2>>"$LOG"
@@ -209,6 +209,18 @@ fi
 xbt_kill 'HyperOS_XJ/battery/scripts/cloud_guard\.sh watch' 'HyperOS_XJ/battery/scripts/cloud_guard.sh watch'
 ( setsid sh $XBT/scripts/cloud_guard.sh watch >/dev/null 2>&1 < /dev/null & )
 log "service: cloud_guard watch started"
+# 8.5 自适应功率爬坡器（v3.11.0，整合版默认关闭，由 apl_enable 开关控制）
+#   让 inf 档目标不再写死 20000，而是按实测量出来的硬件上限动态调整。
+#   与 charge_guard 解耦：只写 state/apl_target_ma，由 closed_loop_ma() 读取。
+xbt_kill 'HyperOS_XJ/battery/scripts/apl\.sh' 'HyperOS_XJ/battery/scripts/apl.sh'
+if [ "$(cfg_get power_limit inf)" = "inf" ] && [ "$(cfg_get apl_enable 0)" = "1" ]; then
+  rm -f "$XBT/state/apl_target_ma" "$XBT/state/apl_lock_until" "$XBT/state/apl_urgent" 2>/dev/null
+  ( setsid sh $XBT/scripts/apl.sh >/dev/null 2>&1 < /dev/null & )
+  log "service: apl(自适应功率爬坡器) started"
+else
+  log "service: apl skipped (power_limit=$(cfg_get power_limit inf) apl_enable=$(cfg_get apl_enable 0))"
+fi
+
 # 9. 温控守护（thermal_guard：到达自定义上限自动降档/还原/停止，回落自动恢复）
 if [ "$(cfg_get thermal_guard 0)" = "1" ]; then
   xbt_kill 'HyperOS_XJ/battery/scripts/thermal_guard\.sh' 'HyperOS_XJ/battery/scripts/thermal_guard.sh'

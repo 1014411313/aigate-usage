@@ -12,15 +12,30 @@
     "KernelSU sulog 曾累积 3.2GB（331 个文件），来自其它模块的高频 root 调用；已清理并建议关闭 su 日志",
     "主页 sCapacity/sStatus 只能由一个源写：refreshStatus 读 status.json（守护轮询快照，会滞后）与 bkRefresh 读 status_kv 实时值，两源同时写会让电量与状态来回跳",
     "圆环 mask 与 filter 互斥：同一元素或其子树带 filter 时 WebView 会丢掉 mask，进度环糊成实心盘；光效改用 background-position 动画",
+    "能量光环的液体容器不要再用 -webkit-mask-image 修方角：mask 会把带 transform 动画的子元素（.wave-layer 波浪层）整层裁掉，波浪完全不可见（同一容器只放 blur 光块时看不出问题）；改用 clip-path:circle(50%)，同样修掉 WebView 里的方角但不影响子元素绘制",
     "解容子模块日志写在 /data/local/tmp/xt_toolbox.log（不在模块目录），诊断脚本需单独收集，否则导出的 battery.log 一直是空的",
     "再往圆环加 CSS filter 会糊掉 mask；现已整体换成 SVG 描边（发光用 SVG drop-shadow），改环时不要再引入 CSS mask/filter 组合",
-    "同名包覆盖发布（如重发 1.0.0）：raw 立即更新，testingcf 会长时间返回旧包，需 purge 并以 raw/cdn.jsdelivr.net 为准"
+    "同名包覆盖发布（如重发 1.0.0）：raw 立即更新，testingcf 会长时间返回旧包，需 purge 并以 raw/cdn.jsdelivr.net 为准",
+    "模块更新会整体替换模块目录：只迁移 config/settings.json 不够，battery/config/settings.conf（功率档/满电电压/PPS/云控/循环伪装）与 battery/state 也要迁移，否则每次更新回默认",
+    "重装控制台 APK 会换 UID，SukiSU/KernelSU 里显示已授权但实际报未授权（开关一次授权才好）；现在按 APK 内容 md5 比对，未变化就不重装",
+    "内置 WebUI 里没有注入的 exec()，只有 ksu.exec()；界面统一用 __kexec() 包装，直接写 exec() 在 WebUI 下会 ReferenceError",
+    "模块脚本无法自动往桌面放图标（Android 限制，需应用/启动器创建）；WebUI 只能从管理器模块页打开",
+    "模块 WebUI 取不到数据时先看关于页「运行环境」：exec/ksu 类型与方法名决定走哪条命令通道；页面上能点但保存失败，通常就是通道探测为空",
+    "ksu.exec 的回调是「全局函数名」字符串，不是函数对象：必须先 window[cb]=fn 再 ksu.exec(cmd,'{}',cb)；只传 cmd 不传回调名不会有任何结果（表现为 errno 0 + stdout 空的「脚本无输出」）",
+    "同一个页面里不要出现两处 __kexec 定义：var 赋值会盖掉 function 声明，导致后面那份正确的实现永不生效（v1.0.4~1.0.5 全站空数据的根因）",
+    "无线充电过热停充不归温控档位管：档位只替换 /data/vendor/thermal/config/thermal-normal.conf（mi_thermald 的 trip 表），而无线停充由内核 charger DT（mca_strategy_quick_wireless_class/adp_temp_max、die_temp_max，haotian 实测 0x190=400→限 40.0℃）、小米 MiCharge HAL 与 persist.vendor.high_temp_stop_charge 控制；模块只有 wireless_chg_curr / wireless_ctrl_limit / wireless_thermal_remove 三个节点，都不是停充阈值",
+    "皮肤层要能看到背景光斑，body 必须透明：body.glass 在深色模式下有两条 html[data-theme=dark] / html:not([data-theme=light]) 的规则（优先级 0,3,1）会给 body 铺 var(--bg) 实色，只写 body[data-skin]{background:transparent} 压不住，表现为进界面只剩一片纯色、光斑与渐变全不见；这两条要一并按同优先级覆盖",
+    "design-ref 是手机壳样机：.app-container 的边框/阴影/固定尺寸/status-bar/theme-switcher 不要搬进 WebUI，只搬玻璃卡、底栏、圆环、光斑与变量",
+    "背景渐变用 inset:-25% 再把 background-size 设 200% 会把渐变放大到只剩一小段颜色（看起来像纯色）；渐变层要铺满视口",
+    "截图验证 WebUI 时：主页 JS 会按定时器把皮肤/数值刷回真实值，evaluate 改的样式可能在截图前被覆盖（看起来像「截图是缓存帧」）；要预置皮肤就复制一份 index.html，把 data-skin 与 --p 直接写进首屏，另存新文件名开新标签页截图",
+    "断充/停充排查：现场靠 thermal_core 的 stop_charge_watch 落到 config/stop_charge.log（状态从 Charging 掉下来的瞬间抓属性/旋钮/无线节点/dmesg），诊断包会打包成 stop_charge.txt；只凭用户一句话「还是断充」定位不了是哪一层（HAL 属性 / charger_thermal / 无线 IC 自身保护）"
   ],
   "decisions": [
     "状态栏/取消全屏：用户确认不是必须，放弃改 dex",
     "解容面板由 iframe 方案改为场景页原生 UI，battery.html 与 chart.min.js 已删除",
     "充电功率四档、电池数值均在主页；场景页只留解容开关、循环伪装、电压、DTBO",
     "「恢复健康度.sh」只集成「启用 PSS + 重启 batteryantiaging」两步，其余（卸 BAA、smart_fv 回 40、温控归 0、取消循环伪装）会关闭解容，未集成",
-    "多版本并存只保留最近 3 个，文件名带版本号"
+    "多版本并存只保留最近 3 个，文件名带版本号",
+    "液态玻璃皮肤下圆环颜色直接跟随强调色（参考里就是纯 accent），外观页的温度配色不再影响环色；底栏选中态也不用强调色底板，只保留图标+文字变色"
   ]
 }

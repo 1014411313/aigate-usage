@@ -8,6 +8,13 @@
   ],
   "tabs": "底部导航 5 页：主页/温控/电池/外观/关于；tab 与 SWIPE_PAGES 顺序必须一致，bkShouldRefresh 只认主页与电池页",
   "styles": {
+    "theme": "液态玻璃皮肤：六套预设 aurora/holographic/neon-dark/aurora-vivid/cyber/lava（v1.0.9 起数值照搬 design-ref）。预设变量：--glass-rgb/--glass-alpha/--glass-border/--glass-highlight/--glass-filter（backdrop-filter 整串）/--glass-reflect/--shadow-color/--nav-bg/--nav-filter/--nav-shadow/--nav-radius/--accent/--accent-bg/--ring-w/--ring-track/--ring-glow-skin/--icon-glow；body[data-skin] 里合成 --glass-bg 并映射给 --primary/--bar 等旧变量",
+    "ambient": "背景层 .ambient（.amb-grad 铺满视口的渐变 10s 位移 / .amb-blobs 三个光斑 60/50/70vw、blur(90px)、screen、12s / .amb-noise 噪点），body.blob-on 开启光斑；浅色三套用 1.html 的渐变，艳丽三套 --bg-gradient:none 只看光斑",
+    "design_ref": "设计源 hyperos-thermal-module/design-ref/1.html（三主题 light/dark/fluid）与 2.html（aurora/cyber/lava）。v1.0.9 已照搬：卡片 blur(24/30px)+saturate(180/200%)+contrast(110%)、28px 圆角、三层阴影（投影 + inset 1px 高光 + inset -1px 暗角）、上半部反光；底栏 nav-bg + blur(24/40px) + 36/37px 药丸；圆环描边 12/14 + 单/双 drop-shadow；艳丽皮肤数字 #fff→#ddd 渐变裁剪、图标发光",
+    "energy_core": "能量光环（照搬 design-ref/3.html 光晕 + 3-1.html 波浪观感）：.gauge 230px；.gauge-glow 196px 径向光晕（五段色阶 + blur(4px)，3.2s 呼吸 0.92→1.08 缩放），仅 .gauge.charg 时淡入；.gauge-fluid 182px 圆形容器（clip-path:circle(50%) 抗方角 + translate3d 抗锯齿），.gauge-fluid-fill 高度 = calc(var(--p) * 1%) 即电量，内叠 .fluid-blob / .fluid-blob-2 旋转模糊光块（强调色 80% 6s / 白色 40% 10s，screen 混合 blur 15px）；液面为三层 .gauge-wave 正弦波条（内嵌 SVG 300% 宽、translateX -33.33% 平移循环：7s / 10s 反向 / 13s + 6s/8s/10s 上下浮动，底部渐变淡出），bottom = calc(var(--p) * 1% - 14px)；外环 --ring-w:6、轨道 rgba(accent,.1)、弧过渡 1.2s，末端亮点脉动 keyframes gaugeSparkSkin 5→8px；中心 .gauge-temp 72px 细体 clamp 上限 84px",
+    "blobs": "六套主题都开光斑（body.blob-on 常置）：blur(100px)、15s 缓动、b3 才 screen；颜色由预设 --b1/b2/b3-color 给，浅色两套 --blob-op:.9 且 --bg-gradient:none（只靠光斑出色彩）",
+    "topbar": "顶栏仍是 h1 + subtitle（无 logo / 版本号 / 按钮）；玻璃版悬浮顶栏与底栏已回退",
+    "about": "关于页：三张作者卡片（小米热炸了 517965 / AxiaojiuY 45432024 / 听夜风1337 37273905，点卡跳酷安）+ 二改声明 + 两个 QQ 群卡片（openQGroup），酷安名片与 openAuthorCard 已删",
     "must_reuse": [
       "新增或改动的 UI 必须复用页面已有样式类：notice-mask/notice-card/notice-title/notice-body/btn/btn secondary/pref/card/mini-grid/small-title/chip",
       "弹层沿用欢迎弹窗组件（noticeIn 动画、--fs 缩放、主题变量），zIndex 100001",
@@ -42,8 +49,22 @@
     "捐赠码与内嵌公告"
   ],
   "gauge": {
-    "effect": "SVG 描边圆环：.gauge-track（灰轨道）+ .gauge-arc（linearGradient 渐变进度，按电量截断，stroke-dashoffset=100-var(--p)）+ .gauge-spark（进度末端亮点，充电时脉动）",
-    "colors": "渐变三个 stop 用 var(--ring-color)/--ring-mid/--ring-hi（后两个由 @supports color-mix 提亮），仍受外观页温度配色控制",
-    "trap": "CSS mask 与 filter 互斥（会糊成实心盘）；改用 SVG 后发光走 SVG 内部 drop-shadow，不再涉及 mask"
+    "effect": "SVG 描边圆环 + 能量光环：.gauge-track（强调色 10% 轨道）+ .gauge-arc（accent 描边 6px，stroke-dashoffset=100-var(--p)，1.2s 缓动）+ .gauge-spark（进度末端亮点，充电时脉动）+ .gauge-fluid（液态充能，高度跟 --p = 电量，内含两个模糊光块 + 三层波浪）+ .gauge-glow（充电光晕，带呼吸）",
+    "colors": "皮肤下环色直接跟 --accent（不再受外观页温度配色影响）；温度数字在 --font-card/--text",
+    "trap": "液体容器不能用 -webkit-mask-image 抗方角：mask 会把带 transform 动画的波浪层整层裁掉；改用 clip-path:circle(50%)。CPU 侧注意：液体容器本身不要再加 filter（会糊成实心盘）"
+  },
+  "entry": {
+    "webui": "KernelSU/SukiSU 管理器打开模块页（webroot/index.html），命令走 ksu.exec，不需要应用授权",
+    "apk": "包内已不含控制台 APK；仓库保留 src/HyperOSxj.apk 仅作回退（注入 exec）",
+    "compat": "页面只保留一份 __kexec（callback 式）：注册 window[cb] 后调 ksu.exec(cmd,'{}',cb)；ksu.exec 的回调参数是全局函数名，不是函数对象。后面新增命令一律用 __kexec()，不要再写第二处定义（v1.0.4 的兼容层 IIFE 覆盖过它，导致全站空数据）"
+  },
+  "diy": {
+    "cards": "外观页「DIY 美化」六张卡：diybg（背景光斑与噪点）、diygauge（能量光环）、diycard（卡片与文字尺寸）、diybar（底栏尺寸）、diylayout（主页字段与卡片显隐）、diyscheme（方案与自定义 CSS）；全部带 data-diy-keep=1，不参与卡片拖拽/隐藏",
+    "registry": "数值项在 DIY_SLIDERS（35 项：label/key/min/max/step/def/fmt/apply），开关在 DIY_SWITCHES（噪点/背景自动变色/光晕常驻），颜色在 DIY_COLORS（b1/b2/b3/进度弧），滑块与开关行由 JS 注入 #diy*Sliders / #diy*Switches",
+    "vars": "数值一律写 :root 的 CSS 变量（--blob-k/--blob-blur/--blob-dx/--blob-speed/--bg-blur/--bg-sat/--ring-w-user/--ring-track-user/--ring-glow-user/--spark-w-*/--gauge-fs/--wave-amp/--wave-speed/--fill-p/--glow-max/--card-gap/--card-pad/--glass-filter-user/--radius-*-user/--bar-* /--tab-icon），色类覆盖写 body（--b1~b3-color）；0 或空表示跟随主题 → 移除变量回落皮肤值",
+    "home_fields": "主页数据格由 diyRenderHome() 生成，HOME_FIELDS 11 项 + HOME_GROUPS [[2,3,3,3]]（auto 模式按原分组）；隐藏只加 .hide，ID 始终存在于 DOM，避免 bkRefresh/refreshStatus 拿到 null",
+    "cards_order": "卡片显隐与排序：key = pageId|卡片首个 .pref-title（无则 #序号），存 ht_diy_hidden_cards / ht_diy_order_<pageId>；排序按 .small-title 分段保存与恢复，长按 0.45s 拖动，输入框/开关/色板/按钮上不触发",
+    "schemes": "ht_schemes 存多套外观快照（除 ht_schemes/ht_backup_path 外的全部 ht_* 键），应用=清空后回写并刷新；支持 JSON 导入导出；自定义 CSS 存 ht_diy_css 并注入 #diyCssStyle",
+    "bg_filter": "光斑容器默认不加 filter（避免隔离 mix-blend-mode），只在背景模糊>0、饱和度≠1 或开着自动变色时才挂 body.bg-filter"
   }
 }

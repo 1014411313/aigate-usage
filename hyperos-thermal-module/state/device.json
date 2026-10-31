@@ -4,6 +4,7 @@
   "root": "KernelSU（另有 susfs/maphide/LSPosed 等）",
   "slot": "_b",
   "current_state": {
+    "installed_version": "1.0.6 (55)，2026-10-31 18:16 安装",
     "unlock": 1,
     "freepps": 1,
     "power_limit": "inf",
@@ -12,6 +13,8 @@
     "pss_low_soc": 25,
     "cyclecount": "500（伪装测试值，真实 733）",
     "smart_fv": "0（原厂 40）",
-    "baa_state": "active"
+    "baa_state": "active",
+    "volt": "fv_v=4600mV / term_v=3000mV / fv_force=1（4600 超原厂 vterm 4580，battery_toolbox.log 已警告）",
+    "capacity": "charge_full 5001mAh / design 6100mAh，约 82%；日志 real cycle=733"
   }
 }

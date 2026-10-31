@@ -39,6 +39,16 @@ CG_LAST_TS="$XBT/state/cg_last_write_ts"
 
 # cg_gap_ok —— 返回 0 表示"距上次写入已超过最小间隔，允许写"
 cg_gap_ok() {
+  # ===== v3.11.0【APL 紧急通道】=====
+  # APL 判定 A 档硬故障（open path fail / cp work abnormal）时写 state/apl_urgent，
+  # 允许本次写节点绕过 60 秒全局限流，否则「立即退让」会被拖到最多 60 秒后才生效，
+  # 波浪图会持续一整轮。
+  # 该标志是【一次性】的：读到这里就删，保证只放行一次写入。
+  if [ -f "$XBT/state/apl_urgent" ]; then
+    rm -f "$XBT/state/apl_urgent" 2>/dev/null
+    log "charge_guard: APL 紧急通道放行（绕过 cg_min_write_gap）"
+    return 0
+  fi
   _gap=$(cfg_get cg_min_write_gap "$CG_GAP_DEFAULT")
   case "$_gap" in ''|*[!0-9]*) _gap=$CG_GAP_DEFAULT ;; esac
   [ "$_gap" -gt 0 ] 2>/dev/null || _gap=$CG_GAP_DEFAULT
@@ -580,7 +590,7 @@ case "$ONCE" in
     # 实现：杀掉所有【长驻实例】（无参数调用），保留 once/status 短命调用不受影响。
     _n=0
     if command -v pgrep >/dev/null 2>&1; then
-      for _p in $(pgrep -f 'HyperOS_XJ/battery/scripts/charge_guard\.sh' 2>/dev/null); do
+      for _p in $(timeout 5 pgrep -f 'HyperOS_XJ/battery/scripts/charge_guard\.sh' 2>/dev/null); do
         [ "$_p" = "$$" ] && continue
         _cl=$(timeout 1 cat "/proc/$_p/cmdline" 2>/dev/null | tr '\0' ' ')
         case "$_cl" in
@@ -590,7 +600,7 @@ case "$ONCE" in
       done
       sleep 0.6
       # 复核：仍存活的强杀
-      for _p in $(pgrep -f 'HyperOS_XJ/battery/scripts/charge_guard\.sh' 2>/dev/null); do
+      for _p in $(timeout 5 pgrep -f 'HyperOS_XJ/battery/scripts/charge_guard\.sh' 2>/dev/null); do
         [ "$_p" = "$$" ] && continue
         _cl=$(timeout 1 cat "/proc/$_p/cmdline" 2>/dev/null | tr '\0' ' ')
         case "$_cl" in
@@ -622,7 +632,7 @@ if command -v pgrep >/dev/null 2>&1; then
   _other=""
   for _w in 1 2 3; do
     _other=""
-    for _p in $(pgrep -f 'HyperOS_XJ/battery/scripts/charge_guard\.sh' 2>/dev/null); do
+    for _p in $(timeout 5 pgrep -f 'HyperOS_XJ/battery/scripts/charge_guard\.sh' 2>/dev/null); do
       [ "$_p" = "$_me" ] && continue
       kill -0 "$_p" 2>/dev/null || continue
       _cl=$(timeout 1 cat "/proc/$_p/cmdline" 2>/dev/null | tr '\0' ' ')
@@ -636,9 +646,17 @@ if command -v pgrep >/dev/null 2>&1; then
     [ -z "$_other" ] && break
     sleep 0.5
   done
-  if [ -n "$_other" ]; then
-    log "charge_guard: another instance alive (pid $_other), yield self=$_me"
+  # ===== v3.12.1【修竞态】旧逻辑：谁看到别人就退出 =====
+  #   若 A、B 同时启动（service.sh + 手工重启 / 升级脚本并发），
+  #   A 看到 B 就 exit，B 看到 A 也 exit → **两个都死了** → 本次开机完全没有 charge_guard
+  #   → 档位限流静默失效（用户只看到日志里一行 "yield"）。
+  #   这与 v3.9.8 在 thermal_guard.sh 修的是同一个 bug，当时漏改了 charge_guard。
+  # 【新逻辑】按 PID 大小确定性仲裁：PID 小的（先起的）胜出，大的让位。
+  if [ -n "$_other" ] && [ "$_other" -lt "$_me" ] 2>/dev/null; then
+    log "charge_guard: elder instance alive (pid $_other < $_me), yield self=$_me"
     exit 0
+  elif [ -n "$_other" ]; then
+    log "charge_guard: self=$_me takes over (younger $ _other=$_other will yield)"
   fi
 fi
 

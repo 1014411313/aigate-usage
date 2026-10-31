@@ -1,0 +1,21 @@
+{
+  "schema": 2,
+  "enabled": true,
+  "default_mode": "default",
+  "charge_mode": true,
+  "charge_level": "unlimited",
+  "sleep_level": "level_1",
+  "time_start": 0,
+  "time_end": 0,
+  "time_level": "level_1",
+  "game_mode": true,
+  "game_level": "unlimited",
+  "game_apps": "",
+  "game_fps": 0,
+  "game_bypass": false,
+  "bypass_temp_on": 0,
+  "bypass_temp_off": 0,
+  "bypass_level": 0,
+  "bypass_current": 500000,
+  "hyperos4": false
+}

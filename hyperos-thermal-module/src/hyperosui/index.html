@@ -1389,10 +1389,425 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
   background: var(--text-tertiary);
   color: var(--bg);
 }
+/* ===== 液态玻璃皮肤（参考 1.html / 2.html）===== */
+/* 背景层：渐变流动 + 彩色光斑 + 噪点 */
+.ambient{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;background:var(--ambient-base,#000)}
+.amb-grad{position:absolute;inset:0;background:var(--bg-gradient,none);background-size:200% 200%;animation:ambFlow 10s ease infinite alternate}
+@keyframes ambFlow{0%{background-position:0% 50%}100%{background-position:100% 50%}}
+.amb-blobs{position:absolute;inset:0;opacity:0;transition:opacity .45s}
+body.blob-on .amb-blobs{opacity:1}
+.amb-blobs i{position:absolute;border-radius:50%;opacity:var(--blob-op,.8);filter:blur(100px);animation:blobFloat 15s infinite alternate cubic-bezier(.4,0,.2,1);transform:translateZ(0)}
+.amb-blobs .b1{width:60vw;height:60vw;background:var(--b1-color,#ff00cc);top:-10%;left:-10%}
+.amb-blobs .b2{width:50vw;height:50vw;background:var(--b2-color,#3333ff);bottom:-10%;right:-10%;animation-delay:-4s}
+.amb-blobs .b3{width:70vw;height:70vw;background:var(--b3-color,#00ffff);top:30%;left:20%;animation-delay:-8s;mix-blend-mode:screen}
+@keyframes blobFloat{0%{transform:translate(0,0) scale(1)}100%{transform:translate(10%,15%) scale(1.2)}}
+.amb-noise{position:absolute;inset:0;opacity:0;pointer-events:none;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E")}
+body.noise-on .amb-noise{opacity:.3}
+
+/* ========= 六套主题预设（数值照搬 design-ref 1.html / 2.html）========= */
+/* 1) 极光浅色 —— 1.html theme-light */
+body[data-skin="aurora"]{
+  --ambient-base:#f0f9ff; color-scheme:light;
+  --bg-gradient:none; --blob-op:.9;
+  --b1-color:#e0f2fe; --b2-color:#fdf4ff; --b3-color:#e0e7ff;
+  --glass-rgb:255,255,255; --glass-alpha:.35;
+  --glass-border:rgba(255,255,255,.6); --glass-highlight:rgba(255,255,255,.9);
+  --glass-filter:blur(24px) saturate(180%); --glass-reflect:none;
+  --shadow-color:rgba(0,0,0,.05);
+  --nav-bg:rgba(255,255,255,.5); --nav-filter:blur(24px) saturate(180%);
+  --nav-shadow:0 10px 30px rgba(0,0,0,.1); --nav-radius:36px;
+  --accent:#f59e0b; --accent-rgb:245,158,11; --accent-bg:rgba(245,158,11,.15);
+  --ring-glow-skin:drop-shadow(0 0 8px var(--accent)); --icon-glow:none;
+  --text:#1e293b; --text-secondary:#64748b; --text-tertiary:#94a3b8;
+  --divider-line-rgb:148,163,184; --divider-line-alpha:.3; --input-bg:rgba(255,255,255,.5); --tag-bg:rgba(255,255,255,.55);
+  --glass-text:#fff;
+}
+/* 2) 全息流体 —— 1.html theme-fluid */
+body[data-skin="holographic"]{
+  --ambient-base:#fdf4ff; color-scheme:light;
+  --bg-gradient:none; --blob-op:.9;
+  --b1-color:#ff9a9e; --b2-color:#fecfef; --b3-color:#a1c4fd;
+  --glass-rgb:255,255,255; --glass-alpha:.25;
+  --glass-border:rgba(255,255,255,.4); --glass-highlight:rgba(255,255,255,.8);
+  --glass-filter:blur(24px) saturate(180%); --glass-reflect:none;
+  --shadow-color:rgba(0,0,0,.05);
+  --nav-bg:rgba(255,255,255,.3); --nav-filter:blur(24px) saturate(180%);
+  --nav-shadow:0 10px 30px rgba(0,0,0,.1); --nav-radius:36px;
+  --accent:#ec4899; --accent-rgb:236,72,153; --accent-bg:rgba(236,72,153,.15);
+  --ring-glow-skin:drop-shadow(0 0 8px var(--accent)); --icon-glow:none;
+  --text:#111827; --text-secondary:#4b5563; --text-tertiary:#6b7280;
+  --divider-line-rgb:107,114,128; --divider-line-alpha:.25; --input-bg:rgba(255,255,255,.42); --tag-bg:rgba(255,255,255,.5);
+  --glass-text:#fff;
+}
+/* 3) 暗黑霓虹 —— 1.html theme-dark */
+body[data-skin="neon-dark"]{
+  --ambient-base:#000; color-scheme:dark;
+  --bg-gradient:none;
+  --b1-color:#0f172a; --b2-color:#1e1b4b; --b3-color:#38bdf8;
+  --glass-rgb:30,41,59; --glass-alpha:.4;
+  --glass-border:rgba(255,255,255,.1); --glass-highlight:rgba(255,255,255,.2);
+  --glass-filter:blur(24px) saturate(180%); --glass-reflect:none;
+  --shadow-color:rgba(0,0,0,.3);
+  --nav-bg:rgba(15,23,42,.6); --nav-filter:blur(24px) saturate(180%);
+  --nav-shadow:0 10px 30px rgba(0,0,0,.4); --nav-radius:36px;
+  --accent:#38bdf8; --accent-rgb:56,189,248; --accent-bg:rgba(56,189,248,.15);
+  --ring-glow-skin:drop-shadow(0 0 8px var(--accent)); --icon-glow:none;
+  --text:#f8fafc; --text-secondary:#94a3b8; --text-tertiary:#64748b;
+  --divider-line-rgb:148,163,184; --divider-line-alpha:.22; --input-bg:rgba(30,41,59,.55); --tag-bg:rgba(30,41,59,.6);
+  --glass-text:#fff;
+}
+/* 4) 幻彩极光 —— 2.html theme-aurora */
+body[data-skin="aurora-vivid"]{
+  --ambient-base:#000; color-scheme:dark;
+  --bg-gradient:none;
+  --glass-rgb:255,255,255; --glass-alpha:.1;
+  --glass-border:rgba(255,255,255,.3); --glass-highlight:rgba(255,255,255,.6);
+  --glass-filter:blur(30px) saturate(200%) contrast(110%);
+  --glass-reflect:linear-gradient(180deg,rgba(255,255,255,.08) 0%,rgba(255,255,255,0) 50%);
+  --shadow-color:rgba(0,0,0,.3);
+  --nav-bg:rgba(255,255,255,.12); --nav-filter:blur(40px) saturate(200%);
+  --nav-shadow:0 15px 35px -5px rgba(0,0,0,.4); --nav-radius:37px;
+  --accent:#00e5ff; --accent-rgb:0,229,255; --accent-bg:rgba(0,229,255,.15);
+  --ring-glow-skin:drop-shadow(0 0 15px var(--accent)) drop-shadow(0 0 5px var(--accent));
+  --icon-glow:drop-shadow(0 0 8px var(--accent));
+  --text:#ffffff; --text-secondary:rgba(255,255,255,.62); --text-tertiary:rgba(255,255,255,.4);
+  --divider-line-rgb:255,255,255; --divider-line-alpha:.16; --input-bg:rgba(255,255,255,.1); --tag-bg:rgba(255,255,255,.12);
+  --b1-color:#ff00cc; --b2-color:#3333ff; --b3-color:#00ffff;
+  --glass-text:#fff;
+}
+/* 5) 赛博霓虹 —— 2.html theme-cyber */
+body[data-skin="cyber"]{
+  --ambient-base:#000; color-scheme:dark;
+  --bg-gradient:none;
+  --glass-rgb:10,10,15; --glass-alpha:.5;
+  --glass-border:rgba(0,255,136,.25); --glass-highlight:rgba(0,255,136,.4);
+  --glass-filter:blur(30px) saturate(200%) contrast(110%);
+  --glass-reflect:linear-gradient(180deg,rgba(255,255,255,.08) 0%,rgba(255,255,255,0) 50%);
+  --shadow-color:rgba(0,255,136,.1);
+  --nav-bg:rgba(10,10,15,.6); --nav-filter:blur(40px) saturate(200%);
+  --nav-shadow:0 15px 35px -5px rgba(0,0,0,.4); --nav-radius:37px;
+  --accent:#00ff88; --accent-rgb:0,255,136; --accent-bg:rgba(0,255,136,.1);
+  --ring-glow-skin:drop-shadow(0 0 15px var(--accent)) drop-shadow(0 0 5px var(--accent));
+  --icon-glow:drop-shadow(0 0 8px var(--accent));
+  --text:#ffffff; --text-secondary:rgba(0,255,136,.62); --text-tertiary:rgba(0,255,136,.38);
+  --divider-line-rgb:0,255,136; --divider-line-alpha:.18; --input-bg:rgba(10,10,15,.55); --tag-bg:rgba(10,10,15,.6);
+  --b1-color:#ff0055; --b2-color:#0055ff; --b3-color:#00ff88;
+  --glass-text:#fff;
+}
+/* 6) 熔岩鎏金 —— 2.html theme-lava */
+body[data-skin="lava"]{
+  --ambient-base:#000; color-scheme:dark;
+  --bg-gradient:none;
+  --glass-rgb:30,20,20; --glass-alpha:.25;
+  --glass-border:rgba(255,200,100,.3); --glass-highlight:rgba(255,200,100,.6);
+  --glass-filter:blur(30px) saturate(200%) contrast(110%);
+  --glass-reflect:linear-gradient(180deg,rgba(255,255,255,.08) 0%,rgba(255,255,255,0) 50%);
+  --shadow-color:rgba(0,0,0,.4);
+  --nav-bg:rgba(30,20,20,.3); --nav-filter:blur(40px) saturate(200%);
+  --nav-shadow:0 15px 35px -5px rgba(0,0,0,.4); --nav-radius:37px;
+  --accent:#ffaa00; --accent-rgb:255,170,0; --accent-bg:rgba(255,170,0,.15);
+  --ring-glow-skin:drop-shadow(0 0 15px var(--accent)) drop-shadow(0 0 5px var(--accent));
+  --icon-glow:drop-shadow(0 0 8px var(--accent));
+  --text:#fff5e6; --text-secondary:rgba(255,200,100,.7); --text-tertiary:rgba(255,200,100,.45);
+  --divider-line-rgb:255,200,100; --divider-line-alpha:.2; --input-bg:rgba(30,20,20,.4); --tag-bg:rgba(30,20,20,.5);
+  --b1-color:#ff3300; --b2-color:#ffaa00; --b3-color:#6600ff;
+  --glass-text:#fff;
+}
+
+/* ========= 皮肤映射与组件（照搬 1.html / 2.html）========= */
+body[data-skin],
+body.glass[data-skin],
+html[data-theme="dark"] body.glass[data-skin],
+html:not([data-theme="light"]) body.glass[data-skin]{
+  background:transparent;
+  color:var(--text);
+  --glass-bg:rgba(var(--glass-rgb), var(--glass-alpha));
+  --primary:var(--accent); --primary-rgb:var(--accent-rgb); --primary-light:var(--accent-bg);
+  --switch-on:var(--accent); --switch-off:rgba(var(--glass-rgb),.18);
+  --bar-rgb:var(--glass-rgb); --bar-alpha:var(--glass-alpha);
+  --ind-rgb:var(--accent-rgb); --ind-alpha:.18;
+  --card-glow-rgb:var(--accent-rgb); --btn-glow-rgb:var(--accent-rgb);
+  --font-cat:var(--text-secondary); --font-card:var(--text); --font-desc:var(--text-secondary);
+  --hairline:var(--glass-border);
+  --ring-w:6; --ring-track:rgba(var(--accent-rgb),.1);
+}
+/* 玻璃卡片：玻璃底 + 顶部高光 + 底部暗角 + 上半部反光 */
+body[data-skin] .card,
+body[data-skin] .panel{
+  background-color:var(--glass-bg);
+  background-image:var(--glass-reflect);
+  border:1px solid var(--glass-border);
+  border-radius:calc(28px * var(--cs));
+  box-shadow:
+    0 10px 30px -10px var(--shadow-color),
+    inset 0 1px 1px var(--glass-highlight),
+    inset 0 -1px 1px rgba(0,0,0,.1);
+  -webkit-backdrop-filter:var(--glass-filter);
+  backdrop-filter:var(--glass-filter);
+}
+body[data-skin] .mini{
+  background-color:rgba(var(--glass-rgb), calc(var(--glass-alpha) * .75));
+  background-image:var(--glass-reflect);
+  border:1px solid var(--glass-border);
+  border-radius:calc(22px * var(--cs));
+  box-shadow:inset 0 1px 1px var(--glass-highlight);
+  -webkit-backdrop-filter:var(--glass-filter);
+  backdrop-filter:var(--glass-filter);
+}
+body[data-skin] .chip{
+  background-color:rgba(var(--glass-rgb), calc(var(--glass-alpha) * .9));
+  border:1px solid var(--glass-border);
+  border-radius:20px;
+}
+body[data-skin] .chip.active{
+  background-color:var(--accent-bg);
+  color:var(--accent);
+  border-color:rgba(var(--accent-rgb),.5);
+  box-shadow:inset 0 1px 0 var(--glass-highlight);
+}
+body[data-skin] .tabbar{
+  background:var(--nav-bg);
+  border:1px solid var(--glass-border);
+  box-shadow:var(--nav-shadow), inset 0 1px 0 var(--glass-highlight);
+  -webkit-backdrop-filter:var(--nav-filter);
+  backdrop-filter:var(--nav-filter);
+}
+body[data-skin].floating .tabbar{ border-radius:var(--nav-radius); }
+body[data-skin] .tab.active{ color:var(--accent); }
+body[data-skin] .tab.active .tab-ico{ filter:var(--icon-glow); }
+body[data-skin] .tab-indicator{
+  background:transparent;
+  border-color:transparent;
+}
+body[data-skin] .btn{
+  background:var(--accent); color:var(--glass-text);
+  box-shadow:0 6px 18px rgba(var(--accent-rgb),.28), inset 0 1px 0 rgba(255,255,255,.3);
+}
+body[data-skin] .btn.secondary{
+  background-color:rgba(var(--glass-rgb), calc(var(--glass-alpha) * 1.1));
+  color:var(--text);
+  border:1px solid var(--glass-border);
+  box-shadow:none;
+}
+body[data-skin] .gauge-arc{ transition:stroke-dashoffset 1.2s cubic-bezier(.32,.72,0,1), stroke .5s ease; }
+body[data-skin] .gauge-track{ stroke:var(--ring-track) !important; stroke-width:var(--ring-w); opacity:1; }
+body[data-skin] .gauge-arc{ stroke:var(--accent); stroke-width:var(--ring-w); filter:var(--ring-glow-skin); }
+body[data-skin] .gauge-spark{ stroke:var(--accent); stroke-width:var(--ring-w); }
+body.skin-vivid .mini-val{ text-shadow:0 2px 4px rgba(0,0,0,.2); }
+body.skin-vivid .topbar h1{ text-shadow:0 2px 10px rgba(0,0,0,.3); }
+
+/* ===== 能量光环：细线外环 + 液态充能 + 充电光晕（照搬 3.html）===== */
+body[data-skin] .gauge{ width:230px; height:230px; transform:translateZ(0); }
+body[data-skin] .gauge-svg{ shape-rendering:geometricPrecision; }
+body[data-skin] .gauge-glow{
+  position:absolute; width:196px; height:196px; border-radius:50%; z-index:0;
+  background:radial-gradient(circle, rgba(var(--accent-rgb),.6) 0%, rgba(var(--accent-rgb),.42) 28%, rgba(var(--accent-rgb),.2) 48%, rgba(var(--accent-rgb),.06) 62%, rgba(var(--accent-rgb),0) 74%);
+  opacity:0; transition:opacity 1.5s ease, background .5s ease; pointer-events:none;
+  filter:blur(4px); will-change:transform;
+  animation:glowBreath 3.2s infinite alternate ease-in-out;
+}
+body[data-skin] .gauge.charg .gauge-glow{ opacity:1; }
+@keyframes glowBreath {
+  0%   { transform:scale(.92); }
+  100% { transform:scale(1.08); }
+}
+/* 液体容器用 clip-path 修 WebView 里 overflow+圆角被 filter 弄成方角的问题；
+   不能用 -webkit-mask-image：带 transform 动画的波浪子元素会被整层裁掉 */
+body[data-skin] .gauge-fluid{
+  position:absolute; width:182px; height:182px; border-radius:50%; overflow:hidden; z-index:1;
+  pointer-events:none; transform:translate3d(0,0,0);
+  -webkit-clip-path:circle(50%); clip-path:circle(50%);
+  box-shadow:inset 0 0 10px rgba(var(--accent-rgb),.1);
+}
+body[data-skin] .gauge-fluid-fill{
+  position:absolute; left:0; bottom:0; width:100%; height:calc(var(--p,0) * 1%); overflow:hidden;
+  background:linear-gradient(to top, rgba(var(--accent-rgb),.6) 0%, rgba(var(--accent-rgb),.1) 100%);
+  transition:height .8s cubic-bezier(.32,.72,0,1), background .5s ease;
+}
+body[data-skin] .fluid-blob{
+  position:absolute; width:200%; height:200%; top:-30%; left:-50%; border-radius:40%;
+  background:radial-gradient(circle, rgba(var(--accent-rgb),.8) 0%, transparent 60%);
+  filter:blur(15px); mix-blend-mode:screen; animation:fluidSpin 6s linear infinite;
+  will-change:transform; z-index:1;
+}
+body[data-skin] .fluid-blob-2{
+  border-radius:38%; animation:fluidSpin 10s linear infinite reverse;
+  background:radial-gradient(circle, rgba(255,255,255,.4) 0%, transparent 60%);
+}
+@keyframes fluidSpin { 100% { transform:rotate(360deg); } }
+/* 液面波浪：每条是一层横向平移的正弦波，波峰任何时候都是曲线；
+   底部用渐变淡出，避免在波条下缘又出现一条直线 */
+body[data-skin] .gauge-wave{
+  position:absolute; left:0; width:100%; height:28px; z-index:2; overflow:hidden; pointer-events:none;
+  bottom:calc(var(--p,0) * 1% - 14px);
+  transition:bottom .8s cubic-bezier(.32,.72,0,1);
+  animation:waveBob 6s ease-in-out infinite alternate;
+}
+body[data-skin] .gauge-wave svg{
+  position:absolute; left:0; top:0; display:block; width:300%; height:100%;
+  animation:waveSlide 7s linear infinite; will-change:transform;
+}
+body[data-skin] .gauge-wave-2{ height:26px; z-index:4; animation-duration:8s; }
+body[data-skin] .gauge-wave-2 svg{ animation:waveSlide 10s linear infinite reverse; }
+body[data-skin] .gauge-wave-3{ height:32px; z-index:3; animation-duration:10s; }
+body[data-skin] .gauge-wave-3 svg{ animation:waveSlide 13s linear infinite; }
+@keyframes waveSlide { from { transform:translateX(0); } to { transform:translateX(-33.3333%); } }
+@keyframes waveBob { from { transform:translateY(-1.5px); } to { transform:translateY(1.5px); } }
+body[data-skin] .gauge-temp{
+  font-size:clamp(44px, calc(72px * var(--fs)), 84px);
+  font-weight:300; letter-spacing:-4px; color:var(--text);
+  text-shadow:0 4px 20px rgba(0,0,0,.3);
+}
+body[data-skin] .gauge-unit{ font-size:16px; letter-spacing:2px; font-weight:600; }
+body[data-skin] .gauge.charg .gauge-spark{ animation:gaugeSparkSkin 1.9s ease-in-out infinite; }
+@keyframes gaugeSparkSkin {
+  0%, 100% { stroke-width:5; opacity:.7; }
+  50%      { stroke-width:8; opacity:1; }
+}
+body[data-skin] .mode-pill{
+  background:var(--accent-bg); color:var(--accent);
+  border:1px solid var(--glass-border);
+  box-shadow:inset 0 1px 0 var(--glass-highlight);
+  -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+}
+body[data-skin] .topbar{ background:transparent; }
+body[data-skin] .small-title{ color:var(--text-secondary); }
+body[data-skin] .notice-card{
+  background:var(--ambient-base);
+  color:var(--text);
+  border:1px solid var(--glass-border);
+}
+
+/* ===== DIY 外观扩展：背景层 ===== */
+/* 光斑尺寸、模糊、透明度、飘动幅度与速度 */
+.amb-blobs i{filter:blur(var(--blob-blur,100px));opacity:calc(var(--blob-op,.8) * var(--blob-user-op,1));
+  animation:blobFloat var(--blob-speed,15s) infinite alternate cubic-bezier(.4,0,.2,1)}
+.amb-blobs .b1{width:calc(60vw * var(--blob-k,1));height:calc(60vw * var(--blob-k,1))}
+.amb-blobs .b2{width:calc(50vw * var(--blob-k,1));height:calc(50vw * var(--blob-k,1))}
+.amb-blobs .b3{width:calc(70vw * var(--blob-k,1));height:calc(70vw * var(--blob-k,1))}
+@keyframes blobFloat{
+  0%{transform:translate(0,0) scale(1)}
+  100%{transform:translate(var(--blob-dx,10%),var(--blob-dy,15%)) scale(1.2)}
+}
+.amb-blobs{filter:none}
+body.bg-filter .amb-blobs{filter:blur(var(--bg-blur,0px)) saturate(var(--bg-sat,1))}
+@keyframes hueSpin{
+  from{filter:blur(var(--bg-blur,0px)) saturate(var(--bg-sat,1)) hue-rotate(0deg)}
+  to{filter:blur(var(--bg-blur,0px)) saturate(var(--bg-sat,1)) hue-rotate(360deg)}
+}
+body.bg-hue .amb-blobs{animation:hueSpin var(--bg-hue-dur,40s) linear infinite}
+body.blob-on[data-blob-n="0"] .amb-blobs{opacity:0}
+body[data-blob-n="1"] .amb-blobs .b2,body[data-blob-n="1"] .amb-blobs .b3{display:none}
+body[data-blob-n="2"] .amb-blobs .b3{display:none}
+body.noise-on .amb-noise{opacity:var(--noise-op,.3)}
+
+/* ===== DIY 外观扩展：能量光环 ===== */
+body[data-skin] .gauge-track{
+  stroke:var(--ring-track-user,var(--ring-track)) !important;
+  stroke-width:var(--ring-w-user,var(--ring-w));
+}
+body[data-skin] .gauge-arc{
+  stroke-width:var(--ring-w-user,var(--ring-w));
+  filter:var(--ring-glow-user,var(--ring-glow-skin));
+}
+body[data-skin] .gauge-spark{ stroke-width:var(--ring-w-user,var(--ring-w)); }
+body[data-skin] .gauge.charg .gauge-spark{ animation:gaugeSparkSkin var(--spark-dur,1.9s) ease-in-out infinite; }
+@keyframes gaugeSparkSkin{
+  0%,100%{ stroke-width:var(--spark-w-min,5); opacity:.7; }
+  50%    { stroke-width:var(--spark-w-max,8); opacity:1; }
+}
+body[data-skin] .gauge-glow{ animation:glowBreath var(--glow-dur,3.2s) infinite alternate ease-in-out; }
+body[data-skin] .gauge.charg .gauge-glow,
+body.glow-always[data-skin] .gauge-glow{ opacity:var(--glow-max,1); }
+body[data-skin] .gauge-temp{
+  font-size:clamp(44px, calc(var(--gauge-fs,72px) * var(--fs)), 110px);
+  font-weight:var(--gauge-fw,300);
+}
+/* 液面高度：按电量 / 固定 / 满格，由 --fill-p 接管 */
+body[data-skin] .gauge-fluid-fill{ height:calc(var(--fill-p,var(--p,0)) * 1%); }
+body[data-skin] .gauge-wave{ bottom:calc(var(--fill-p,var(--p,0)) * 1% - 14px); }
+/* 波浪：幅度、速度、层数 */
+body[data-skin] .gauge-wave{
+  transform:scaleY(var(--wave-amp,1));
+  transform-origin:50% 100%;
+}
+body[data-skin] .gauge-wave-inner{ position:absolute; inset:0; animation:waveBob 6s ease-in-out infinite alternate; }
+body[data-skin] .gauge-wave svg{ animation-duration:calc(7s / var(--wave-speed,1)); }
+body[data-skin] .gauge-wave-2 svg{ animation-duration:calc(10s / var(--wave-speed,1)); }
+body[data-skin] .gauge-wave-3 svg{ animation-duration:calc(13s / var(--wave-speed,1)); }
+body[data-skin] .gauge-wave{ animation:none; }
+body[data-wave-n="1"] .gauge-wave-2,body[data-wave-n="1"] .gauge-wave-3{ display:none; }
+body[data-wave-n="2"] .gauge-wave-3{ display:none; }
+
+/* ===== DIY 外观扩展：卡片与文字 ===== */
+.card{ margin-bottom:calc(12px * var(--card-gap,1)); }
+.card .pref{ padding-left:calc(20px * var(--card-pad,1) * var(--cs)); padding-right:calc(20px * var(--card-pad,1) * var(--cs)); }
+body[data-skin] .card,body[data-skin] .panel{
+  -webkit-backdrop-filter:var(--glass-filter-user,var(--glass-filter));
+  backdrop-filter:var(--glass-filter-user,var(--glass-filter));
+}
+body[data-skin] .card{ border-radius:var(--radius-card-user,calc(28px * var(--cs))); }
+body[data-skin] .panel{ border-radius:var(--radius-panel-user,calc(22px * var(--cs))); }
+body[data-skin] .mini{ border-radius:var(--radius-mini-user,calc(22px * var(--cs))); }
+.topbar h1{ font-size:calc(var(--title-fs,27px) * var(--fs)); }
+.mini-val{ font-size:calc(var(--mini-fs,17px) * var(--fs)); }
+#homeFields{ display:grid; gap:18px 10px; margin-top:18px; grid-template-columns:repeat(3,1fr); }
+#homeFields.auto{ display:block; margin-top:0; }
+#homeFields.auto .mini-grid:first-child{ margin-top:18px; }
+#homeFields.cols2{ grid-template-columns:repeat(2,1fr); }
+#homeFields .mini.hide{ display:none; }
+
+/* ===== DIY 外观扩展：底栏 ===== */
+body[data-skin].floating .tabbar{ border-radius:var(--bar-radius-user,var(--nav-radius)); }
+body.floating .tabbar{
+  bottom:calc(var(--bar-gap-b,14px) + env(safe-area-inset-bottom));
+  width:calc(calc(var(--bar-w,84) * 1vw) - 2 * var(--bar-side,0px));
+}
+.tab-ico svg{ width:var(--tab-icon,22px); height:var(--tab-icon,22px); }
+body.hide-tab-text .tab-ico svg{ width:calc(var(--tab-icon,22px) * 1.09); height:calc(var(--tab-icon,22px) * 1.09); }
+
+/* ===== DIY 外观扩展：卡片排序 ===== */
+body.diy-dragging{ overflow:hidden; }
+body.diy-dragging .card,body.diy-dragging .panel{ -webkit-user-select:none; user-select:none; }
+.card.diy-drag,body[data-skin] .card.diy-drag{
+  position:fixed; z-index:9000; margin:0; transition:none;
+  box-shadow:0 18px 44px rgba(0,0,0,.34); opacity:.97;
+}
+.diy-placeholder{
+  margin:0 16px 12px; border-radius:var(--radius);
+  border:1px dashed rgba(var(--divider-line-rgb),.55);
+  background:rgba(var(--bar-rgb),.12);
+}
+
+/* 卡片内非 .pref 的直排内容（功率分段按钮、输入行、说明文字）补齐卡片内边距，
+   否则按钮/输入框会直接贴到卡片边缘，看起来像被裁切 */
+.card > div:not(.pref):not(.expand-body):not(.author){
+  padding-left: calc(20px * var(--cs) * var(--card-pad,1));
+  padding-right: calc(20px * var(--cs) * var(--card-pad,1));
+  box-sizing: border-box;
+}
+.card > div:not(.pref):not(.expand-body):not(.author):last-child{
+  padding-bottom: calc(14px * var(--cs) * var(--card-pad,1));
+}
+.card > .bk-power{ padding-top: calc(14px * var(--cs) * var(--card-pad,1)); }
+.card > input,
+.card > textarea,
+.card > select{
+  width: calc(100% - 2 * 20px * var(--cs) * var(--card-pad,1)) !important;
+  margin-left: calc(20px * var(--cs) * var(--card-pad,1)) !important;
+  margin-right: calc(20px * var(--cs) * var(--card-pad,1)) !important;
+}
 
 </style>
 </head>
 <body>
+
+<div class="ambient" aria-hidden="true">
+  <div class="amb-grad"></div>
+  <div class="amb-blobs"><i class="b1"></i><i class="b2"></i><i class="b3"></i></div>
+  <div class="amb-noise"></div>
+</div>
 
 
 <div class="page active" id="page-console">
@@ -1422,6 +1837,43 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
           <circle class="gauge-arc" cx="120" cy="120" r="100" pathLength="100" transform="rotate(-90 120 120)"></circle>
           <circle class="gauge-spark" cx="120" cy="120" r="100" pathLength="100" transform="rotate(-90 120 120)"></circle>
         </svg>
+        <div class="gauge-glow" aria-hidden="true"></div>
+        <div class="gauge-fluid" aria-hidden="true">
+          <div class="gauge-fluid-fill">
+            <i class="fluid-blob"></i>
+            <i class="fluid-blob fluid-blob-2"></i>
+          </div>
+          <div class="gauge-wave">
+            <div class="gauge-wave-inner"><svg viewBox="0 0 546 28" preserveAspectRatio="none">
+              <defs><linearGradient id="wvGradA" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="var(--accent)" stop-opacity=".72"/>
+                <stop offset=".62" stop-color="var(--accent)" stop-opacity=".66"/>
+                <stop offset="1" stop-color="var(--accent)" stop-opacity="0"/>
+              </linearGradient></defs>
+              <path fill="url(#wvGradA)" d="M0 14 Q45.5 0 91 14 T182 14 T273 14 T364 14 T455 14 T546 14 L546 28 L0 28 Z"/>
+            </svg></div>
+          </div>
+          <div class="gauge-wave gauge-wave-3">
+            <div class="gauge-wave-inner"><svg viewBox="0 0 546 32" preserveAspectRatio="none">
+              <defs><linearGradient id="wvGradC" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="var(--accent)" stop-opacity=".3"/>
+                <stop offset=".6" stop-color="var(--accent)" stop-opacity=".24"/>
+                <stop offset="1" stop-color="var(--accent)" stop-opacity="0"/>
+              </linearGradient></defs>
+              <path fill="url(#wvGradC)" d="M0 16 Q45.5 -2 91 16 T182 16 T273 16 T364 16 T455 16 T546 16 L546 32 L0 32 Z"/>
+            </svg></div>
+          </div>
+          <div class="gauge-wave gauge-wave-2">
+            <div class="gauge-wave-inner"><svg viewBox="0 0 546 26" preserveAspectRatio="none">
+              <defs><linearGradient id="wvGradB" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#fff" stop-opacity=".34"/>
+                <stop offset=".55" stop-color="#fff" stop-opacity=".26"/>
+                <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+              </linearGradient></defs>
+              <path fill="url(#wvGradB)" d="M0 13 Q45.5 3 91 13 T182 13 T273 13 T364 13 T455 13 T546 13 L546 26 L0 26 Z"/>
+            </svg></div>
+          </div>
+        </div>
         <div class="gauge-hole">
           <div class="gauge-bolt" aria-hidden="true">
             <svg viewBox="0 0 24 24"><path d="M13 2 4.6 13.4h6.1l-1 8.6 8.7-11.6H13z"/></svg>
@@ -1433,28 +1885,7 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
 
       <div class="mode-pill"><span id="sMode">--</span></div>
 
-      <div class="mini-grid">
-        <div class="mini"><div class="mini-val" id="sCapacity">--</div><div class="mini-lbl">电量 %</div></div>
-        <div class="mini"><div class="mini-val" id="sStatus">--</div><div class="mini-lbl">状态</div></div>
-      </div>
-
-      <div class="mini-grid" style="grid-template-columns:repeat(3,1fr)">
-        <div class="mini"><div class="mini-val" id="pcDes">--</div><div class="mini-lbl">设计容量 mAh</div></div>
-        <div class="mini"><div class="mini-val" id="pcFull">--</div><div class="mini-lbl">满充容量 mAh</div></div>
-        <div class="mini"><div class="mini-val" id="pcHealth">--</div><div class="mini-lbl">健康度 %</div></div>
-      </div>
-
-      <div class="mini-grid" style="grid-template-columns:repeat(3,1fr)">
-        <div class="mini"><div class="mini-val" id="pcVolt">--</div><div class="mini-lbl">电压 V</div></div>
-        <div class="mini"><div class="mini-val" id="pcCur">--</div><div class="mini-lbl">电流 A</div></div>
-        <div class="mini"><div class="mini-val" id="pcTemp">--</div><div class="mini-lbl">温度 ℃</div></div>
-      </div>
-
-      <div class="mini-grid" style="grid-template-columns:repeat(3,1fr)">
-        <div class="mini"><div class="mini-val" id="pcCycle">--</div><div class="mini-lbl">循环次数</div></div>
-        <div class="mini"><div class="mini-val" id="pcFake">--</div><div class="mini-lbl">伪装次数</div></div>
-        <div class="mini"><div class="mini-val" id="pcProto" style="font-size:calc(12.5px * var(--fs))">--</div><div class="mini-lbl">充电协议</div></div>
-      </div>
+      <div id="homeFields"></div>
     </div>
   </div>
 
@@ -1482,6 +1913,7 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
         <div class="info-row"><span class="info-lbl">当前日期</span><span class="info-val" id="devDate">--</span></div>
         <div class="info-row"><span class="info-lbl">设备型号</span><span class="info-val" id="devModel">--</span></div>
         <div class="info-row"><span class="info-lbl">系统版本</span><span class="info-val" id="devOS">--</span></div>
+        <div class="info-row"><span class="info-lbl">运行环境</span><span class="info-val" id="devEnv" style="font-size:calc(11px * var(--fs));text-align:right">--</span></div>
       </div>
     </div>
   </div>
@@ -1594,6 +2026,27 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
     </div>
   </div>
 
+  <div class="small-title">高温保护</div>
+  <div class="card">
+    <div class="pref" onclick="document.getElementById('no_hitemp_stop').click()">
+      <div class="pref-body">
+        <div class="pref-title">解除系统高温停充</div>
+        <div class="pref-desc" id="hitempSub">已关闭 · 高温时系统会停止充电</div>
+      </div>
+      <div class="pref-right">
+        <label class="hyper-switch" onclick="event.stopPropagation()">
+          <input type="checkbox" id="no_hitemp_stop" onchange="toggleHiTemp()">
+          <span class="track"></span><span class="thumb"></span>
+        </label>
+      </div>
+    </div>
+    <div class="pref" style="padding-top:0">
+      <div class="pref-body">
+        <div class="pref-desc">温控档位只换 mi_thermald 的 trip 表，管不到小米充电 HAL 的「高温停充」。开启后模块会把 persist.vendor.high_temp_stop_charge 置 false，高温时不再被系统停充（无线充电器自身的过热保护仍会生效）；关闭模块或卸载时会恢复。</div>
+      </div>
+    </div>
+  </div>
+
   <div class="small-title">旁路供电</div>
   <div class="card">
     <div class="pref" onclick="toggleExpand('bypass')">
@@ -1653,6 +2106,20 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
         <div class="pref-desc">拦截 BAA 云端下发与巡检隔离</div>
       </div>
       <div class="pref-right"><label class="hyper-switch"><input type="checkbox" id="bkCloud" onchange="bkSet('cloud',this.checked)"><span class="track"></span><span class="thumb"></span></label></div>
+    </div>
+    <div class="pref">
+      <div class="pref-body">
+        <div class="pref-title">自适应功率爬坡（APL）</div>
+        <div class="pref-desc" id="bkAplDesc">全速档按实测硬件上限动态上探，需要「全速」功率档</div>
+      </div>
+      <div class="pref-right"><label class="hyper-switch"><input type="checkbox" id="bkApl" onchange="bkAplToggle(this.checked)"><span class="track"></span><span class="thumb"></span></label></div>
+    </div>
+    <div class="pref" style="cursor:default">
+      <div class="pref-body">
+        <div class="pref-title">温控守护</div>
+        <div class="pref-desc" id="bkTgDesc">解容侧的自定义温度上限守护，默认不启用（降功率由温控档位统一负责）</div>
+      </div>
+      <div class="pref-right"><span id="bkTgState" style="font-size:calc(13px * var(--fs));color:var(--text-secondary)">--</span></div>
     </div>
   </div>
 
@@ -1733,6 +2200,22 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
   </div>
 
   <div class="small-title">主题</div>
+
+  <div class="card">
+    <div class="pref" onclick="toggleExpand('skin')">
+      <div class="pref-body">
+        <div class="pref-title">主题预设</div>
+        <div class="pref-desc" id="skinSub">极光浅色</div>
+      </div>
+      <div class="pref-right"><span class="expand-arrow" id="arrow-skin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></span></div>
+    </div>
+    <div class="expand-body" id="expand-skin">
+      <div class="expand-inner">
+        <div class="field-label">六套液态玻璃预设，选中后会同步切换深浅模式；具体颜色仍可在下面调</div>
+        <div class="chips" id="skinChips" style="margin:0"></div>
+      </div>
+    </div>
+  </div>
 
   <div class="card">
     <div class="pref" onclick="toggleExpand('theme')">
@@ -2419,6 +2902,129 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
       </div>
     </div>
   </div>
+  <div class="small-title">DIY 美化</div>
+
+  <div class="card" data-diy-keep="1">
+    <div class="pref" onclick="toggleExpand('diybg')">
+      <div class="pref-body">
+        <div class="pref-title">背景光斑与噪点</div>
+        <div class="pref-desc" id="diyBgSub">光斑 3 个 · 噪点关闭</div>
+      </div>
+      <div class="pref-right"><span class="expand-arrow" id="arrow-diybg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></span></div>
+    </div>
+    <div class="expand-body" id="expand-diybg">
+      <div class="expand-inner">
+        <div class="field-label" style="margin-top:0">光斑数量</div>
+        <div class="chips" id="diyBlobCountChips" style="display:grid;grid-template-columns:repeat(4,1fr)"></div>
+        <div id="diyBgSwitches"></div>
+        <div id="diyBgSliders"></div>
+        <div class="field-label" style="margin-top:18px">光斑颜色</div>
+        <div id="diyBgColors"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-diy-keep="1">
+    <div class="pref" onclick="toggleExpand('diygauge')">
+      <div class="pref-body">
+        <div class="pref-title">能量光环</div>
+        <div class="pref-desc" id="diyGaugeSub">跟随主题</div>
+      </div>
+      <div class="pref-right"><span class="expand-arrow" id="arrow-diygauge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></span></div>
+    </div>
+    <div class="expand-body" id="expand-diygauge">
+      <div class="expand-inner">
+        <div id="diyGaugeSliders"></div>
+        <div class="field-label" style="margin-top:18px">液面波浪</div>
+        <div id="diyWaveSliders"></div>
+        <div class="field-label" style="margin-top:18px">液面高度</div>
+        <div class="chips" id="diyFillChips" style="display:grid;grid-template-columns:repeat(3,1fr)"></div>
+        <div id="diyFillSliders"></div>
+        <div id="diyGlowSwitches"></div>
+        <div id="diyGlowSliders"></div>
+        <div class="field-label" style="margin-top:18px">进度弧发光颜色</div>
+        <div id="diyGlowColors"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-diy-keep="1">
+    <div class="pref" onclick="toggleExpand('diycard')">
+      <div class="pref-body">
+        <div class="pref-title">卡片与文字尺寸</div>
+        <div class="pref-desc" id="diyCardSub">间距 1.00 / 内边距 1.00</div>
+      </div>
+      <div class="pref-right"><span class="expand-arrow" id="arrow-diycard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></span></div>
+    </div>
+    <div class="expand-body" id="expand-diycard">
+      <div class="expand-inner"><div id="diyCardSliders"></div></div>
+    </div>
+  </div>
+
+  <div class="card" data-diy-keep="1">
+    <div class="pref" onclick="toggleExpand('diybar')">
+      <div class="pref-body">
+        <div class="pref-title">底栏尺寸</div>
+        <div class="pref-desc" id="diyBarSub">圆角跟随主题 · 图标 22px</div>
+      </div>
+      <div class="pref-right"><span class="expand-arrow" id="arrow-diybar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></span></div>
+    </div>
+    <div class="expand-body" id="expand-diybar">
+      <div class="expand-inner"><div id="diyBarSliders"></div></div>
+    </div>
+  </div>
+
+  <div class="card" data-diy-keep="1">
+    <div class="pref" onclick="toggleExpand('diylayout')">
+      <div class="pref-body">
+        <div class="pref-title">主页字段与卡片显隐</div>
+        <div class="pref-desc" id="diyLayoutSub">字段 11 项 · 列数自动</div>
+      </div>
+      <div class="pref-right"><span class="expand-arrow" id="arrow-diylayout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></span></div>
+    </div>
+    <div class="expand-body" id="expand-diylayout">
+      <div class="expand-inner">
+        <div class="field-label" style="margin-top:0">主页数据格列数</div>
+        <div class="chips" id="diyHomeColsChips" style="display:grid;grid-template-columns:repeat(3,1fr)"></div>
+        <div class="field-label" style="margin-top:18px">主页数据格字段</div>
+        <div class="chips" id="diyHomeFieldChips" style="display:grid;grid-template-columns:repeat(2,1fr)"></div>
+        <div class="field-label" style="margin-top:18px">面板默认状态</div>
+        <div class="chips" id="diyPanelChips" style="display:grid;grid-template-columns:repeat(3,1fr)"></div>
+        <div class="field-label" style="margin-top:18px">卡片显隐</div>
+        <div class="field-label" style="margin-top:0;font-size:calc(12px * var(--fs));opacity:.75">长按任意卡片 0.45 秒可拖动排序；隐藏的卡片不会参与拖动</div>
+        <div id="diyCardVisList"></div>
+        <button class="btn secondary" style="width:100%;margin-top:12px" onclick="diyResetLayout()">恢复默认布局</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-diy-keep="1">
+    <div class="pref" onclick="toggleExpand('diyscheme')">
+      <div class="pref-body">
+        <div class="pref-title">外观方案与自定义 CSS</div>
+        <div class="pref-desc" id="diySchemeSub">已保存 0 套方案</div>
+      </div>
+      <div class="pref-right"><span class="expand-arrow" id="arrow-diyscheme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></span></div>
+    </div>
+    <div class="expand-body" id="expand-diyscheme">
+      <div class="expand-inner">
+        <button class="btn" style="width:100%;margin-bottom:10px" onclick="diySaveScheme()">保存当前外观为方案</button>
+        <div id="diySchemeList"></div>
+        <div class="field-label" style="margin-top:18px">导入 / 导出（方案 JSON）</div>
+        <textarea id="diySchemeBox" rows="4" style="width:100%;box-sizing:border-box;border-radius:var(--radius-sm);border:1px solid var(--hairline);background:var(--input-bg);color:var(--text);padding:10px;font-size:calc(12px * var(--fs));font-family:monospace"></textarea>
+        <div style="display:flex;gap:10px;margin-top:10px">
+          <button class="btn secondary" style="flex:1" onclick="diyExportSchemes()">导出到上方</button>
+          <button class="btn secondary" style="flex:1" onclick="diyImportSchemes()">从上方导入</button>
+        </div>
+        <div class="field-label" style="margin-top:18px">自定义 CSS</div>
+        <textarea id="diyCssBox" rows="5" style="width:100%;box-sizing:border-box;border-radius:var(--radius-sm);border:1px solid var(--hairline);background:var(--input-bg);color:var(--text);padding:10px;font-size:calc(12px * var(--fs));font-family:monospace" placeholder="例如：.card { box-shadow: 0 0 24px rgba(0,0,0,.25); }"></textarea>
+        <div style="display:flex;gap:10px;margin-top:10px">
+          <button class="btn" style="flex:1" onclick="diyApplyCss()">应用 CSS</button>
+          <button class="btn secondary" style="flex:1" onclick="diyClearCss()">清空</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 
@@ -2431,14 +3037,28 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
 
   <div class="card">
     <div class="author" onclick="openCoolapk('517965')" style="cursor:pointer">
-      <div class="author-avatar" id="avatarXj1" oncontextmenu="return false">
-        <span>MI</span>
-      </div>
+      <div class="author-avatar" oncontextmenu="return false"><span>热</span></div>
       <div class="author-info">
         <div class="author-name">小米热炸了</div>
-        <div class="author-role">HyperOS - 动态温控·解容开发者</div>
+        <div class="author-role">HyperOS - 动态温控·解容 维护者</div>
       </div>
-      <div class="update-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></div>
+      <div class="update-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></div>
+    </div>
+    <div class="author" onclick="openCoolapk('45432024')" style="cursor:pointer">
+      <div class="author-avatar" oncontextmenu="return false"><span>AX</span></div>
+      <div class="author-info">
+        <div class="author-name">AxiaojiuY</div>
+        <div class="author-role">动态温控 K2 作者</div>
+      </div>
+      <div class="update-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></div>
+    </div>
+    <div class="author" onclick="openCoolapk('37273905')" style="cursor:pointer">
+      <div class="author-avatar" oncontextmenu="return false"><span>听</span></div>
+      <div class="author-info">
+        <div class="author-name">听夜风1337</div>
+        <div class="author-role">电池解容工具箱 作者</div>
+      </div>
+      <div class="update-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></div>
     </div>
   </div>
 
@@ -2446,20 +3066,25 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
     <div class="pref" style="cursor:default">
       <div class="pref-body">
         <div class="pref-title">二改声明</div>
-        <div class="pref-desc" style="white-space:normal;line-height:1.6">本包由小米热炸了整合维护，合并电池解容 / 公版 PPS / DTBO，原作者为 Axiaojiux 与 听夜风1337</div>
+        <div class="pref-desc" style="white-space:normal;line-height:1.6">本包由小米热炸了整合维护，合并动态温控 K2、电池解容工具箱 v3.12.6、公版 PPS 与 DTBO 刷入。</div>
       </div>
     </div>
-    <div class="pref" style="cursor:default">
+  </div>
+
+  <div class="card">
+    <div class="pref" onclick="openQGroup('thermal')" style="cursor:pointer">
       <div class="pref-body">
-        <div class="pref-title">动态温控 K2</div>
-        <div class="pref-desc">作者 Axiaojiux</div>
+        <div class="pref-title">动态温控 QQ 群</div>
+        <div class="pref-desc">HyperOS·动态温控 · 点击加入</div>
       </div>
+      <div class="update-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></div>
     </div>
-    <div class="pref" style="cursor:default">
+    <div class="pref" onclick="openQGroup('battery')" style="cursor:pointer">
       <div class="pref-body">
-        <div class="pref-title">电池解容工具箱 v3.9.6</div>
-        <div class="pref-desc">作者 听夜风1337</div>
+        <div class="pref-title">电池解容 QQ 群</div>
+        <div class="pref-desc">米米电池解容 · 点击加入</div>
       </div>
+      <div class="update-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></div>
     </div>
   </div>
 
@@ -2479,16 +3104,6 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
     <div class="pref" style="cursor:default">
       <div class="pref-body"><div class="pref-title">模块路径</div></div>
       <div class="pref-right about-right" id="modPathVal" style="word-break:break-all;text-align:right">/data/adb/modules/HyperOS_XJ</div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="pref" onclick="openAuthorCard()" style="cursor:pointer">
-      <div class="pref-body">
-        <div class="pref-title">酷安名片</div>
-        <div class="pref-desc">小米热炸了 · 点击查看二维码获取最新版本</div>
-      </div>
-      <div class="update-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></div>
     </div>
   </div>
 
@@ -2830,7 +3445,7 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
 - 主页查看电量、容量、健康度、循环次数、充电协议与实时数据
 - 温控页设置各场景档位、游戏加速与旁路供电
 - 电池页管理解容、公版 PPS、云控屏蔽、循环伪装与电池电压
-- 关于页可检查更新、查看更新日志与酷安名片
+- 关于页可检查更新、查看更新日志，点作者卡片直达酷安主页
 
 2026年10月31日 · 小米热炸了</div>
     <button class="notice-btn" id="noticeBtn" disabled>我知道了（10）</button>
@@ -2838,12 +3453,23 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
 </div>
 
 <script>
+/* 命令入口：KernelSU/SukiSU 内置 WebUI 注入 ksu.exec(cmd, opts, 回调函数名)，
+   回调只按「全局函数名」被 Java 侧调用，所以必须先挂 window[cb] 再把名字传进去；
+   只传 cmd 不传回调名不会有任何结果回来。探测结果存在 __kexecProbe，取数失败时直接显示。 */
+var __kexecProbe = '';
+var __kexecMode = 'none';
+try {
+  var _keys = (typeof ksu !== 'undefined' && ksu) ? Object.keys(ksu).join(',') : '-';
+  __kexecProbe = 'exec=' + (typeof exec) + ' ksu=' + (typeof ksu) + ' keys=' + _keys;
+} catch(e) { __kexecProbe = 'probe-err'; }
+if (typeof ksu !== 'undefined' && ksu && typeof ksu.exec === 'function') __kexecMode = 'ksu.exec';
+
 const MODDIR='/data/adb/modules/HyperOS_XJ', CONF=MODDIR+'/config/settings.json';
 
 function logOp(action){
   try{
     const a=String(action==null?'':action).replace(/'/g,'’').replace(/[\r\n]+/g,' ').slice(0,200);
-    exec(`mkdir -p '${MODDIR}/log' 2>/dev/null; printf '%s [UI] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" '${a}' >> '${MODDIR}/log/core.log' 2>/dev/null; true`);
+    __kexec(`mkdir -p '${MODDIR}/log' 2>/dev/null; printf '%s [UI] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" '${a}' >> '${MODDIR}/log/core.log' 2>/dev/null; true`);
   }catch(e){}
 }
 let settings={}, gameApps=[];
@@ -2860,7 +3486,7 @@ const MODES=[{id:'default',l:'系统默认'},...LEVELS];
 const MODE_NAMES={default:'默认',unlimited:'无限制',level_1:'一档',level_2:'二档',level_3:'三档',level_4:'四档',level_5:'五档',bypass:'旁路',off:'关闭'};
 
 
-function exec(cmd, timeoutMs){
+function __kexec(cmd, timeoutMs){
   const TO = timeoutMs || 20000;
   return new Promise(r=>{
     const cb='cb_'+Date.now()+'_'+Math.random().toString(36).slice(2);
@@ -2875,50 +3501,37 @@ function exec(cmd, timeoutMs){
     };
     window[cb]=(e,o,s)=>{ fin(e,o,s); };
     tm=setTimeout(()=>{ fin(-2,'','执行超时（'+TO+'ms 无回调），可能是 root 授权未响应，请重试或检查 KernelSU 授权'); }, TO);
-    try{ ksu.exec(cmd,'{}',cb); }catch(x){ fin(-1,'',String(x)); }
+    try{
+      if(__kexecMode === 'ksu.exec') ksu.exec(cmd,'{}',cb);
+      else fin(-1,'','未找到可用的命令通道（' + __kexecProbe + '）');
+    }catch(x){ fin(-1,'',String(x)); }
   });
 }
 function toast(m){const s=document.getElementById('snackbar');s.textContent=m;s.classList.add('show');clearTimeout(s._t);s._t=setTimeout(()=>s.classList.remove('show'),2500);}
 
-// ===== 酷安名片 =====
-const COOLAPK_HOME = 'https://www.coolapk.com/u/517965';
+// ===== 酷安主页跳转 =====
+function openCoolapk(uid){
+  const id = String(uid == null ? '' : uid).replace(/[^0-9]/g, '');
+  if(!id){ toast('酷安主页地址无效'); return; }
+  try{
+    __kexec('am start -a android.intent.action.VIEW -d "https://www.coolapk.com/u/' + id + '" >/dev/null 2>&1');
+    toast('正在打开酷安主页');
+  }catch(e){ toast('打开失败：' + String(e)); }
+}
 
-async function openAuthorCard(){
-  if(document.getElementById('cardWrap')) return;
-  let src='';
-  try{ src=await fileToDataUrl(AUTHOR_BASE + 'XJ_card.png'); }catch(e){}
-  const wrap=document.createElement('div');
-  wrap.id='cardWrap';
-  wrap.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;padding:22px;box-sizing:border-box;';
-  wrap.onclick=function(){ wrap.remove(); };
-  const box=document.createElement('div');
-  box.style.cssText='width:100%;max-width:380px;max-height:86vh;overflow:auto;background:#fff;border-radius:18px;padding:14px;box-sizing:border-box;';
-  if(src){
-    const img=document.createElement('img');
-    img.src=src;
-    img.style.cssText='width:100%;display:block;border-radius:12px;';
-    box.appendChild(img);
-  }else{
-    const t=document.createElement('div');
-    t.textContent='读取名片失败，请到酷安搜索「小米热炸了」';
-    t.style.cssText='font-size:14px;color:#333;padding:20px 4px;text-align:center;';
-    box.appendChild(t);
-  }
-  const btn=document.createElement('button');
-  btn.textContent='打开酷安';
-  btn.style.cssText='display:block;width:100%;margin-top:12px;padding:12px;border:0;border-radius:12px;background:#0aa06e;color:#fff;font-size:15px;';
-  btn.onclick=function(ev){
-    ev.stopPropagation();
-    exec('am start -a android.intent.action.VIEW -d "'+COOLAPK_HOME+'" >/dev/null 2>&1');
-    toast('已调用浏览器打开酷安');
-  };
-  box.appendChild(btn);
-  const tip=document.createElement('div');
-  tip.textContent='点击空白处关闭';
-  tip.style.cssText='text-align:center;font-size:12px;color:#888;margin-top:9px;';
-  box.appendChild(tip);
-  wrap.appendChild(box);
-  document.body.appendChild(wrap);
+// ===== QQ 群跳转 =====
+const QQ_GROUPS={
+  thermal:'https://qun.qq.com/universal-share/share?ac=1&authKey=RSvlWnjRWmhH7eZNWVFhcTk4KdsQZjKQf6P2z%2FmG7ouwroWWQmPb1R5N8eOtAnpu&busi_data=eyJncm91cENvZGUiOiIxMDk3ODcxODgwIiwidG9rZW4iOiIxSHp6TGhqZFRGMTFSRUE0RE03ZDZqdkdXb3h5Q3dhSUZqRjR3TXlDRFU4b1Z4Z2g1OE5ibUZDS3gxSS9sUkxVIiwidWluIjoiMTAxNDQxMTMxMyJ9&data=XcfpZ1j5ydljNceReGiyA0fMBYwge4F4e4wx9SWv_jwq8oIN7FG9YHuWLWnLnwjVMOS6YwBKJTbSh3g5bqkKBw&svctype=4&tempid=h5_group_info',
+  battery:'https://qun.qq.com/universal-share/share?ac=1&authKey=JZlX9I0nTl0DsTmEiz9h7oUgecygedKyrhsY4vzaoROQOf2a8aeFx46difhBveOt&busi_data=eyJncm91cENvZGUiOiIxMDc1OTc1ODM2IiwidG9rZW4iOiJ6Z3pUcFR6V09yekFJbU9udVlsd3YwNWwvU3NCbVRQbnRyMjJRajEvNFZmMEpUUElWcExhbUJqRlZZYzdFcGZLIiwidWluIjoiMTAxNDQxMTMxMyJ9&data=dKFe6xgolY54H4qGys76HoRo3zuJxxSmHvDiq_QHuRgi05eW5PnAdep3O3aw-Kl6A5Q75dl6Ki5SiLj1csic_Q&svctype=4&tempid=h5_group_info'
+};
+function openQGroup(key){
+  const url=QQ_GROUPS[key];
+  if(!url){ toast('群链接缺失'); return; }
+  if(url.indexOf("'")>=0){ toast('群链接格式异常'); return; }
+  try{
+    __kexec("am start -a android.intent.action.VIEW -d '" + url + "' >/dev/null 2>&1");
+    toast('正在打开 QQ 群');
+  }catch(e){ toast('打开失败：' + String(e)); }
 }
 
 // ===== 检查更新 =====
@@ -2938,7 +3551,7 @@ async function fetchRemoteJson(url){
            +'(command -v wget >/dev/null 2>&1 && wget -q -O - "'+url+'") || '
            +'toybox wget -q -O - "'+url+'" 2>/dev/null';
   try{
-    const r=await exec(cmd,20000);
+    const r=await __kexec(cmd,20000);
     const out=(r&&r.stdout)?String(r.stdout).trim():'';
     if(out&&out.charAt(0)==='{'){ const j=JSON.parse(out); if(j&&j.versionCode) return j; }
   }catch(e){}
@@ -2947,7 +3560,7 @@ async function fetchRemoteJson(url){
 
 async function localVersion(){
   try{
-    const r=await exec('cat "'+MODDIR+'/module.prop" 2>/dev/null');
+    const r=await __kexec('cat "'+MODDIR+'/module.prop" 2>/dev/null');
     const t=(r&&r.stdout)||'';
     const m1=t.match(/^versionCode=(.*)$/m), m2=t.match(/^version=(.*)$/m);
     return {versionCode:parseInt((m1&&m1[1])||'0',10)||0, versionName:((m2&&m2[1])||'').trim()};
@@ -2984,7 +3597,7 @@ const BK_DIR = MODDIR + '/battery/scripts';
 let bkBusy = false;
 
 function bkSh(cmd){
-  return exec('sh ' + cmd + ' 2>&1', 12000)
+  return __kexec('sh ' + cmd + ' 2>&1', 12000)
     .then(function(r){ return (r && r.stdout) ? r.stdout : ''; })
     .catch(function(){ return ''; });
 }
@@ -3024,7 +3637,7 @@ async function bkRefresh(){
       // 取不到数据多半是 root 授权未通过，退避 30 秒，避免 KernelSU 反复弹窗
       if (window.__bkFail === 3) {
         window.__bkPauseUntil = Date.now() + 30000;
-        toast('读取失败：请在 KernelSU 中授予本应用 root 权限');
+        toast('读取失败（' + __kexecProbe + '）');
       }
       return;
     }
@@ -3071,6 +3684,22 @@ async function bkRefresh(){
     bkPair('Temp', isFinite(tc) ? (tc / 10).toFixed(1) : '--');
 
     const u = document.getElementById('bkUnlock'); if (u) u.checked = (kv.unlock === '1');
+    const ap = document.getElementById('bkApl'); if (ap) ap.checked = (kv.apl_enable === '1');
+    const apd = document.getElementById('bkAplDesc');
+    if (apd) {
+      if (kv.apl_alive === '1') apd.textContent = '运行中 · 目标 ' + (kv.apl_target_ma || '--') + 'mA / 上限 ' + (kv.apl_cap_ma || '--') + 'mA';
+      else if (kv.apl_enable === '1') apd.textContent = (kv.power_limit === 'inf') ? '已开启 · 等待充电时启动' : '已开启 · 切到「全速」功率档才生效';
+      else apd.textContent = '全速档按实测硬件上限动态上探，需要「全速」功率档';
+    }
+    const tg = document.getElementById('bkTgState');
+    const tgd = document.getElementById('bkTgDesc');
+    if (tg) {
+      const on = kv.thermal_guard === '1';
+      const alive = kv.thermal_guard_alive === '1';
+      if (!on) { tg.textContent = '未启用'; tg.style.color = 'var(--text-secondary)'; if (tgd) tgd.textContent = '解容侧的自定义温度上限守护，默认不启用（降功率由温控档位统一负责）'; }
+      else if (alive) { tg.textContent = '运行中'; tg.style.color = 'var(--success)'; if (tgd) tgd.textContent = '上限 ' + (kv.thermal_limit || '--') + '℃ · 动作 ' + (kv.thermal_action || '--'); }
+      else { tg.textContent = '已停止（异常）'; tg.style.color = 'var(--warn)'; if (tgd) tgd.textContent = '开关为开但守护进程没在跑，可关闭后重开或重启设备'; }
+    }
     const pp = document.getElementById('bkPps'); if (pp) pp.checked = (kv.freepps === '1');
     const c = document.getElementById('bkCloud'); if (c) c.checked = (kv.cloud_guard === '1');
     const vf = document.getElementById('voltForce'); if (vf) vf.checked = (String(kv.fv_force || '0') === '1');
@@ -3122,6 +3751,15 @@ async function bkSet(kind, on){
   const tail = (out || '').trim().split(/\r?\n/).slice(-1)[0];
   if (tail) toast(tail.slice(0, 60));
   setTimeout(bkRefresh, 800);
+}
+
+async function bkAplToggle(on){
+  bkResetGuard();
+  toast(on ? '正在开启 APL…' : '正在关闭 APL…');
+  const out = await bkSh(BK_DIR + '/scripts/apl_toggle.sh ' + (on ? 1 : 0));
+  const tail = (out || '').trim().split(/\r?\n/).slice(-1)[0];
+  if (tail) toast(tail.slice(0, 60));
+  setTimeout(bkRefresh, 900);
 }
 
 async function bkSetPower(p){
@@ -3229,7 +3867,7 @@ async function openChangelog(){
   if (document.getElementById('changelogWrap')) return;
   let txt = '';
   try {
-    const r = await exec('cat "' + MODDIR + '/更新日志.log" 2>/dev/null', 12000);
+    const r = await __kexec('cat "' + MODDIR + '/更新日志.log" 2>/dev/null', 12000);
     txt = (r && r.stdout) ? r.stdout : '';
   } catch(e){}
   const mask = document.createElement('div');
@@ -3485,7 +4123,7 @@ async function _writeJsonToPathImpl(json, fullPath){
   const nonce = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   const tmpB64 = fullPath + '.' + nonce + '.b64tmp';
   const tmpOut = fullPath + '.' + nonce + '.tmpout';
-  await exec(`mkdir -p '${dir}' 2>/dev/null; rm -f '${tmpB64}' '${tmpOut}' 2>/dev/null; true`);
+  await __kexec(`mkdir -p '${dir}' 2>/dev/null; rm -f '${tmpB64}' '${tmpOut}' 2>/dev/null; true`);
   
   const CHUNK = 1500;
   const total = Math.ceil(b64.length / CHUNK);
@@ -3493,33 +4131,33 @@ async function _writeJsonToPathImpl(json, fullPath){
     const piece = b64.slice(i * CHUNK, (i + 1) * CHUNK);
     
     const redir = (i === 0) ? '>' : '>>';
-    const r = await exec(`printf '%s' '${piece}' ${redir} '${tmpB64}'`);
+    const r = await __kexec(`printf '%s' '${piece}' ${redir} '${tmpB64}'`);
     if (r.errno !== 0) {
-      await exec(`rm -f '${tmpB64}' '${tmpOut}' 2>/dev/null`);
+      await __kexec(`rm -f '${tmpB64}' '${tmpOut}' 2>/dev/null`);
       return { ok:false, msg:'分块写入失败 (' + (i+1) + '/' + total + '): ' + ((r.stderr||'').trim()||('errno='+r.errno)) };
     }
   }
   
-  const sizeCheck = await exec(`wc -c < '${tmpB64}' 2>/dev/null`);
+  const sizeCheck = await __kexec(`wc -c < '${tmpB64}' 2>/dev/null`);
   const tmpSize = parseInt((sizeCheck.stdout || '0').trim()) || 0;
   if (!tmpSize || tmpSize < b64.length) {
-    await exec(`rm -f '${tmpB64}' '${tmpOut}' 2>/dev/null`);
+    await __kexec(`rm -f '${tmpB64}' '${tmpOut}' 2>/dev/null`);
     return { ok:false, msg:`临时文件大小异常 (${tmpSize}/${b64.length})` };
   }
   
-  const r2 = await exec(`base64 -d < '${tmpB64}' > '${tmpOut}' 2>/dev/null && echo __OK__`);
+  const r2 = await __kexec(`base64 -d < '${tmpB64}' > '${tmpOut}' 2>/dev/null && echo __OK__`);
   if ((r2.stdout || '').indexOf('__OK__') < 0) {
-    await exec(`rm -f '${tmpB64}' '${tmpOut}' 2>/dev/null`);
+    await __kexec(`rm -f '${tmpB64}' '${tmpOut}' 2>/dev/null`);
     return { ok:false, msg:'解码写入失败' };
   }
-  const mv = await exec(`mv -f '${tmpOut}' '${fullPath}' && sync 2>/dev/null; echo __OK__`);
-  await exec(`rm -f '${tmpB64}' 2>/dev/null`);
+  const mv = await __kexec(`mv -f '${tmpOut}' '${fullPath}' && sync 2>/dev/null; echo __OK__`);
+  await __kexec(`rm -f '${tmpB64}' 2>/dev/null`);
   if ((mv.stdout || '').indexOf('__OK__') < 0) {
-    await exec(`rm -f '${tmpOut}' 2>/dev/null`);
+    await __kexec(`rm -f '${tmpOut}' 2>/dev/null`);
     return { ok:false, msg:'无法写入目标文件（权限不足）' };
   }
   
-  const finalCheck = await exec(`wc -c < '${fullPath}' 2>/dev/null`);
+  const finalCheck = await __kexec(`wc -c < '${fullPath}' 2>/dev/null`);
   const finalSize = parseInt((finalCheck.stdout || '0').trim()) || 0;
   if (finalSize <= 0) {
     return { ok:false, msg:'目标文件为空' };
@@ -3549,7 +4187,7 @@ async function saveBackupToPath(){
 
   toast('正在写入…');
   
-  await exec(`mkdir -p '${dir}' 2>/dev/null`);
+  await __kexec(`mkdir -p '${dir}' 2>/dev/null`);
 
   const res = await writeJsonToPath(json, fullPath);
   if (res.ok) {
@@ -3569,7 +4207,7 @@ async function browserDownloadFile(){
   const fullPath = dir + fname;
 
   toast('正在生成文件…');
-  await exec(`mkdir -p '${dir}' 2>/dev/null`);
+  await __kexec(`mkdir -p '${dir}' 2>/dev/null`);
 
   const json = buildBackupJson();
   const res = await writeJsonToPath(json, fullPath);
@@ -3593,7 +4231,7 @@ async function browserDownloadFile(){
 
   let opened = false;
   for (const cmd of openCmds) {
-    const r = await exec(cmd);
+    const r = await __kexec(cmd);
     const out = (r.stdout || '') + (r.stderr || '');
     
     if (r.errno === 0 && !/Error|Exception/i.test(out)) {
@@ -3706,11 +4344,11 @@ async function saveFullBackup(){
     'rm -rf "' + T + '" "' + U + '" 2>/dev/null'
   ].join('\n');
   let r = null;
-  try { r = await exec(cmd, 180000); }
+  try { r = await __kexec(cmd, 180000); }
   catch(e){ r = { errno: -1, stdout: '', stderr: String(e) }; }
   if(stop){ stop(); stop = null; }
   if((r.stdout || '').indexOf('__OK__') < 0){
-    await exec('rm -rf "' + T + '" "' + U + '" 2>/dev/null');
+    await __kexec('rm -rf "' + T + '" "' + U + '" 2>/dev/null');
     const msg = (r.stderr || '').trim().split('\n')[0].slice(0, 60) || '未知错误';
     pv.finish(false, r.errno === -2 ? '打包超时' : '备份失败');
     pv.addLog('失败：' + msg);
@@ -3721,7 +4359,7 @@ async function saveFullBackup(){
   }
   pv.setStep('校验文件大小', 95);
   try { localStorage.setItem('ht_full_backup_last', out); } catch(e){}
-  const sz = await exec('wc -c < "' + out + '" 2>/dev/null');
+  const sz = await __kexec('wc -c < "' + out + '" 2>/dev/null');
   const n = parseInt((sz.stdout || '0').trim()) || 0;
   const txt = n < 1024 ? (n + ' B') : (n < 1048576 ? ((n / 1024).toFixed(1) + ' KB') : ((n / 1048576).toFixed(2) + ' MB'));
   pv.finish(true, '备份完成');
@@ -3754,7 +4392,7 @@ async function restoreFullBackup(){
     'mkdir -p "' + T + '"',
     'tar -xzf "' + path + '" -C "' + T + '" && echo __UNPACKED__'
   ].join('\n');
-  const r = await exec(cmd, 180000);
+  const r = await __kexec(cmd, 180000);
   if(stop){ stop(); stop = null; }
   const o = r.stdout || '';
   if(o.indexOf('__NOFILE__') >= 0){
@@ -3766,7 +4404,7 @@ async function restoreFullBackup(){
     return;
   }
   if(o.indexOf('__UNPACKED__') < 0){
-    await exec('rm -rf "' + T + '" 2>/dev/null');
+    await __kexec('rm -rf "' + T + '" 2>/dev/null');
     pv.finish(false, '解包失败');
     pv.addLog('备份文件可能损坏或不是 .tar.gz');
     endBtn('关闭');
@@ -3784,7 +4422,7 @@ async function restoreFullBackup(){
     'chmod -R 0771 "' + MODDIR + '/config" "' + MODDIR + '/profiles" 2>/dev/null',
     'echo __OK__'
   ].join('\n');
-  const r2 = await exec(cmd2, 120000);
+  const r2 = await __kexec(cmd2, 120000);
   if(stop){ stop(); stop = null; }
   if((r2.stdout || '').indexOf('__OK__') < 0){
     const msg = (r2.stderr || '').trim().split('\n')[0].slice(0, 60) || '未知错误';
@@ -3798,10 +4436,10 @@ async function restoreFullBackup(){
   pv.addLog('模块数据已覆盖');
   pv.setStep('还原 UI 设置', 85);
   let uiN = 0;
-  const u = await exec('cat "' + T + '/ui/ui-settings.json" 2>/dev/null');
+  const u = await __kexec('cat "' + T + '/ui/ui-settings.json" 2>/dev/null');
   const uiText = (u.stdout || '').trim();
   if(uiText){ try { uiN = restoreSettingsFromJson(uiText) || 0; } catch(e){} }
-  await exec('rm -rf "' + T + '" 2>/dev/null');
+  await __kexec('rm -rf "' + T + '" 2>/dev/null');
   pv.finish(true, '恢复完成');
   pv.addLog('UI 设置已还原' + (uiN ? '（' + uiN + ' 项）' : '（备份中无 UI 设置）'));
   endBtn('完成');
@@ -4491,9 +5129,14 @@ function toggleDeviceInfo(){
 function initPanelState(){
   const pb = document.getElementById('panelBody');
   const pa = document.getElementById('arrow-panel');
+  let mode = 'remember';
+  try { mode = localStorage.getItem('ht_diy_panel') || 'remember'; } catch(e){}
   if(pb){
     let collapsed = false;
-    try { collapsed = localStorage.getItem('ht_panel_collapsed') === '1'; } catch(e){}
+    if(mode === 'closed') collapsed = true;
+    else if(mode !== 'open'){
+      try { collapsed = localStorage.getItem('ht_panel_collapsed') === '1'; } catch(e){}
+    }
     setElExpandedInstant(pb, !collapsed);
     pa.classList.toggle('open', !collapsed);
   }
@@ -4596,6 +5239,57 @@ function initAppearance(){
   }
 }
 
+
+/* ===== 液态玻璃皮肤（参考 1.html / 2.html）===== */
+const SKINS=[
+  {id:'aurora',       l:'极光浅色', dark:false},
+  {id:'holographic',  l:'全息流体', dark:false},
+  {id:'neon-dark',    l:'暗黑霓虹', dark:true},
+  {id:'aurora-vivid', l:'幻彩极光', dark:true, vivid:true},
+  {id:'cyber',        l:'赛博霓虹', dark:true, vivid:true},
+  {id:'lava',         l:'熔岩鎏金', dark:true, vivid:true}
+];
+let skinId='aurora';
+function applySkin(){
+  document.body.setAttribute('data-skin', skinId);
+  document.body.classList.add('blob-on');
+  document.body.classList.toggle('skin-vivid', !!(SKINS.find(x=>x.id===skinId)||{}).vivid);
+}
+function renderSkinChips(){
+  const el=document.getElementById('skinChips');
+  if(!el) return;
+  el.innerHTML=SKINS.map(s=>`<div class="chip${skinId===s.id?' active':''}" onclick="setSkin('${s.id}')"><span>${s.l}</span></div>`).join('');
+}
+function updateSkinSub(){
+  const el=document.getElementById('skinSub');
+  const s=SKINS.find(x=>x.id===skinId);
+  if(el) el.textContent=s?s.l:'极光浅色';
+}
+function setSkin(id){
+  if(!SKINS.some(x=>x.id===id)) return;
+  skinId=id;
+  try{ localStorage.setItem('ht_skin', id); }catch(e){}
+  const s=SKINS.find(x=>x.id===id);
+  themeId = (s && s.dark) ? 'dark' : 'light';
+  try{ localStorage.setItem('ht_theme', themeId); }catch(e){}
+  document.documentElement.setAttribute('data-theme', themeId);
+  applySkin(); renderSkinChips(); updateSkinSub();
+  renderThemeChips(); updateThemeSub(); renderAccentSwatches();
+  try{ logOp('皮肤切换：' + (s?s.l:id)); }catch(e){}
+}
+function initSkin(){
+  let v='aurora';
+  try{ v=localStorage.getItem('ht_skin')||'aurora'; }catch(e){}
+  if(!SKINS.some(x=>x.id===v)) v='aurora';
+  skinId=v;
+  const s=SKINS.find(x=>x.id===skinId);
+  if(s){
+    themeId = s.dark ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', themeId);
+    try{ localStorage.setItem('ht_theme', themeId); }catch(e){}
+  }
+  applySkin(); renderSkinChips(); updateSkinSub();
+}
 
 const SCALE_DEFS = {
   fs: { min:0.80, max:1.50, step:0.01, def:0.80, key:'ht_fs',  css:'--fs',    isInt:false, fmt:v=>v.toFixed(2),  hint:'请输入 0.80 - 1.50 之间的数值' },
@@ -5695,7 +6389,7 @@ function initFirstNotice(){
   Promise.resolve().then(async () => {
     let curVer = '';
     try {
-      const r = await exec(`cat "${MODDIR}/module.prop" 2>/dev/null`);
+      const r = await __kexec(`cat "${MODDIR}/module.prop" 2>/dev/null`);
       const out = (r && r.stdout) || '';
       const mc = out.match(/^\s*versionCode\s*=\s*(.+)\s*$/m);
       const mv = out.match(/^\s*version\s*=\s*(.+)\s*$/m);
@@ -5708,7 +6402,7 @@ function initFirstNotice(){
     if(!curCode) return;
     let seenCode = '';
     try {
-      const rf = await exec(`cat "${MODDIR}/config/.notice_seen" 2>/dev/null`);
+      const rf = await __kexec(`cat "${MODDIR}/config/.notice_seen" 2>/dev/null`);
       seenCode = ((rf && rf.stdout) || '').trim();
     } catch(e){}
     if(!seenCode){ try { seenCode = (localStorage.getItem('ht_notice_code') || '').trim(); } catch(e){} }
@@ -5764,7 +6458,7 @@ function showFirstNotice(){
     } catch(e){}
     
     if(_noticeVer){
-      exec(`mkdir -p "${MODDIR}/config" 2>/dev/null; printf '%s' "${_noticeVer}" > "${MODDIR}/config/.notice_seen" 2>/dev/null`);
+      __kexec(`mkdir -p "${MODDIR}/config" 2>/dev/null; printf '%s' "${_noticeVer}" > "${MODDIR}/config/.notice_seen" 2>/dev/null`);
     }
     if(showFirstNotice._t){ clearInterval(showFirstNotice._t); showFirstNotice._t = null; }
     if(mask._guardTouch){ mask.removeEventListener('touchmove', mask._guardTouch); }
@@ -5781,7 +6475,7 @@ async function fileToDataUrl(path){
   try {
     let mime = 'image/png';
     try {
-      const t = await exec(`file -b "${path}" 2>/dev/null`);
+      const t = await __kexec(`file -b "${path}" 2>/dev/null`);
       const tt = (t.stdout || '').toLowerCase();
       if (tt.includes('jpeg') || tt.includes('jpg')) mime = 'image/jpeg';
       else if (tt.includes('png')) mime = 'image/png';
@@ -5789,7 +6483,7 @@ async function fileToDataUrl(path){
       else if (tt.includes('webp')) mime = 'image/webp';
       else if (tt.includes('bmp')) mime = 'image/bmp';
     } catch(e){}
-    const r = await exec(`base64 "${path}" 2>/dev/null`);
+    const r = await __kexec(`base64 "${path}" 2>/dev/null`);
     const b64 = (r.stdout || '').replace(/\s+/g, '');
     if (!b64 || b64.length < 20) return null;
     return `data:${mime};base64,${b64}`;
@@ -5881,14 +6575,14 @@ async function openProfileConf(){
   if(model){
     const mp = `${MODDIR}/profiles/${model}.conf`;
     try {
-      const rm = await exec(`[ -s "${mp}" ] && echo yes`);
+      const rm = await __kexec(`[ -s "${mp}" ] && echo yes`);
       if(((rm && rm.stdout) || '').trim() === 'yes'){ path = mp; srcPath = mp; }
       else { path = mp; srcPath = defPath; isNew = true; }
     } catch(e){}
   }
   let text = '';
   try {
-    const rc = await exec(`cat "${srcPath}" 2>/dev/null`);
+    const rc = await __kexec(`cat "${srcPath}" 2>/dev/null`);
     text = ((rc && rc.stdout) || '').replace(/\s+$/, '');
   } catch(e){}
   const lines = text ? text.split('\n') : [];
@@ -6015,7 +6709,7 @@ async function openProfileConf(){
     const content = out.join('\n') + '\n';
     try {
       const b64 = btoa(unescape(encodeURIComponent(content)));
-      const r = await exec(`echo "${b64}" | base64 -d > "${path}" 2>/dev/null; echo $?`);
+      const r = await __kexec(`echo "${b64}" | base64 -d > "${path}" 2>/dev/null; echo $?`);
       if(((r && r.stdout) || '').trim() === '0'){
         if(isNew){
           toast('已为本机型新建档案，重启模块后生效');
@@ -6032,7 +6726,7 @@ async function openProfileConf(){
   defB.onclick = async () => {
     let dtext = '';
     try {
-      const rd = await exec(`cat "${MODDIR}/profiles/default.conf" 2>/dev/null`);
+      const rd = await __kexec(`cat "${MODDIR}/profiles/default.conf" 2>/dev/null`);
       dtext = ((rd && rd.stdout) || '');
     } catch(e){}
     if(!dtext.trim()){ toast('默认档案 default.conf 不存在'); return; }
@@ -6162,7 +6856,7 @@ async function fetchInstalledApps(includeSys){
     + 'fi\n'
     + 'cat "' + F + '" 2>/dev/null';
   let out = '';
-  try { const r = await exec(cmd); out = (r && r.stdout) ? r.stdout : ''; } catch(e){ out = ''; }
+  try { const r = await __kexec(cmd); out = (r && r.stdout) ? r.stdout : ''; } catch(e){ out = ''; }
   const map = {};
   out.split('\n').forEach(function(line){
     const t = parseAppLine(line);
@@ -6529,7 +7223,7 @@ async function _unzipEntry(apk, entry, maxBytes){
   const q = "'" + String(apk).replace(/'/g, "'\\''") + "'";
   const cmd = 'unzip -p ' + q + ' "' + entry + '" 2>/dev/null | head -c ' + (maxBytes || 1200000) + " | base64 | tr -d '\\n'";
   let r = null;
-  try { r = await exec(cmd); } catch(e){ return null; }
+  try { r = await __kexec(cmd); } catch(e){ return null; }
   const s = ((r && r.stdout) || '').replace(/[\s\r\n]+/g, '');
   if(!s) return null;
   return _b64ToBytes(s);
@@ -6667,7 +7361,7 @@ async function doDiagnose(){
   let ok = false;
   try {
     
-    const r = await exec('sh ' + MODDIR + '/diagnose.sh 2>&1', 180000);
+    const r = await __kexec('sh ' + MODDIR + '/diagnose.sh 2>&1', 180000);
     let txt = ((r && r.stdout) || '');
     if(r && r.stderr && r.stderr.trim()) txt += '\n[stderr]\n' + r.stderr;
     if(!txt.trim()) txt = '（脚本无输出，退出码 ' + ((r && r.errno) || 0) + '）';
@@ -6706,7 +7400,7 @@ async function runUninstallScript(){
   const endBtn = function(text){ btn.textContent = text; btn.disabled = false; btn.onclick = function(){ try { ov.remove(); } catch(e){} }; };
   ov.setStep('提交执行', 5);
   try {
-    await exec('nohup sh ' + MODDIR + '/uninstall.sh > /data/local/tmp/HX_uninstall.out 2>&1 &');
+    await __kexec('nohup sh ' + MODDIR + '/uninstall.sh > /data/local/tmp/HX_uninstall.out 2>&1 &');
     logOp('卸载模块｜已启动 uninstall.sh（后台执行）');
   } catch(e){
     out.textContent = '启动失败：' + e;
@@ -6721,9 +7415,9 @@ async function runUninstallScript(){
     await new Promise(function(res){ setTimeout(res, 600); });
     let t = '';
     try {
-      const r1 = await exec('cat /data/local/tmp/HX_uninstall.out 2>/dev/null');
+      const r1 = await __kexec('cat /data/local/tmp/HX_uninstall.out 2>/dev/null');
       t = ((r1 && r1.stdout) || '');
-      const r2 = await exec('cat /data/local/tmp/HyperOS_XJ_uninstall.log 2>/dev/null');
+      const r2 = await __kexec('cat /data/local/tmp/HyperOS_XJ_uninstall.log 2>/dev/null');
       const lg = ((r2 && r2.stdout) || '');
       if(lg) t += '\n── uninstall.log ──\n' + lg;
     } catch(e){}
@@ -6739,7 +7433,7 @@ async function runUninstallScript(){
 
 async function viewLog(){
   
-  const r=await exec(`L="${MODDIR}/log/core.log"; [ -s "$L" ] || L="${MODDIR}/切换log.log"; [ -s "$L" ] || L="${MODDIR}/config/core.log"; tail -n 800 "$L" 2>/dev/null`);
+  const r=await __kexec(`L="${MODDIR}/log/core.log"; [ -s "$L" ] || L="${MODDIR}/切换log.log"; [ -s "$L" ] || L="${MODDIR}/config/core.log"; tail -n 800 "$L" 2>/dev/null`);
   const text=(r.stdout||'').trim();
   const ov=document.createElement('div');
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;';
@@ -6776,9 +7470,9 @@ async function exportLog(){
   const stamp = `${d.getFullYear()}${p2(d.getMonth()+1)}${p2(d.getDate())}_${p2(d.getHours())}${p2(d.getMinutes())}${p2(d.getSeconds())}`;
   const dir = '/sdcard/Download/HyperOS_XJ_Log';
   const dest = `${dir}/切换log_${stamp}.log`;
-  await exec(`mkdir -p "${dir}" 2>/dev/null`);
-  await exec(`L="${MODDIR}/log/core.log"; [ -s "$L" ] || L="${MODDIR}/切换log.log"; cat "$L" > "${dest}" 2>/dev/null`);
-  const chk = await exec(`[ -f "${dest}" ] && echo OK || echo FAIL`);
+  await __kexec(`mkdir -p "${dir}" 2>/dev/null`);
+  await __kexec(`L="${MODDIR}/log/core.log"; [ -s "$L" ] || L="${MODDIR}/切换log.log"; cat "$L" > "${dest}" 2>/dev/null`);
+  const chk = await __kexec(`[ -f "${dest}" ] && echo OK || echo FAIL`);
   if (((chk.stdout) || '').indexOf('OK') !== -1) toast('日志已导出：' + dest);
   else toast('导出失败，请检查存储权限');
 }
@@ -6809,7 +7503,7 @@ async function toggleBypass(){
   
   let ok=false, tail='';
   try{
-    const r = await exec(`printf '%s' '${el.checked?1:0}' > ${MODDIR}/config/bypass_manual 2>/dev/null; echo "RC=$?"`);
+    const r = await __kexec(`printf '%s' '${el.checked?1:0}' > ${MODDIR}/config/bypass_manual 2>/dev/null; echo "RC=$?"`);
     tail=((r&&r.stdout)||'').replace(/\s+/g,' ').trim();
     ok=/RC=0(\s|$)/.test(tail);
   }catch(e){ tail='异常:'+String(e); }
@@ -6826,7 +7520,7 @@ async function toggleGameBypass(){
 
 async function checkIsHyperOS(){
   try{
-    const r=await exec(`printf '%s\n%s\n%s\n' "$(getprop ro.mi.os.version.name)" "$(getprop ro.mi.os.version.code)" "$(getprop ro.miui.ui.version.name)"`);
+    const r=await __kexec(`printf '%s\n%s\n%s\n' "$(getprop ro.mi.os.version.name)" "$(getprop ro.mi.os.version.code)" "$(getprop ro.miui.ui.version.name)"`);
     const L=(((r&&r.stdout)||'').split('\n')).map(x=>(x||'').trim());
     const n=L[0]||'', c=L[1]||'', mn=L[2]||'';
     if(n && n!=='unknown') return true;
@@ -6839,7 +7533,7 @@ async function checkIsHyperOS(){
 async function runHyperOS4Script(){
   try{
     
-    const r=await exec(`if [ -f '${MODDIR}/HyperOS/HyperOS-yes' ]; then sh '${MODDIR}/HyperOS/HyperOS-yes' 2>&1; echo "RC=$?"; else echo "RC=NOFILE"; fi; echo "P_SUP=$(getprop debug.game.video.support)"; echo "P_SPD=$(getprop debug.game.video.speed)"`);
+    const r=await __kexec(`if [ -f '${MODDIR}/HyperOS/HyperOS-yes' ]; then sh '${MODDIR}/HyperOS/HyperOS-yes' 2>&1; echo "RC=$?"; else echo "RC=NOFILE"; fi; echo "P_SUP=$(getprop debug.game.video.support)"; echo "P_SPD=$(getprop debug.game.video.speed)"`);
     const o=((r&&r.stdout)||'');
     const ok=/RC=0(\s|$)/.test(o);
     window._h4Msg=o.replace(/\s+/g,' ').trim().slice(0,200);
@@ -6850,13 +7544,51 @@ async function runHyperOS4Script(){
 
 async function runHyperOS4OffScript(){
   try{
-    const r=await exec(`if [ -f '${MODDIR}/HyperOS/HyperOS-off' ]; then sh '${MODDIR}/HyperOS/HyperOS-off' 2>&1; echo "RC=$?"; else setprop debug.game.video.support false; setprop debug.game.video.speed false; echo "RC=$?"; fi; echo "P_SUP=$(getprop debug.game.video.support)"; echo "P_SPD=$(getprop debug.game.video.speed)"`);
+    const r=await __kexec(`if [ -f '${MODDIR}/HyperOS/HyperOS-off' ]; then sh '${MODDIR}/HyperOS/HyperOS-off' 2>&1; echo "RC=$?"; else setprop debug.game.video.support false; setprop debug.game.video.speed false; echo "RC=$?"; fi; echo "P_SUP=$(getprop debug.game.video.support)"; echo "P_SPD=$(getprop debug.game.video.speed)"`);
     const o=((r&&r.stdout)||'');
     const ok=/RC=0(\s|$)/.test(o);
     logOp('三倍速关闭｜'+(ok?'成功':'失败')+'｜'+o.replace(/\s+/g,' ').trim().slice(0,200));
     return ok;
   }catch(e){ logOp('三倍速关闭｜异常｜'+String(e)); return false; }
 }
+async function initHiTemp(){
+  try{
+    const r=await __kexec('getprop persist.vendor.high_temp_stop_charge');
+    window.__htsc=((r&&r.stdout)||'').trim();
+  }catch(e){ window.__htsc=''; }
+  paintHiTemp();
+}
+function paintHiTemp(){
+  const hs=document.getElementById('hitempSub');
+  const el=document.getElementById('no_hitemp_stop');
+  if(!hs||!el) return;
+  const v=window.__htsc||'';
+  const cur=v?('high_temp_stop_charge='+v):'读不到属性';
+  if(el.checked){
+    hs.textContent=v==='false' ? '已开启 · 系统侧已解除（'+cur+'）' : '已开启 · 属性尚未生效（'+cur+'），守护进程会重试';
+  }else{
+    hs.textContent='已关闭 · 高温时系统会终止充电（'+cur+'）';
+  }
+}
+
+async function toggleHiTemp(){
+  const el=document.getElementById('no_hitemp_stop');
+  if(!el) return;
+  const ok=await save();
+  if(!ok){ el.checked=!el.checked; updateSubs(); toast('写入配置失败'); return; }
+  await __kexec(`sh ${MODDIR}/thermal_core.sh apply >/dev/null 2>&1 &`);
+  setTimeout(async ()=>{
+    const r=await __kexec(`getprop persist.vendor.high_temp_stop_charge`);
+    const v=((r&&r.stdout)||'').trim();
+    const want=el.checked?'false':'true';
+    if(v && v!==want) toast('已记录开关，但属性未生效（当前 '+v+'），守护进程会持续重试');
+    else toast(el.checked?'已解除系统高温停充 · 高温时不再停止充电':'已恢复系统高温停充保护');
+    window.__htsc=v;
+    updateSubs();
+  }, 1200);
+  updateSubs();
+}
+
 async function toggleHyperOS4(){
   const el=document.getElementById('hyperos4');
   if(!el) return;
@@ -6916,7 +7648,7 @@ function _fmtOs(kind,ver,rel){
 async function resolveOsLabel(runtimeOsVer){
   let rel='',hyName='',hyInc='',hyCode='',miuiName='';
   try{
-    const r=await exec(`printf '%s\n%s\n%s\n%s\n%s\n' "$(getprop ro.build.version.release)" "$(getprop ro.mi.os.version.name)" "$(getprop ro.mi.os.version.incremental)" "$(getprop ro.mi.os.version.code)" "$(getprop ro.miui.ui.version.name)"`);
+    const r=await __kexec(`printf '%s\n%s\n%s\n%s\n%s\n' "$(getprop ro.build.version.release)" "$(getprop ro.mi.os.version.name)" "$(getprop ro.mi.os.version.incremental)" "$(getprop ro.mi.os.version.code)" "$(getprop ro.miui.ui.version.name)"`);
     const L=(((r&&r.stdout)||'').split('\n')).map(x=>(x||'').trim());
     rel=L[0]||''; hyName=L[1]||''; hyInc=L[2]||''; hyCode=L[3]||''; miuiName=L[4]||'';
   }catch(e){}
@@ -6958,11 +7690,12 @@ function updateSubs(){
   const bt=settings.bypass_temp_on,bl=settings.bypass_level,parts=[];
   if(bt>0)parts.push(`温度≥${bt}°C`);if(bl>0)parts.push(`电量≥${bl}%`);
   document.getElementById('bypassSub').textContent=parts.length?parts.join(' / '):'点击展开';
+  paintHiTemp();
   const h4s=document.getElementById('hyperos4Sub');
   if(h4s) h4s.textContent=document.getElementById('hyperos4').checked?'已开启 · 立即生效 + 每次开机自动执行':'开启后立即生效 · 每次开机自动执行（仅 HyperOS 可用）';
 }
 
-const DEF_SETTINGS={schema:2,enabled:true,default_mode:'default',charge_mode:true,charge_level:'unlimited',sleep_level:'level_1',time_start:0,time_end:0,time_level:'level_1',game_mode:true,game_level:'unlimited',game_apps:'',game_fps:0,game_bypass:false,bypass_temp_on:0,bypass_temp_off:0,bypass_level:0,bypass_current:500000,hyperos4:false};
+const DEF_SETTINGS={schema:2,enabled:true,default_mode:'default',charge_mode:true,charge_level:'unlimited',sleep_level:'level_1',time_start:0,time_end:0,time_level:'level_1',game_mode:true,game_level:'unlimited',game_apps:'',game_fps:0,game_bypass:false,bypass_temp_on:0,bypass_temp_off:0,bypass_level:0,bypass_current:500000,hyperos4:false,no_hitemp_stop:false};
 
 
 let _saveChain = Promise.resolve();
@@ -6994,31 +7727,32 @@ async function saveImpl(){
     bypass_temp_off:num('bypass_temp_off',0),
     bypass_level:num('bypass_level',0),
     bypass_current:old.bypass_current||500000,
-    hyperos4:chk('hyperos4',false)
+    hyperos4:chk('hyperos4',false),
+    no_hitemp_stop:chk('no_hitemp_stop',false)
   };
   settings=out;
   const json=JSON.stringify(out,null,2)+'\n';
   const tmp=CONF+'.new';
   try{
-    await exec(`mkdir -p ${MODDIR}/config 2>/dev/null`);
+    await __kexec(`mkdir -p ${MODDIR}/config 2>/dev/null`);
     const res=await writeJsonToPath(json,tmp);
     if(!res||!res.ok){
-      await exec(`rm -f '${tmp}' 2>/dev/null`);
+      await __kexec(`rm -f '${tmp}' 2>/dev/null`);
       toast('保存失败：'+((res&&res.msg)||'写入错误'));
       return false;
     }
-    const head=await exec(`head -c 1 '${tmp}' 2>/dev/null`);
+    const head=await __kexec(`head -c 1 '${tmp}' 2>/dev/null`);
     if((head.stdout||'').trim()!=='{'){
-      await exec(`rm -f '${tmp}' 2>/dev/null`);
+      await __kexec(`rm -f '${tmp}' 2>/dev/null`);
       toast('保存失败：写入校验不通过');
       return false;
     }
     
-    const mv=await exec(`cat '${tmp}' > '${CONF}' 2>/dev/null && rm -f '${tmp}' && sync 2>/dev/null; echo __OK__`);
+    const mv=await __kexec(`cat '${tmp}' > '${CONF}' 2>/dev/null && rm -f '${tmp}' && sync 2>/dev/null; echo __OK__`);
     if((mv.stdout||'').indexOf('__OK__')<0){ toast('保存失败：无法覆盖配置'); return false; }
-    const chk=await exec(`wc -c < '${CONF}' 2>/dev/null`);
+    const chk=await __kexec(`wc -c < '${CONF}' 2>/dev/null`);
     if((parseInt((chk.stdout||'0').trim())||0)<=0){ toast('保存失败：配置写入为空'); return false; }
-    exec(`(nohup sh ${MODDIR}/thermal_core.sh apply >/dev/null 2>&1 &) 2>/dev/null`);
+    __kexec(`(nohup sh ${MODDIR}/thermal_core.sh apply >/dev/null 2>&1 &) 2>/dev/null`);
     
     logOp(`保存设置｜默认=${out.default_mode} 充电=${out.charge_mode?1:0}/${out.charge_level} 息屏=${out.sleep_level} 游戏=${out.game_mode?1:0}/${out.game_level} 旁路温=${out.bypass_temp_on}/${out.bypass_temp_off} 旁路电=${out.bypass_level} 三倍速=${out.hyperos4?1:0}`);
     updateSubs();
@@ -7031,7 +7765,7 @@ async function saveImpl(){
 }
 async function load(){
   let raw='';
-  try{ raw=((await exec(`cat ${CONF} 2>/dev/null`)).stdout||'').trim(); }catch(e){ raw=''; }
+  try{ raw=((await __kexec(`cat ${CONF} 2>/dev/null`)).stdout||'').trim(); }catch(e){ raw=''; }
   let parsed=null, repaired=false;
   if(raw){
     try{ parsed=JSON.parse(raw); }
@@ -7045,20 +7779,22 @@ async function load(){
   }
   if(!parsed){
     if(raw){
-      await exec(`cp -f '${CONF}' '${CONF}.broken' 2>/dev/null`);
+      await __kexec(`cp -f '${CONF}' '${CONF}.broken' 2>/dev/null`);
       toast('配置损坏，已备份为 settings.json.broken，本次载入默认值');
     }
     parsed={};
   }
   settings=Object.assign({},DEF_SETTINGS,parsed);
   if(repaired){
-    try{ await writeJsonToPath(JSON.stringify(settings,null,2)+'\n',CONF+'.new'); await exec(`cat '${CONF}.new' > '${CONF}' 2>/dev/null && rm -f '${CONF}.new' && sync 2>/dev/null`); }catch(e){}
+    try{ await writeJsonToPath(JSON.stringify(settings,null,2)+'\n',CONF+'.new'); await __kexec(`cat '${CONF}.new' > '${CONF}' 2>/dev/null && rm -f '${CONF}.new' && sync 2>/dev/null`); }catch(e){}
   }
   document.getElementById('charge_mode').checked=settings.charge_mode!==false;
   document.getElementById('game_mode').checked=settings.game_mode!==false;
   document.getElementById('game_bypass').checked=settings.game_bypass===true;
   const _h4el=document.getElementById('hyperos4');
   if(_h4el) _h4el.checked=settings.hyperos4===true;
+  const _htel=document.getElementById('no_hitemp_stop');
+  if(_htel) _htel.checked=settings.no_hitemp_stop===true;
   document.getElementById('game_fps').value=settings.game_fps||0;
   document.getElementById('bypass_temp_on').value=settings.bypass_temp_on||0;
   document.getElementById('bypass_temp_off').value=settings.bypass_temp_off||0;
@@ -7075,9 +7811,9 @@ async function load(){
   const dsub=document.getElementById('defaultSub');
   const dm=MODES.find(x=>x.id===(settings.default_mode||'default'));
   if(dsub) dsub.textContent=dm?dm.l:'系统默认';
-  const bp=await exec(`cat ${MODDIR}/config/bypass_manual 2>/dev/null`);
+  const bp=await __kexec(`cat ${MODDIR}/config/bypass_manual 2>/dev/null`);
   document.getElementById('bypass_manual').checked=bp.stdout.trim()==='1';
-  const rt=await exec(`cat ${MODDIR}/config/runtime.json 2>/dev/null`);
+  const rt=await __kexec(`cat ${MODDIR}/config/runtime.json 2>/dev/null`);
   if(rt.stdout.trim())try{
     const i=JSON.parse(rt.stdout.trim());
     const name = i.market_name || i.model || '--';
@@ -7117,7 +7853,7 @@ async function initRootEnv(){
       'fi;' +
       '[ -z "$E" ] && E="未识别";' +
       'echo "@@$E|$V"';
-    const r = await exec(probe);
+    const r = await __kexec(probe);
     if(r && r.errno === -2){ label = '未识别（探测超时）'; }
     else {
       const out = (((r && r.stdout) || '').split('\n').filter(function(l){ return l.indexOf('@@') === 0; }).pop() || '').trim();
@@ -7137,7 +7873,7 @@ async function initProfileSub(){
   const el = document.getElementById('profileSub');
   if(!el) return;
   try {
-    const r = await exec(`P="${MODDIR}/profiles/$(getprop ro.product.model).conf"; ` +
+    const r = await __kexec(`P="${MODDIR}/profiles/$(getprop ro.product.model).conf"; ` +
       `[ -f "$P" ] || P="${MODDIR}/profiles/default.conf"; [ -f "$P" ] || exit 0; ` +
       `echo "$(basename "$P")"; grep -E '^(poll_interval|temp_protect|bypass_current)=' "$P" 2>/dev/null`);
     const lines = (((r && r.stdout) || '').trim()).split('\n').filter(x => x.trim());
@@ -7162,9 +7898,15 @@ function updateDevDate(){
 }
 async function initVersion(){
   updateDevDate();
+  // 命令通道自检：不同管理器的 WebUI 注入对象不一样，读不到数据时靠这行定位
+  const envEl = document.getElementById('devEnv');
+  if(envEl) envEl.textContent = (__kexecProbe || '--') + ' [' + __kexecMode + ']';
+  if(__kexecMode === 'none'){
+    setTimeout(function(){ toast('未检测到 root 命令通道：' + __kexecProbe); }, 1200);
+  }
   if (!window._devDateTimer) window._devDateTimer = setInterval(updateDevDate, 60000);
   try {
-    const r = await exec(`cat "${MODDIR}/module.prop" 2>/dev/null`);
+    const r = await __kexec(`cat "${MODDIR}/module.prop" 2>/dev/null`);
     const out = (r && r.stdout) || '';
     const mv = out.match(/^\s*version\s*=\s*(.+)\s*$/m);
     if(mv) setTxt('devVer', mv[1].trim());
@@ -7174,7 +7916,7 @@ async function initVersion(){
 }
 async function refreshStatus(){
   if(document.hidden) return;   
-  const r=await exec(`cat ${MODDIR}/config/status.json 2>/dev/null`);
+  const r=await __kexec(`cat ${MODDIR}/config/status.json 2>/dev/null`);
   if(!r.stdout.trim())return;
   let s;try{s=JSON.parse(r.stdout.trim())}catch(e){return}
   const tc=s.temp/10;
@@ -7217,6 +7959,656 @@ async function refreshStatus(){
 
 
 
+/* ===================== DIY 美化：背景 / 光环 / 卡片 / 底栏 / 布局 / 方案 ===================== */
+/* 约定：数值型设置走 CSS 变量（挂在 :root），皮肤色类覆盖挂在 body，
+   0 或空字符串表示「跟随主题」，对应变量会被移除，回落到皮肤自带的值 */
+
+function diyLS(key, def){ try{ const s = localStorage.getItem(key); return (s === null || s === '') ? def : s; }catch(e){ return def; } }
+function diyNum(key, def){ const v = parseFloat(diyLS(key, def)); return isNaN(v) ? def : v; }
+function diyFlag(key, def){ return diyLS(key, def ? '1' : '0') === '1'; }
+function diyJson(key, def){
+  try{ const s = localStorage.getItem(key); if(!s) return def; const v = JSON.parse(s); return v === null || v === undefined ? def : v; }catch(e){ return def; }
+}
+function diySave(key, v){ try{ localStorage.setItem(key, String(v)); }catch(e){} }
+function diySaveJson(key, v){ try{ localStorage.setItem(key, JSON.stringify(v)); }catch(e){} }
+function diyVar(k, v){ try{ document.documentElement.style.setProperty(k, v); }catch(e){} }
+function diyVarBody(k, v){ try{ document.body.style.setProperty(k, v); }catch(e){} }
+function diyUnset(k){ try{ document.documentElement.style.removeProperty(k); }catch(e){} }
+function diyUnsetBody(k){ try{ document.body.style.removeProperty(k); }catch(e){} }
+function diyVivid(){ const s = SKINS.find(x => x.id === skinId) || {}; return !!s.vivid; }
+
+/* ---------- 数值项 ---------- */
+const DIY_SLIDERS = {
+  /* 背景 */
+  blobSize:  { label:'光斑大小',     key:'ht_diy_blob_k',      min:40,  max:170, step:5,    def:100, fmt:v=>v+'%',        apply:v=>diyVar('--blob-k', (v/100).toFixed(2)) },
+  blobBlur:  { label:'光斑模糊度',   key:'ht_diy_blob_blur',   min:20,  max:200, step:5,    def:100, fmt:v=>v+'px',       apply:v=>diyVar('--blob-blur', v+'px') },
+  blobOp:    { label:'光斑透明度',   key:'ht_diy_blob_op',     min:0.2, max:1.6, step:0.05, def:1,   fmt:v=>v.toFixed(2)+'×', apply:v=>diyVar('--blob-user-op', v) },
+  blobDrift: { label:'飘动幅度',     key:'ht_diy_blob_drift',  min:0,   max:40,  step:1,    def:15,  fmt:v=>v+'%',
+               apply:v=>{ diyVar('--blob-dx', (v * 0.67).toFixed(1) + '%'); diyVar('--blob-dy', v + '%'); } },
+  blobSpeed: { label:'飘动速度',     key:'ht_diy_blob_speed',  min:5,   max:40,  step:1,    def:15,  fmt:v=>v+'s',        apply:v=>diyVar('--blob-speed', v+'s') },
+  bgBlur:    { label:'背景模糊',     key:'ht_diy_bg_blur',     min:0,   max:20,  step:1,    def:0,   fmt:v=>v+'px',       apply:()=>diyApplyBgFilter() },
+  bgSat:     { label:'背景饱和度',   key:'ht_diy_bg_sat',      min:0.4, max:2.2, step:0.05, def:1,   fmt:v=>v.toFixed(2)+'×', apply:()=>diyApplyBgFilter() },
+  bgHueDur:  { label:'自动变色周期', key:'ht_diy_bg_hue_dur',  min:10,  max:120, step:5,    def:40,  fmt:v=>v+'s',        apply:v=>diyVar('--bg-hue-dur', v+'s') },
+  noiseOp:   { label:'噪点强度',     key:'ht_diy_noise_op',    min:0.05,max:0.6, step:0.05, def:0.3, fmt:v=>v.toFixed(2), apply:v=>diyVar('--noise-op', v) },
+
+  /* 能量光环 */
+  ringW:     { label:'圆环粗细',     key:'ht_diy_ring_w',      min:0,   max:24,  step:0.5,  def:0,   fmt:v=>v>0?(v+'px'):'跟随主题',
+               apply:v=>{ v > 0 ? diyVar('--ring-w-user', v) : diyUnset('--ring-w-user'); } },
+  ringTrack: { label:'轨道可见度',   key:'ht_diy_ring_track',  min:0,   max:100, step:5,    def:10,  fmt:v=>(v/100).toFixed(2),
+               apply:v=>diyVar('--ring-track-user', 'rgba(var(--accent-rgb),' + (v/100).toFixed(3) + ')') },
+  arcGlow:   { label:'进度弧发光',   key:'ht_diy_arg_glow_px', min:0,   max:30,  step:1,    def:0,   fmt:v=>v>0?(v+'px'):'跟随主题', apply:()=>diyApplyRingGlow() },
+  sparkSize: { label:'末端亮点大小', key:'ht_diy_spark_w',     min:2,   max:14,  step:0.5,  def:8,   fmt:v=>v+'px',
+               apply:v=>{ diyVar('--spark-w-max', v); diyVar('--spark-w-min', Math.max(1, v - 3)); } },
+  sparkSpeed:{ label:'亮点脉冲速度', key:'ht_diy_spark_dur',   min:0.6, max:4,   step:0.1,  def:1.9, fmt:v=>v.toFixed(1)+'s', apply:v=>diyVar('--spark-dur', v+'s') },
+  gaugeFs:   { label:'中心数字字号', key:'ht_diy_gauge_fs',    min:44,  max:110, step:2,    def:72,  fmt:v=>v+'px',       apply:v=>diyVar('--gauge-fs', v+'px') },
+  gaugeFw:   { label:'中心数字粗细', key:'ht_diy_gauge_fw',    min:100, max:700, step:100,  def:300, fmt:v=>String(v),    apply:v=>diyVar('--gauge-fw', v) },
+  waveN:     { label:'波浪层数',     key:'ht_diy_wave_n',      min:1,   max:3,   step:1,    def:3,   fmt:v=>v+' 层',      apply:v=>document.body.setAttribute('data-wave-n', String(v)) },
+  waveAmp:   { label:'波浪起伏',     key:'ht_diy_wave_amp',    min:0.4, max:2,   step:0.05, def:1,   fmt:v=>v.toFixed(2)+'×', apply:v=>diyVar('--wave-amp', v) },
+  waveSpeed: { label:'波浪速度',     key:'ht_diy_wave_speed',  min:0.3, max:2.5, step:0.05, def:1,   fmt:v=>v.toFixed(2)+'×', apply:v=>diyVar('--wave-speed', v) },
+  fillFixed: { label:'固定液面高度', key:'ht_diy_fill_fixed',  min:0,   max:100, step:1,    def:50,  fmt:v=>v+'%',        apply:()=>diyApplyFill() },
+  glowMax:   { label:'光晕强度',     key:'ht_diy_glow_max',    min:0.2, max:1.6, step:0.05, def:1,   fmt:v=>v.toFixed(2)+'×', apply:v=>diyVar('--glow-max', v) },
+  glowDur:   { label:'光晕呼吸速度', key:'ht_diy_glow_dur',    min:1,   max:8,   step:0.2,  def:3.2, fmt:v=>v.toFixed(1)+'s', apply:v=>diyVar('--glow-dur', v+'s') },
+
+  /* 卡片与文字 */
+  cardGap:   { label:'卡片间距',     key:'ht_diy_card_gap',    min:0.4, max:2,   step:0.05, def:1,   fmt:v=>v.toFixed(2)+'×', apply:v=>diyVar('--card-gap', v) },
+  cardPad:   { label:'卡片内边距',   key:'ht_diy_card_pad',    min:0.4, max:2,   step:0.05, def:1,   fmt:v=>v.toFixed(2)+'×', apply:v=>diyVar('--card-pad', v) },
+  cardBlur:  { label:'卡片毛玻璃',   key:'ht_diy_card_blur',   min:0,   max:40,  step:1,    def:0,   fmt:v=>v>0?(v+'px'):'跟随主题', apply:()=>diyApplyGlass() },
+  cardSat:   { label:'卡片饱和度',   key:'ht_diy_card_sat',    min:0,   max:260, step:10,   def:0,   fmt:v=>v>0?(v+'%'):'跟随主题', apply:()=>diyApplyGlass() },
+  titleFs:   { label:'标题字号',     key:'ht_diy_title_fs',    min:18,  max:40,  step:1,    def:27,  fmt:v=>v+'px',       apply:v=>diyVar('--title-fs', v+'px') },
+  miniFs:    { label:'数据格字号',   key:'ht_diy_mini_fs',     min:11,  max:26,  step:1,    def:17,  fmt:v=>v+'px',       apply:v=>diyVar('--mini-fs', v+'px') },
+  radiusCard:{ label:'卡片圆角',     key:'ht_diy_radius_card', min:0,   max:40,  step:1,    def:0,   fmt:v=>v>0?(v+'px'):'跟随主题', apply:()=>diyApplyRadii() },
+  radiusPanel:{label:'面板圆角',     key:'ht_diy_radius_panel',min:0,   max:40,  step:1,    def:0,   fmt:v=>v>0?(v+'px'):'跟随主题', apply:()=>diyApplyRadii() },
+  radiusMini:{ label:'数据格圆角',   key:'ht_diy_radius_mini', min:0,   max:40,  step:1,    def:0,   fmt:v=>v>0?(v+'px'):'跟随主题', apply:()=>diyApplyRadii() },
+
+  /* 底栏 */
+  barRadius: { label:'悬浮底栏圆角', key:'ht_diy_bar_radius',  min:0,   max:50,  step:1,    def:0,   fmt:v=>v>0?(v+'px'):'跟随主题',
+               apply:v=>{ v > 0 ? diyVar('--bar-radius-user', v+'px') : diyUnset('--bar-radius-user'); } },
+  barGapB:   { label:'距底部距离',   key:'ht_diy_bar_gap_b',   min:0,   max:60,  step:1,    def:14,  fmt:v=>v+'px',       apply:v=>diyVar('--bar-gap-b', v+'px') },
+  barSide:   { label:'左右留白',     key:'ht_diy_bar_side',    min:0,   max:40,  step:1,    def:0,   fmt:v=>v+'px',       apply:v=>diyVar('--bar-side', v+'px') },
+  tabIcon:   { label:'底栏图标大小', key:'ht_diy_tab_icon',    min:14,  max:32,  step:1,    def:22,  fmt:v=>v+'px',       apply:v=>diyVar('--tab-icon', v+'px') }
+};
+
+/* ---------- 开关项 ---------- */
+const DIY_SWITCHES = {
+  noise:      { label:'噪点纹理',   desc:'背景叠一层细噪点',        key:'ht_diy_noise',       def:false, apply:on=>document.body.classList.toggle('noise-on', on) },
+  bgHue:      { label:'背景自动变色', desc:'光斑颜色缓慢循环',      key:'ht_diy_bg_hue',      def:false, apply:on=>document.body.classList.toggle('bg-hue', on) },
+  glowAlways: { label:'光晕常驻',   desc:'关闭后仅在充电时出现',    key:'ht_diy_glow_always', def:false, apply:on=>document.body.classList.toggle('glow-always', on) }
+};
+
+/* ---------- 颜色项 ---------- */
+const DIY_PALETTE = [
+  {c:'#FFFFFF',n:'白'},{c:'#F2F2F7',n:'浅灰'},{c:'#C7C7CC',n:'灰'},{c:'#8E8E93',n:'中灰'},
+  {c:'#3A3A3C',n:'深灰'},{c:'#1C1C1E',n:'黑'},{c:'#0A84FF',n:'蓝'},{c:'#5AC8FA',n:'浅蓝'},
+  {c:'#34C759',n:'绿'},{c:'#30D158',n:'浅绿'},{c:'#FF9F0A',n:'橙'},{c:'#FFA940',n:'浅橙'},
+  {c:'#FF3B30',n:'红'},{c:'#FF6B6B',n:'浅红'},{c:'#FF6BB5',n:'粉'},{c:'#BF5AF2',n:'紫'},
+  {c:'#00E5FF',n:'青'},{c:'#FF00CC',n:'品红'},{c:'#FFAA00',n:'金'},{c:'#00FF88',n:'荧光绿'}
+];
+const DIY_COLORS = {
+  b1:  { label:'光斑 1',      key:'ht_diy_b1',   css:'--b1-color' },
+  b2:  { label:'光斑 2',      key:'ht_diy_b2',   css:'--b2-color' },
+  b3:  { label:'光斑 3',      key:'ht_diy_b3',   css:'--b3-color' },
+  arc: { label:'进度弧发光',  key:'ht_diy_arc_c' }
+};
+
+/* ---------- 通用渲染 ---------- */
+function diySliderHtml(id){
+  const d = DIY_SLIDERS[id], v = diyNum(d.key, d.def);
+  return `<div class="slider-item" style="padding-top:12px">
+    <div class="slider-head"><span class="slider-name">${d.label}</span>
+      <span class="slider-val" id="diy_${id}_v" onclick="diyEditSlider('${id}')">${d.fmt(v)}</span></div>
+    <input type="range" id="diy_${id}_r" min="${d.min}" max="${d.max}" step="${d.step}" value="${v}"
+           oninput="diySliderInput('${id}', this.value)">
+  </div>`;
+}
+function diySwitchHtml(id){
+  const d = DIY_SWITCHES[id], on = diyFlag(d.key, d.def);
+  return `<div class="pref" style="padding:12px 0;margin:0" onclick="document.getElementById('diy_sw_${id}').click()">
+    <div class="pref-body"><div class="pref-title">${d.label}</div><div class="pref-desc">${d.desc || ''}</div></div>
+    <div class="pref-right"><label class="hyper-switch" onclick="event.stopPropagation()">
+      <input type="checkbox" id="diy_sw_${id}" ${on ? 'checked' : ''} onchange="diySwitchChange('${id}', this.checked)">
+      <span class="track"></span><span class="thumb"></span></label></div>
+  </div>`;
+}
+function diyColorHtml(id){
+  const d = DIY_COLORS[id], cur = diyLS(d.key, '');
+  const sw = DIY_PALETTE.map(p => {
+    const active = cur && cur.toLowerCase() === p.c.toLowerCase();
+    return `<div class="swatch${active ? ' active' : ''}" style="background:${p.c}" title="${p.n}" onclick="diySetColor('${id}','${p.c}')"></div>`;
+  }).join('');
+  return `<div id="diy_cw_${id}" style="margin-top:10px">
+    <div class="slider-head"><span class="slider-name">${d.label}</span>
+      <span class="slider-val" onclick="diyResetColor('${id}')">${cur || '跟随主题'}</span></div>
+    <div class="swatches">${sw}</div>
+  </div>`;
+}
+function diyRender(containerId, html){ const el = document.getElementById(containerId); if(el) el.innerHTML = html; }
+function diyRenderSliders(containerId, ids){ diyRender(containerId, ids.map(diySliderHtml).join('')); }
+function diyRenderSwitches(containerId, ids){ diyRender(containerId, ids.map(diySwitchHtml).join('')); }
+
+function diySliderInput(id, val){
+  const d = DIY_SLIDERS[id];
+  let v = parseFloat(val);
+  if(isNaN(v)) v = d.def;
+  v = Math.min(d.max, Math.max(d.min, v));
+  if(d.step >= 1) v = Math.round(v); else v = Math.round(v * 100) / 100;
+  diySave(d.key, v);
+  d.apply(v);
+  const t = document.getElementById('diy_' + id + '_v');
+  if(t) t.textContent = d.fmt(v);
+  diyUpdateSubs();
+}
+function diyEditSlider(id){
+  const d = DIY_SLIDERS[id];
+  const cur = diyNum(d.key, d.def);
+  const input = window.prompt(d.label + '（' + d.min + ' - ' + d.max + '）', String(cur));
+  if(input === null) return;
+  const v = parseFloat(input);
+  if(isNaN(v)){ toast('请输入数字'); return; }
+  diySliderInput(id, v);
+  const r = document.getElementById('diy_' + id + '_r');
+  if(r) r.value = diyNum(d.key, d.def);
+}
+function diySwitchChange(id, on){
+  const d = DIY_SWITCHES[id];
+  diySave(d.key, on ? '1' : '0');
+  d.apply(on);
+  diyUpdateSubs();
+}
+function diySetColor(id, color){
+  const d = DIY_COLORS[id];
+  diySave(d.key, color);
+  diyApplyColors();
+  const el = document.getElementById('diy_cw_' + id);
+  if(el) el.outerHTML = diyColorHtml(id);
+  diyUpdateSubs();
+}
+function diyResetColor(id){
+  const d = DIY_COLORS[id];
+  try{ localStorage.removeItem(d.key); }catch(e){}
+  diyApplyColors();
+  const el = document.getElementById('diy_cw_' + id);
+  if(el) el.outerHTML = diyColorHtml(id);
+  diyUpdateSubs();
+}
+
+/* ---------- 应用 ---------- */
+function diyApplyColors(){
+  ['b1','b2','b3'].forEach(k => {
+    const d = DIY_COLORS[k], v = diyLS(d.key, '');
+    if(v) diyVarBody(d.css, v); else diyUnsetBody(d.css);
+  });
+  diyApplyRingGlow();
+}
+function diyApplyRingGlow(){
+  const color = diyLS(DIY_COLORS.arc.key, '');
+  const px = diyNum(DIY_SLIDERS.arcGlow.key, 0);
+  if(!color && !px){ diyUnset('--ring-glow-user'); return; }
+  const p = px > 0 ? px : (diyVivid() ? 15 : 8);
+  const c = color || 'var(--accent)';
+  const glow = diyVivid() && !px
+    ? `drop-shadow(0 0 ${p}px ${c}) drop-shadow(0 0 5px ${c})`
+    : `drop-shadow(0 0 ${p}px ${c})`;
+  diyVar('--ring-glow-user', glow);
+}
+function diyApplyGlass(){
+  const blur = diyNum(DIY_SLIDERS.cardBlur.key, 0);
+  const sat = diyNum(DIY_SLIDERS.cardSat.key, 0);
+  if(!blur && !sat){ diyUnset('--glass-filter-user'); return; }
+  const vivid = diyVivid();
+  const b = blur > 0 ? blur : (vivid ? 30 : 24);
+  const s = sat > 0 ? sat : (vivid ? 200 : 180);
+  diyVar('--glass-filter-user', `blur(${b}px) saturate(${s}%)` + (vivid ? ' contrast(110%)' : ''));
+}
+function diyApplyRadii(){
+  const r = {
+    '--radius-card-user':  diyNum(DIY_SLIDERS.radiusCard.key, 0),
+    '--radius-panel-user': diyNum(DIY_SLIDERS.radiusPanel.key, 0),
+    '--radius-mini-user':  diyNum(DIY_SLIDERS.radiusMini.key, 0)
+  };
+  Object.keys(r).forEach(k => { if(r[k] > 0) diyVar(k, r[k] + 'px'); else diyUnset(k); });
+}
+function diyApplyBgFilter(){
+  const b = diyNum(DIY_SLIDERS.bgBlur.key, 0);
+  const s = diyNum(DIY_SLIDERS.bgSat.key, 1);
+  diyVar('--bg-blur', b + 'px');
+  diyVar('--bg-sat', s);
+  document.body.classList.toggle('bg-filter', b > 0 || Math.abs(s - 1) > 0.001);
+}
+function diyApplyFill(){
+  const mode = diyLS('ht_diy_fill_mode', 'soc');
+  if(mode === 'full') diyVar('--fill-p', '100');
+  else if(mode === 'fixed') diyVar('--fill-p', String(diyNum('ht_diy_fill_fixed', 50)));
+  else diyUnset('--fill-p');
+}
+function diyApplyAll(){
+  Object.keys(DIY_SLIDERS).forEach(k => { const d = DIY_SLIDERS[k]; d.apply(diyNum(d.key, d.def)); });
+  Object.keys(DIY_SWITCHES).forEach(k => { const d = DIY_SWITCHES[k]; d.apply(diyFlag(d.key, d.def)); });
+  diyApplyColors(); diyApplyGlass(); diyApplyRadii(); diyApplyFill();
+}
+
+/* ---------- 选项类（chips） ---------- */
+const DIY_BLOB_COUNTS = [{id:'3',l:'3 个'},{id:'2',l:'2 个'},{id:'1',l:'1 个'},{id:'0',l:'关闭'}];
+const DIY_FILL_MODES  = [{id:'soc',l:'按电量'},{id:'fixed',l:'固定高度'},{id:'full',l:'常亮满格'}];
+const DIY_HOME_COLS   = [{id:'auto',l:'自动'},{id:'2',l:'2 列'},{id:'3',l:'3 列'}];
+const DIY_PANEL_MODES = [{id:'remember',l:'记住上次'},{id:'open',l:'默认展开'},{id:'closed',l:'默认收起'}];
+
+function diyRenderChipsAll(){
+  renderChips('diyBlobCountChips', DIY_BLOB_COUNTS, diyLS('ht_diy_blob_n', '3'), 'diySetBlobCount');
+  renderChips('diyFillChips', DIY_FILL_MODES, diyLS('ht_diy_fill_mode', 'soc'), 'diySetFillMode');
+  renderChips('diyHomeColsChips', DIY_HOME_COLS, diyLS('ht_diy_home_cols', 'auto'), 'diySetHomeCols');
+  renderChips('diyPanelChips', DIY_PANEL_MODES, diyLS('ht_diy_panel', 'remember'), 'diySetPanelMode');
+}
+function diySetBlobCount(id){
+  diySave('ht_diy_blob_n', id);
+  document.body.setAttribute('data-blob-n', id);
+  diyRenderChipsAll(); diyUpdateSubs();
+}
+function diySetFillMode(id){
+  diySave('ht_diy_fill_mode', id);
+  diyApplyFill(); diyRenderChipsAll(); diyUpdateSubs();
+}
+function diySetPanelMode(id){
+  diySave('ht_diy_panel', id);
+  diyRenderChipsAll(); diyUpdateSubs();
+  const pb = document.getElementById('panelBody'), pa = document.getElementById('arrow-panel');
+  if(pb && id !== 'remember'){ setElExpandedInstant(pb, id === 'open'); if(pa) pa.classList.toggle('open', id === 'open'); }
+}
+
+/* ---------- 主页数据格（E1） ---------- */
+const HOME_FIELDS = [
+  {id:'sCapacity', l:'电量 %'}, {id:'sStatus', l:'状态'},
+  {id:'pcDes', l:'设计容量 mAh'}, {id:'pcFull', l:'满充容量 mAh'}, {id:'pcHealth', l:'健康度 %'},
+  {id:'pcVolt', l:'电压 V'}, {id:'pcCur', l:'电流 A'}, {id:'pcTemp', l:'温度 ℃'},
+  {id:'pcCycle', l:'循环次数'}, {id:'pcFake', l:'伪装次数'}, {id:'pcProto', l:'充电协议', small:true}
+];
+const HOME_GROUPS = [[0,1],[2,3,4],[5,6,7],[8,9,10]];
+function diyHomeHidden(){ return diyJson('ht_diy_home_hidden', []); }
+function diyRenderHome(){
+  const box = document.getElementById('homeFields');
+  if(!box) return;
+  const cols = diyLS('ht_diy_home_cols', 'auto');
+  const hidden = diyHomeHidden();
+  const cell = f => `<div class="mini${hidden.indexOf(f.id) >= 0 ? ' hide' : ''}">`
+    + `<div class="mini-val" id="${f.id}"${f.small ? ' style="font-size:calc(12.5px * var(--fs))"' : ''}>--</div>`
+    + `<div class="mini-lbl">${f.l}</div></div>`;
+  if(cols === 'auto'){
+    box.className = 'auto';
+    box.innerHTML = HOME_GROUPS.map(g =>
+      `<div class="mini-grid" style="grid-template-columns:repeat(${g.length},1fr)">` + g.map(i => cell(HOME_FIELDS[i])).join('') + '</div>'
+    ).join('');
+  } else {
+    box.className = cols === '2' ? 'cols2' : '';
+    box.innerHTML = HOME_FIELDS.map(cell).join('');
+  }
+  const ids = ['sCapacity','sStatus','pcDes','pcFull','pcHealth','pcVolt','pcCur','pcTemp','pcCycle','pcFake','pcProto'];
+  ids.forEach(id => { if(!document.getElementById(id)){ const d = document.createElement('div'); d.id = id; d.style.display = 'none'; d.textContent = '--'; box.appendChild(d); } });
+}
+function diySetHomeCols(id){
+  diySave('ht_diy_home_cols', id);
+  diyRenderHome(); diyRenderChipsAll(); diyRenderHomeFields(); diyUpdateSubs();
+}
+function diyRenderHomeFields(){
+  const el = document.getElementById('diyHomeFieldChips');
+  if(!el) return;
+  const hidden = diyHomeHidden();
+  el.innerHTML = HOME_FIELDS.map(f => {
+    const on = hidden.indexOf(f.id) < 0;
+    return `<div class="chip${on ? ' active' : ''}" onclick="diyToggleHomeField('${f.id}')"><span>${f.l}</span></div>`;
+  }).join('');
+}
+function diyToggleHomeField(id){
+  const hidden = diyHomeHidden();
+  const i = hidden.indexOf(id);
+  if(i >= 0) hidden.splice(i, 1); else hidden.push(id);
+  diySaveJson('ht_diy_home_hidden', hidden);
+  diyRenderHome(); diyRenderHomeFields(); diyUpdateSubs();
+}
+
+/* ---------- 卡片显隐与排序（E3 / E4） ---------- */
+const DIY_PAGE_NAMES = { 'page-console':'主页', 'page-thermal':'温控', 'page-battery':'电池', 'page-appearance':'外观', 'page-about':'关于' };
+function diyCards(page){
+  return Array.prototype.slice.call(page.children).filter(el =>
+    (el.classList.contains('card') || el.classList.contains('panel')) && !el.hasAttribute('data-diy-keep'));
+}
+function diyCardTitle(card){
+  const t = card.querySelector('.pref-title') || card.querySelector('.panel-head');
+  return t ? t.textContent.replace(/\s+/g, ' ').trim() : '';
+}
+function diyCardKey(page, card, i){
+  const t = diyCardTitle(card);
+  return page.id + '|' + (t || ('#' + i));
+}
+function diyHiddenCards(){ return diyJson('ht_diy_hidden_cards', []); }
+function diyApplyHiddenCards(){
+  const hidden = diyHiddenCards();
+  Array.prototype.forEach.call(document.querySelectorAll('.page'), page => {
+    diyCards(page).forEach((card, i) => {
+      const k = diyCardKey(page, card, i);
+      const shouldHide = hidden.indexOf(k) >= 0;
+      card.style.display = shouldHide ? 'none' : '';
+    });
+  });
+}
+function diyRenderCardVis(){
+  const el = document.getElementById('diyCardVisList');
+  if(!el) return;
+  const hidden = diyHiddenCards();
+  let html = '';
+  Array.prototype.forEach.call(document.querySelectorAll('.page'), page => {
+    const cards = diyCards(page);
+    if(!cards.length) return;
+    html += `<div class="field-label" style="margin-top:14px">${DIY_PAGE_NAMES[page.id] || page.id}</div>`;
+    cards.forEach((card, i) => {
+      const k = diyCardKey(page, card, i);
+      const title = diyCardTitle(card) || ('卡片 ' + (i + 1));
+      const on = hidden.indexOf(k) < 0;
+      html += `<div class="pref" style="padding:10px 0;margin:0" onclick="diyToggleCard('${encodeURIComponent(k)}')">
+        <div class="pref-body"><div class="pref-title" style="font-size:calc(14px * var(--fs))">${title}</div></div>
+        <div class="pref-right"><label class="hyper-switch" onclick="event.stopPropagation()">
+          <input type="checkbox" ${on ? 'checked' : ''} onchange="diyToggleCard('${encodeURIComponent(k)}')">
+          <span class="track"></span><span class="thumb"></span></label></div>
+      </div>`;
+    });
+  });
+  el.innerHTML = html || '<div class="field-label">没有可隐藏的卡片</div>';
+}
+function diyToggleCard(encKey){
+  const key = decodeURIComponent(encKey);
+  const hidden = diyHiddenCards();
+  const i = hidden.indexOf(key);
+  if(i >= 0) hidden.splice(i, 1); else hidden.push(key);
+  diySaveJson('ht_diy_hidden_cards', hidden);
+  diyApplyHiddenCards(); diyRenderCardVis(); diyUpdateSubs();
+}
+
+let diyDrag = null, diyDragTimer = null;
+function diyEnsurePlaceholder(){}
+function diyPointerDown(e){
+  if(diyDrag || e.button > 0) return;
+  const t = e.target;
+  if(t && t.closest && t.closest('input, textarea, .hyper-switch, .swatches, .btn, button')) return;
+  const card = t && t.closest ? t.closest('.page > .card, .page > .panel') : null;
+  if(!card || card.hasAttribute('data-diy-keep') || card.style.display === 'none') return;
+  const x = e.clientX, y = e.clientY;
+  const cancel = () => { clearTimeout(diyDragTimer); window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', cancel); window.removeEventListener('pointercancel', cancel); };
+  const move = ev => { if(Math.abs(ev.clientX - x) > 8 || Math.abs(ev.clientY - y) > 8) cancel(); };
+  diyDragTimer = setTimeout(() => {
+    cancel();
+    diyDragStart(card, y);
+  }, 450);
+  window.addEventListener('pointermove', move, { passive:true });
+  window.addEventListener('pointerup', cancel, { passive:true });
+  window.addEventListener('pointercancel', cancel, { passive:true });
+}
+function diyDragStart(card, y){
+  const r = card.getBoundingClientRect();
+  const ph = document.createElement('div');
+  ph.className = 'diy-placeholder';
+  ph.style.height = Math.max(24, r.height) + 'px';
+  card.parentNode.insertBefore(ph, card);
+  diyDrag = { card, ph, offsetY: y - r.top, height: r.height };
+  card.classList.add('diy-drag');
+  card.style.width = r.width + 'px';
+  card.style.left = r.left + 'px';
+  card.style.top = r.top + 'px';
+  document.body.classList.add('diy-dragging');
+  window.addEventListener('pointermove', diyPointerMove, { passive:false });
+  window.addEventListener('pointerup', diyPointerUp);
+  window.addEventListener('pointercancel', diyPointerUp);
+  try{ if(navigator.vibrate) navigator.vibrate(12); }catch(e){}
+}
+function diySegBounds(page, node){
+  const kids = Array.prototype.slice.call(page.children);
+  const i = kids.indexOf(node);
+  let start = null, end = null;
+  for(let k = i - 1; k >= 0; k--){ if(kids[k].classList.contains('small-title')){ start = kids[k]; break; } }
+  for(let k = i + 1; k < kids.length; k++){ if(kids[k].classList.contains('small-title')){ end = kids[k]; break; } }
+  return { start, end };
+}
+function diyPointerMove(ev){
+  if(!diyDrag) return;
+  ev.preventDefault();
+  const card = diyDrag.card, ph = diyDrag.ph;
+  card.style.top = (ev.clientY - diyDrag.offsetY) + 'px';
+  const page = ph.parentNode;
+  const kids = Array.prototype.slice.call(page.children);
+  const bounds = diySegBounds(page, ph);
+  const from = bounds.start ? kids.indexOf(bounds.start) + 1 : 0;
+  const to = bounds.end ? kids.indexOf(bounds.end) : kids.length;
+  let placed = false;
+  for(let i = from; i < to; i++){
+    const el = kids[i];
+    if(el === card || el === ph) continue;
+    if(!(el.classList.contains('card') || el.classList.contains('panel')) || el.style.display === 'none') continue;
+    const r = el.getBoundingClientRect();
+    if(ev.clientY < r.top + r.height / 2){ page.insertBefore(ph, el); placed = true; break; }
+  }
+  if(!placed){
+    if(bounds.end) page.insertBefore(ph, bounds.end);
+    else page.appendChild(ph);
+  }
+}
+function diyPointerUp(){
+  if(!diyDrag) return;
+  const card = diyDrag.card, ph = diyDrag.ph;
+  if(ph.parentNode) ph.parentNode.replaceChild(card, ph);
+  card.classList.remove('diy-drag');
+  card.style.width = ''; card.style.left = ''; card.style.top = '';
+  document.body.classList.remove('diy-dragging');
+  window.removeEventListener('pointermove', diyPointerMove);
+  window.removeEventListener('pointerup', diyPointerUp);
+  window.removeEventListener('pointercancel', diyPointerUp);
+  diyDrag = null;
+  diySaveOrder(card.closest('.page'));
+  diyRenderCardVis();
+}
+function diySaveOrder(page){
+  if(!page) return;
+  const keys = diyCards(page).map((c, i) => diyCardKey(page, c, i));
+  diySaveJson('ht_diy_order_' + page.id, keys);
+}
+function diyApplyOrder(page){
+  const order = diyJson('ht_diy_order_' + page.id, []);
+  if(!order.length) return;
+  const keyed = new Map();
+  diyCards(page).forEach((c, i) => keyed.set(c, diyCardKey(page, c, i)));
+  const rank = el => { const i = order.indexOf(keyed.get(el)); return i < 0 ? 9999 : i; };
+  const kids = Array.prototype.slice.call(page.children);
+  const segs = [];
+  let cur = null;
+  kids.forEach(el => {
+    if(el.classList.contains('small-title')){
+      if(cur){ cur.to = el; segs.push(cur); cur = null; }
+    } else if(el.classList.contains('card') || el.classList.contains('panel')){
+      if(!cur) cur = { cards: [], to: null };
+      cur.cards.push(el);
+    }
+  });
+  if(cur){ cur.to = null; segs.push(cur); }
+  segs.forEach(seg => {
+    if(seg.cards.length < 2) return;
+    const sorted = seg.cards.slice().sort((a, b) => rank(a) - rank(b));
+    if(sorted.every((el, i) => el === seg.cards[i])) return;
+    for(let i = 0; i < sorted.length; i++) page.insertBefore(sorted[i], seg.to);
+  });
+}
+
+function diyResetLayout(){
+  try{
+    localStorage.removeItem('ht_diy_hidden_cards');
+    localStorage.removeItem('ht_diy_home_hidden');
+    localStorage.removeItem('ht_diy_home_cols');
+    localStorage.removeItem('ht_diy_panel');
+    Array.prototype.forEach.call(document.querySelectorAll('.page'), p => {
+      try{ localStorage.removeItem('ht_diy_order_' + p.id); }catch(e){}
+    });
+  }catch(e){}
+  toast('布局已恢复默认，正在刷新');
+  setTimeout(() => { try{ location.reload(); }catch(e){} }, 600);
+}
+
+/* ---------- 方案管理（F1）与自定义 CSS（F2） ---------- */
+function diySchemes(){ return diyJson('ht_schemes', {}); }
+function diySnapshot(){
+  const out = {};
+  getAllBackupKeys().forEach(k => {
+    if(k === 'ht_schemes' || k === 'ht_backup_path') return;
+    try{ out[k] = localStorage.getItem(k); }catch(e){}
+  });
+  return out;
+}
+function diySaveScheme(){
+  const name = window.prompt('方案名称', '方案 ' + (Object.keys(diySchemes()).length + 1));
+  if(!name) return;
+  const all = diySchemes();
+  all[name] = diySnapshot();
+  diySaveJson('ht_schemes', all);
+  diyRenderSchemes();
+  toast('已保存方案「' + name + '」');
+}
+function diyApplyScheme(enc){
+  const name = decodeURIComponent(enc);
+  const s = diySchemes()[name];
+  if(!s) return;
+  if(!window.confirm('应用方案「' + name + '」会覆盖当前全部外观设置，确定继续？')) return;
+  const keep = ['ht_schemes', 'ht_backup_path'];
+  getAllBackupKeys().forEach(k => { if(keep.indexOf(k) < 0){ try{ localStorage.removeItem(k); }catch(e){} } });
+  Object.keys(s).forEach(k => { if(keep.indexOf(k) < 0){ try{ localStorage.setItem(k, s[k]); }catch(e){} } });
+  toast('正在应用方案');
+  setTimeout(() => { try{ location.reload(); }catch(e){} }, 600);
+}
+function diyDelScheme(enc){
+  const name = decodeURIComponent(enc);
+  if(!window.confirm('删除方案「' + name + '」？')) return;
+  const all = diySchemes();
+  delete all[name];
+  diySaveJson('ht_schemes', all);
+  diyRenderSchemes();
+  toast('已删除');
+}
+function diyRenderSchemes(){
+  const el = document.getElementById('diySchemeList');
+  const all = diySchemes();
+  const names = Object.keys(all);
+  if(el){
+    el.innerHTML = names.length
+      ? names.map(n => `<div class="pref" style="padding:10px 0;margin:0">
+          <div class="pref-body"><div class="pref-title" style="font-size:calc(14px * var(--fs))">${n}</div>
+          <div class="pref-desc">${Object.keys(all[n]).length} 项设置</div></div>
+          <div class="pref-right" style="gap:8px">
+            <span class="btn secondary" style="padding:6px 14px;font-size:calc(13px * var(--fs))" onclick="event.stopPropagation();diyApplyScheme('${encodeURIComponent(n)}')">应用</span>
+            <span class="btn secondary" style="padding:6px 14px;font-size:calc(13px * var(--fs))" onclick="event.stopPropagation();diyDelScheme('${encodeURIComponent(n)}')">删除</span>
+          </div></div>`).join('')
+      : '<div class="field-label">还没有保存的方案</div>';
+  }
+  const sub = document.getElementById('diySchemeSub');
+  if(sub) sub.textContent = '已保存 ' + names.length + ' 套方案';
+}
+function diyExportSchemes(){
+  const box = document.getElementById('diySchemeBox');
+  if(!box) return;
+  box.value = JSON.stringify(diySchemes(), null, 2);
+  toast('方案已导出到输入框，可长按复制');
+}
+function diyImportSchemes(){
+  const box = document.getElementById('diySchemeBox');
+  if(!box || !box.value.trim()){ toast('输入框为空'); return; }
+  let obj = null;
+  try{ obj = JSON.parse(box.value); }catch(e){ toast('JSON 解析失败'); return; }
+  if(!obj || typeof obj !== 'object'){ toast('格式不正确'); return; }
+  const all = diySchemes();
+  let n = 0;
+  Object.keys(obj).forEach(k => { if(obj[k] && typeof obj[k] === 'object'){ all[k] = obj[k]; n++; } });
+  diySaveJson('ht_schemes', all);
+  diyRenderSchemes();
+  toast('已导入 ' + n + ' 套方案');
+}
+function diyApplyCss(){
+  const css = diyLS('ht_diy_css', '');
+  let el = document.getElementById('diyCssStyle');
+  if(!el){ el = document.createElement('style'); el.id = 'diyCssStyle'; document.head.appendChild(el); }
+  el.textContent = css;
+}
+function diySaveCss(){
+  const box = document.getElementById('diyCssBox');
+  if(!box) return;
+  diySave('ht_diy_css', box.value || '');
+  diyApplyCss();
+  toast('CSS 已应用');
+}
+function diyClearCss(){
+  try{ localStorage.removeItem('ht_diy_css'); }catch(e){}
+  const box = document.getElementById('diyCssBox');
+  if(box) box.value = '';
+  diyApplyCss();
+  toast('已清空自定义 CSS');
+}
+
+/* ---------- 摘要文字 ---------- */
+function diyUpdateSubs(){
+  const bg = document.getElementById('diyBgSub');
+  if(bg){
+    const n = diyLS('ht_diy_blob_n', '3');
+    bg.textContent = (n === '0' ? '光斑关闭' : '光斑 ' + n + ' 个') + ' · 噪点' + (diyFlag(DIY_SWITCHES.noise.key, false) ? '开启' : '关闭');
+  }
+  const g = document.getElementById('diyGaugeSub');
+  if(g){
+    const w = diyNum(DIY_SLIDERS.ringW.key, 0);
+    const mode = diyLS('ht_diy_fill_mode', 'soc');
+    const mLabel = (DIY_FILL_MODES.find(x => x.id === mode) || {}).l || '按电量';
+    g.textContent = (w > 0 ? w + 'px 环宽' : '环宽跟随主题') + ' · 液面' + mLabel;
+  }
+  const c = document.getElementById('diyCardSub');
+  if(c) c.textContent = '间距 ' + diyNum(DIY_SLIDERS.cardGap.key, 1).toFixed(2) + ' / 内边距 ' + diyNum(DIY_SLIDERS.cardPad.key, 1).toFixed(2);
+  const b = document.getElementById('diyBarSub');
+  if(b){
+    const r = diyNum(DIY_SLIDERS.barRadius.key, 0);
+    b.textContent = (r > 0 ? r + 'px 圆角' : '圆角跟随主题') + ' · 图标 ' + diyNum(DIY_SLIDERS.tabIcon.key, 22) + 'px';
+  }
+  const l = document.getElementById('diyLayoutSub');
+  if(l){
+    const hidden = diyHomeHidden().length;
+    const cols = diyLS('ht_diy_home_cols', 'auto');
+    l.textContent = '字段 ' + (HOME_FIELDS.length - hidden) + ' 项 · 列数 ' + (cols === 'auto' ? '自动' : cols);
+  }
+}
+
+/* ---------- 初始化 ---------- */
+function initDIY(){
+  diyRenderSliders('diyBgSliders', ['blobSize','blobBlur','blobOp','blobDrift','blobSpeed','bgBlur','bgSat','bgHueDur','noiseOp']);
+  diyRenderSwitches('diyBgSwitches', ['noise','bgHue']);
+  diyRender('diyBgColors', ['b1','b2','b3'].map(diyColorHtml).join(''));
+
+  diyRenderSliders('diyGaugeSliders', ['ringW','ringTrack','arcGlow','sparkSize','sparkSpeed','gaugeFs','gaugeFw']);
+  diyRenderSliders('diyWaveSliders', ['waveN','waveAmp','waveSpeed']);
+  diyRenderSliders('diyFillSliders', ['fillFixed']);
+  diyRenderSwitches('diyGlowSwitches', ['glowAlways']);
+  diyRenderSliders('diyGlowSliders', ['glowMax','glowDur']);
+  diyRender('diyGlowColors', diyColorHtml('arc'));
+
+  diyRenderSliders('diyCardSliders', ['cardGap','cardPad','cardBlur','cardSat','titleFs','miniFs','radiusCard','radiusPanel','radiusMini']);
+  diyRenderSliders('diyBarSliders', ['barRadius','barGapB','barSide','tabIcon']);
+
+  diyRenderChipsAll();
+  diyRenderHomeFields();
+  diyRenderHome();
+  diyRenderCardVis();
+
+  document.body.setAttribute('data-blob-n', diyLS('ht_diy_blob_n', '3'));
+  diyApplyAll();
+  diyApplyHiddenCards();
+
+  Array.prototype.forEach.call(document.querySelectorAll('.page'), diyApplyOrder);
+
+  const cssBox = document.getElementById('diyCssBox');
+  if(cssBox) cssBox.value = diyLS('ht_diy_css', '');
+  diyApplyCss();
+  diyRenderSchemes();
+  diyUpdateSubs();
+
+  document.addEventListener('pointerdown', diyPointerDown, { passive:true });
+}
+
 function safeInit(name, fn){
   try {
     const r = fn();
@@ -7224,6 +8616,7 @@ function safeInit(name, fn){
   } catch(e){ console.warn('[init] ' + name, e); }
 }
 safeInit('initAppearance', initAppearance);
+safeInit('initSkin', initSkin);
 safeInit('initScales', initScales);
 safeInit('initSwipeEasing', initSwipeEasing);
 safeInit('initSwitchGlass', initSwitchGlass);
@@ -7253,6 +8646,8 @@ safeInit('initWallpaper', initWallpaper);
 safeInit('initFirstNotice', initFirstNotice);
 safeInit('initVersion', initVersion);
 safeInit('initProfileSub', initProfileSub);
+safeInit('initDIY', initDIY);
+safeInit('initHiTemp', initHiTemp);
 safeInit('initPanelState', initPanelState);
 safeInit('initBackup', initBackup);
 safeInit('load', load);

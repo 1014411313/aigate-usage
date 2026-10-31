@@ -2,7 +2,7 @@
   "meta": {
     "module_id": "HyperOS_XJ",
     "name": "HyperOS - 动态温控·解容",
-    "current_version": "1.0.0",
+    "current_version": "1.0.21",
     "updated": "2026-10-31",
     "maintainer": "小米热炸了（酷安 517965）",
     "upstream": {
@@ -21,6 +21,7 @@
     "device.json": "本机信息与当前运行状态"
   },
   "pending": [
+    "v1.0.21 待发布：修复充电功率卡/循环伪装输入行/电压输入框贴边（卡片内非 .pref 内容补内边距，跟随 DIY 卡片内边距）",
     ".git 499MB 瘦身（filter-repo，需用户确认后 force push）",
     "关于页的「关于模块」死页面（特别鸣谢/注意事项）入口已删但内容保留，未清理"
   ]

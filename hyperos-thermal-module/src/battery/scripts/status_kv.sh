@@ -61,6 +61,48 @@ echo "ctrl_limit=$(cat /sys/class/xm_power/charger/charger_thermal/wired_ctrl_li
 echo "thermal_guard=$(cfg_get thermal_guard 0)"
 echo "thermal_limit=$(cfg_get thermal_limit 45)"
 echo "thermal_action=$(cfg_get thermal_action slow)"
+# ===== v3.9.8【修 bug】上报 thermal_guard 的【真实存活状态】 =====
+# 【群友反馈】开关显示「开」但温控守护实际没跑。
+# 【根因】旧版这里只 echo(cfg_get thermal_guard) —— 它是【配置值】不是【运行状态】。
+#   thermal_guard.sh 有 3 个 exit 0 路径（单实例让位 / 开机时开关=0 / 循环里开关=0），
+#   一旦退出，配置仍是 1 → 前端永远显示"开"，用户完全无感。
+# 【修法】额外输出 thermal_guard_alive（进程是否存活）与 thermal_guard_ok（两者是否一致）。
+#   前端可用 thermal_guard_ok 判红：=0 表示「开关是开但进程没跑」。
+_tgpid=$(cat /data/local/tmp/xt_thermal_guard.pid 2>/dev/null)
+case "$_tgpid" in ''|*[!0-9]*) _tgalive=0 ;; *)
+  if kill -0 "$_tgpid" 2>/dev/null; then _tgalive=1; else _tgalive=0; fi ;;
+esac
+echo "thermal_guard_alive=$_tgalive"
+echo "thermal_guard_pid=$_tgpid"
+if [ "$(cfg_get thermal_guard 0)" = "1" ] && [ "$_tgalive" = "1" ]; then
+  echo "thermal_guard_ok=1"
+elif [ "$(cfg_get thermal_guard 0)" = "0" ] && [ "$_tgalive" = "0" ]; then
+  echo "thermal_guard_ok=1"
+else
+  echo "thermal_guard_ok=0"      # ← 开关与进程不一致，前端应提示/自动修复
+fi
+# charge_guard 同理（v3.9.5 起它也有 PID 文件）
+_cgpid=$(cat $XBT/state/cg.pid 2>/dev/null)
+case "$_cgpid" in ''|*[!0-9]*) _cgalive=0 ;; *)
+  if kill -0 "$_cgpid" 2>/dev/null; then _cgalive=1; else _cgalive=0; fi ;;
+esac
+echo "charge_guard_alive=$_cgalive"
+echo "charge_guard_ok=$_cgalive"
+echo "watchdog_alive=$(timeout 5 pgrep -f 'battery_tune/scripts/guard_watchdog\.sh' 2>/dev/null | head -n1)"
+# ===== v3.11.0 自适应功率爬坡器状态 =====
+_apl_pid=$(cat $XBT/state/apl.pid 2>/dev/null)
+case "$_apl_pid" in ''|*[!0-9]*) _apl_live=0 ;; *)
+  if kill -0 "$_apl_pid" 2>/dev/null; then _apl_live=1; else _apl_live=0; fi ;;
+esac
+echo "apl_alive=$_apl_live"
+echo "apl_pid=$_apl_pid"
+echo "apl_target_ma=$(cat $XBT/state/apl_target_ma 2>/dev/null)"
+echo "apl_cap_ma=$(dt_curr_cap_ma 2>/dev/null)"
+echo "apl_locked=$( [ -f $XBT/state/apl_lock_until ] && echo 1 || echo 0 )"
+echo "apl_profile=$( [ -f $XBT/state/apl_profile.$(cfg_get dev_code unknown).kv ] && echo 1 || echo 0 )"
+echo "apl_best_ma=$(_pb=$XBT/state/apl_profile.$(cfg_get dev_code unknown).kv; [ -f "$_pb" ] && grep -a '^b[0-9]=' "$_pb" 2>/dev/null | cut -d= -f2 | awk '{if($1+0>m)m=$1+0}END{if(m>0)print m}')"
+echo "apl_reset_reason=$(grep -a '^_reset_' $XBT/state/apl_profile.$(cfg_get dev_code unknown).kv 2>/dev/null | tail -n1 | cut -d= -f2-)"
+
 # v2.7：下发滞回值（前端要显示"降回 x℃ 自动还原"，此前前端只能硬编码 fallback 4）
 echo "thermal_hyst=$(cfg_get thermal_hyst 4)"
 _tgc=$(cat $BAT/temp 2>/dev/null); case "$_tgc" in ''|*[!0-9]*) _tgc=0 ;; esac
@@ -81,6 +123,7 @@ echo "version=$(grep '^version=' "$XBT/module.prop" 2>/dev/null | head -n1 | cut
 
 # ---- 附加项：供主页/场景页一次取齐，减少前端 su 请求次数 ----
 echo "power_limit=$(cfg_get power_limit inf)"
+echo "apl_enable=$(cfg_get apl_enable 0)"
 echo "cycle_fake=$(cfg_get cycle_fake '')"
 echo "cycle_real=$(cycle_real_read)"
 if [ -f "$XBT/dtbo/local.img" ]; then echo "dtbo_local=1"; else echo "dtbo_local=0"; fi

@@ -183,8 +183,10 @@ if [ -f "$_bd" ]; then
   echo "大小       : ${_bsz} B"
   if [ "$_bsz" -le 8 ]; then
     echo "内容       : 空文件 ⚠ 系统BAA为空（魔改包特征）"
-    echo "适配       : 模块已跳过挂载，不干预系统原样"
-    echo "挂载状态   : skipped（系统BAA为空，已跳过）"
+    # v3.9.9：空 BAA 不再「跳过挂载」—— 空文件 = 系统没有 BAA 约束，
+    #   模块现在照常挂载自己的解容配置（旧行为会让驱动用兜底阶梯把电流锁在 4.5A）。
+    echo "适配       : v3.9.9 起【照常挂载】模块 BAA（空文件=系统无约束，写入是纯增益）"
+    echo "挂载状态   : $(baa_state 2>/dev/null)（旧版此处为 skipped，会导致 60% 后锁 20W）"
   else
     echo "sha256     : $_bsha"
     _bh8=$(head -c 8 "$_bd" 2>/dev/null)
@@ -786,6 +788,26 @@ echo "  伪装设置(cycle_fake) : $(cfg_get cycle_fake '(空=不干预)')"
 echo "  真实值记录文件       : $(cat $XBT/state/last_real_cycle.txt 2>/dev/null || echo '(未记录)')"
 
 echo "--- 判读速览 ---"
+echo "--- 自适应功率爬坡器（APL）现场 ---"
+_ap="$XBT/state/apl.csv"
+_pf="$XBT/state/apl_profile.$(cfg_get dev_code unknown).kv"
+echo "进程 pid   : $(cat $XBT/state/apl.pid 2>/dev/null)"
+echo "当前目标   : $(cat $XBT/state/apl_target_ma 2>/dev/null) mA"
+echo "硬上限     : $(dt_curr_cap_ma 2>/dev/null) mA"
+echo "锁定至     : $(cat $XBT/state/apl_lock_until 2>/dev/null)"
+if [ -f "$_pf" ]; then
+  echo "学习档案   :"
+  sed 's/^/    /' "$_pf" 2>/dev/null
+else
+  echo "学习档案   : (无，尚未学习到任何 SOC 段)"
+fi
+if [ -f "$_ap" ]; then
+  echo "采样日志   : $(wc -l < "$_ap" 2>/dev/null) 行（末 40 行）"
+  tail -40 "$_ap" 2>/dev/null | sed 's/^/    /'
+else
+  echo "采样日志   : (无)"
+fi
+echo
 echo "① DTBO：见上方『DTBO 现场信息』结论行（一致=解容镜像已就位）"
 echo "② BAA ：active=改版已生效；skipped=系统BAA为空(魔改包→已跳过)；inactive=待重挂"
 echo "③ 掉功率/需拔插类：重点看『充电契约现场』达成率 + 『驱动内部评估』adp_volt 请求/实际"

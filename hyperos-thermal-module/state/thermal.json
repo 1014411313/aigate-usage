@@ -29,5 +29,6 @@
     "heal": "每轮比 md5，被回写就重写，连续 8 次失败放弃",
     "guard": "电池 ≥ temp_guard(默认60℃) 时把 default/unlimited/1/2 档强制降为三档",
     "sources": "t_blank=无限制、t_bypass_0/1=旁路、thermal/N/thermal-scene.conf=1~5 档"
-  }
+  },
+  "hitemp_stop": "温控档位管不到系统高温停充：档位只替换 mi_thermald 的 trip 表 + charger_thermal 的 wired/wireless_thermal_remove（实测两个节点都已置 1），而「温度过高，无线充电已停止」来自小米充电 HAL 的 persist.vendor.high_temp_stop_charge。v1.0.16 起温控页「高温保护」可把它写 false（thermal_core.sh 的 hitemp_guard，每轮校验、30 秒重试、关闭模块/卸载恢复 true）"
 }

@@ -476,6 +476,9 @@ restart_daemon() {
     local t=$(cat "$CONFDIR/rt_charge_orig" 2>/dev/null)
     if [ "$(cat "$CONFDIR/bypass_active" 2>/dev/null)" = "1" ]; then
         t=$(bypass_current)
+    else
+        # 充电电流归电池解容管，非旁路时温控不回写（否则会盖掉它刚设的功率档）
+        t=""
     fi
     case "$t" in ''|*[!0-9]*) ;; *) set_charge_current "$t" ;; esac
     log "已重启温控进程 $THERMAL_DAEMON"
@@ -735,8 +738,103 @@ hyperos_keepalive() {
     return 0
 }
 
+# 系统「高温停充」总闸 persist.vendor.high_temp_stop_charge
+# 温控档位只改 mi_thermald 的 trip 表与 charger_thermal 的 thermal_remove 节点，
+# 拿不到小米充电 HAL 这层保护：无限制档位下仍会被「温度过高已停止充电」停充。
+# 只在用户显式开启时写 false，关模块/卸载时恢复 true。
+hitemp_guard() {
+    local want=1
+    if [ ! -f "$MODDIR/disable" ] && [ "$(conf enabled true)" != "false" ] \
+       && [ "$(conf no_hitemp_stop false)" = "true" ]; then
+        want=0
+    fi
+    local val=true
+    [ "$want" = "0" ] && val=false
+    local now=$(getprop persist.vendor.high_temp_stop_charge 2>/dev/null)
+    [ "$now" = "$val" ] && return 0
+    # 写不进去（部分机型只读）时不要每轮刷日志，最多 30 秒重试一次
+    local last=$(cat "$CONFDIR/.hitemp_try" 2>/dev/null)
+    local ts=$(date +%s)
+    case "$last" in ''|*[!0-9]*) last=0 ;; esac
+    [ $((ts - last)) -lt 30 ] && return 0
+    printf '%s' "$ts" > "$CONFDIR/.hitemp_try" 2>/dev/null
+    local rp=""
+    for c in /data/adb/ksu/bin/resetprop /data/adb/magisk/resetprop /data/adb/ap/bin/resetprop; do
+        [ -x "$c" ] && { rp="$c"; break; }
+    done
+    [ -z "$rp" ] && command -v resetprop >/dev/null 2>&1 && rp="resetprop"
+    [ -n "$rp" ] && "$rp" -n persist.vendor.high_temp_stop_charge "$val" >/dev/null 2>&1
+    setprop persist.vendor.high_temp_stop_charge "$val" >/dev/null 2>&1
+    if [ "$(getprop persist.vendor.high_temp_stop_charge 2>/dev/null)" = "$val" ]; then
+        if [ "$want" = "0" ]; then
+            log "已解除系统高温停充保护（high_temp_stop_charge=false）"
+        else
+            log "已恢复系统高温停充保护（high_temp_stop_charge=true）"
+        fi
+    fi
+    return 0
+}
+
+# 充电过程采样：插着电时每 10 秒记一行温度/电流趋势（保留 12 行），
+# 停充时一起写进 stop_charge.log，能看出是慢慢爬上去还是瞬间跳变。
+charge_tail_sample() {
+    local ac=$(cat /sys/class/power_supply/ac/online 2>/dev/null)
+    local usb=$(cat /sys/class/power_supply/usb/online 2>/dev/null)
+    local wls=$(cat /sys/class/power_supply/wireless/online 2>/dev/null)
+    case "$ac$usb$wls" in *1*) ;; *) : > "$CONFDIR/.chg_tail" 2>/dev/null; return 0 ;; esac
+    local now=$(date +%s)
+    local last=$(cat "$CONFDIR/.chg_tail_ts" 2>/dev/null)
+    case "$last" in ''|*[!0-9]*) last=0 ;; esac
+    [ $((now - last)) -lt 10 ] && return 0
+    printf '%s' "$now" > "$CONFDIR/.chg_tail_ts" 2>/dev/null
+    local t="$BAT_TEMP"
+    case "$t" in ''|*[!0-9]*) t=0 ;; esac
+    echo "$(date '+%H:%M:%S') st=$BAT_STATUS cap=$BAT_CAP% batt=$((t / 10)).$((t % 10))C cur=${BAT_CUR}uA wls=$wls die=$(cat /sys/class/xm_power/wireless_master/wls_die_temp 2>/dev/null) rx_iout=$(cat /sys/class/xm_power/wireless_master/rx_iout 2>/dev/null)" \
+        >> "$CONFDIR/.chg_tail" 2>/dev/null
+    tail -n 12 "$CONFDIR/.chg_tail" > "$CONFDIR/.chg_tail.tmp" 2>/dev/null && mv -f "$CONFDIR/.chg_tail.tmp" "$CONFDIR/.chg_tail" 2>/dev/null
+    return 0
+}
+
+# 停充现场记录：插着电但状态从充电掉下来时，抓一份现场供排查
+# 高温停充分好几层（HAL 的 persist.vendor.high_temp_stop_charge、charger_thermal 旋钮、
+# 无线 IC 自身保护），只报「还是断充」无法定位，这里把每次现场落到 config/stop_charge.log。
+stop_charge_watch() {
+    local cur="$BAT_STATUS"
+    local prev=$(cat "$CONFDIR/.last_chg_status" 2>/dev/null)
+    [ "$cur" = "$prev" ] && return 0
+    printf '%s' "$cur" > "$CONFDIR/.last_chg_status" 2>/dev/null
+    case "$prev" in Charging|Full) ;; *) return 0 ;; esac
+    local ac=$(cat /sys/class/power_supply/ac/online 2>/dev/null)
+    local usb=$(cat /sys/class/power_supply/usb/online 2>/dev/null)
+    local wls=$(cat /sys/class/power_supply/wireless/online 2>/dev/null)
+    case "$ac$usb$wls" in *1*) ;; *) return 0 ;; esac
+    local t="$BAT_TEMP"
+    case "$t" in ''|*[!0-9]*) t=0 ;; esac
+    local f="$CONFDIR/stop_charge.log"
+    {
+        echo "===== $(date '+%F %T') 停充现场 ====="
+        echo "状态       : $prev -> $cur ｜ 电量 ${BAT_CAP}% ｜ 温度 $((t / 10)).$((t % 10))℃ ｜ 电池电流 ${BAT_CUR}uA"
+        echo "在线       : ac=$ac usb=$usb wireless=$wls"
+        echo "高温停充   : high_temp_stop_charge=$(getprop persist.vendor.high_temp_stop_charge 2>/dev/null)"
+        echo "内核旋钮   : wired_rm=$(cat /sys/class/xm_power/charger/charger_thermal/wired_thermal_remove 2>/dev/null) wireless_rm=$(cat /sys/class/xm_power/charger/charger_thermal/wireless_thermal_remove 2>/dev/null) ctrl=$(cat /sys/class/xm_power/charger/charger_thermal/wired_ctrl_limit 2>/dev/null) curr=$(cat /sys/class/xm_power/charger/charger_thermal/wired_chg_curr 2>/dev/null)"
+        echo "无线节点   : die_temp=$(cat /sys/class/xm_power/wireless_master/wls_die_temp 2>/dev/null) rx_iout=$(cat /sys/class/xm_power/wireless_master/rx_iout 2>/dev/null) rx_vout=$(cat /sys/class/xm_power/wireless_master/rx_vout 2>/dev/null)"
+        echo "功率档     : power_limit=$(grep -a '^power_limit=' /data/adb/modules/HyperOS_XJ/battery/config/settings.conf 2>/dev/null | cut -d= -f2) apl_enable=$(grep -a '^apl_enable=' /data/adb/modules/HyperOS_XJ/battery/config/settings.conf 2>/dev/null | cut -d= -f2)"
+        echo "温控档位   : $(cat "$CONFDIR/current_mode" 2>/dev/null)"
+        echo "--- 停充前 12 次采样（每 10s）---"
+        cat "$CONFDIR/.chg_tail" 2>/dev/null
+        echo "--- dmesg 尾部 ---"
+        dmesg 2>/dev/null | grep -iE 'wireless|wls|thermal|charge|high_temp|mca' | tail -25
+        echo
+    } >> "$f" 2>/dev/null
+    if [ -f "$f" ]; then
+        tail -n 240 "$f" > "$f.tmp" 2>/dev/null && mv -f "$f.tmp" "$f" 2>/dev/null
+    fi
+    log "检测到停充：$prev -> $cur（温度 $((t / 10)).$((t % 10))℃，已记入 stop_charge.log）"
+}
+
 tick() {
     ensure_thermal_dir
+    hitemp_guard
 
     if [ -f "$MODDIR/disable" ]; then
         if [ "$(cat "$CONFDIR/current_mode" 2>/dev/null)" != "disabled" ]; then
@@ -771,6 +869,8 @@ tick() {
 
     IS_CHARGING=0
     case "$BAT_STATUS" in Charging|Full) IS_CHARGING=1 ;; esac
+    stop_charge_watch
+    charge_tail_sample
 
     local on=0
     screen_on && on=1
@@ -819,11 +919,18 @@ tick() {
     fi
     if [ "$(cat "$CONFDIR/bypass_active" 2>/dev/null)" = "1" ]; then
         rm -f "$CONFDIR/bypass_active" 2>/dev/null
-        local t=$(cat "$CONFDIR/rt_charge_orig" 2>/dev/null)
-        case "$t" in
-            ''|*[!0-9]*) log "旁路关闭：无原值可回写" ;;
-            *) set_charge_current "$t"; log "旁路关闭：充电电流恢复 $t" ;;
-        esac
+        # 旁路结束后交还给电池解容：让它按当前功率档重新写一次；拿不到再用原值兑底
+        local _bk="/data/adb/modules/HyperOS_XJ/battery/scripts/charge_guard.sh"
+        if [ -f "$_bk" ]; then
+            ( setsid sh "$_bk" once >/dev/null 2>&1 < /dev/null & )
+            log "旁路关闭：已交还电池解容重新施加功率档"
+        else
+            local t=$(cat "$CONFDIR/rt_charge_orig" 2>/dev/null)
+            case "$t" in
+                ''|*[!0-9]*) log "旁路关闭：无原值可回写" ;;
+                *) set_charge_current "$t"; log "旁路关闭：充电电流恢复 $t" ;;
+            esac
+        fi
     fi
 
     local target="default"

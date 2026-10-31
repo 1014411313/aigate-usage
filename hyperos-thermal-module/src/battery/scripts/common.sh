@@ -428,12 +428,12 @@ slot_letter() {
 }
 
 baa_state() {
-  # 空目标（魔改包掏空 BAA）→ skipped：模块不挂载、不报 inactive、不触发自动重挂
-  if [ -f "$BAA_TGT" ]; then
-    _ts=$(stat -c %s "$BAA_TGT" 2>/dev/null)
-    case "$_ts" in ''|*[!0-9]*) _ts=0 ;; esac
-    if [ "$_ts" -le 8 ]; then echo "skipped"; return; fi
-  fi
+  # ===== v3.9.9【修 bug】不再对「空目标」返回 skipped =====
+  # 【旧行为】魔改包把 BAA 掏空成 1 字节 → 这里返回 skipped → 上层不挂载、不重挂。
+  # 【实测后果】annibale / haotian 两台 15 系列：系统无 BAA 配置 → 驱动用兜底阶梯 →
+  #   volt_thermal_limit 4500（4.5A）锁死 → 60% 后掉到 20W。
+  # 【新行为】空目标视为「没有系统约束」，照样挂载我们的配置 →
+  #   走下面的正常判定（挂上了就 active，没挂上就 inactive 并触发重挂）。
   _s=$(hash_of "$BAA_SRC"); _t=$(hash_of "$BAA_TGT")
   _l=$(stat -c '%C' "$BAA_TGT" 2>/dev/null)
   _sl=$(stat -c '%C' "$BAA_SRC" 2>/dev/null)
@@ -606,6 +606,13 @@ direct_set_current_ma() {
   _lv="${3:-}"
   case "$_value" in ''|*[!0-9]*) return 1 ;; esac
   case "$_th" in 0|1) ;; *) _th=$(thermal_target) ;; esac
+
+  # ===== 旁路供电让路 =====
+  # 温控侧旁路需要把充电电流压得很低；期间电池解容不要抢节点，
+  # 旁路结束后由温控调用 charge_guard.sh once 交还。
+  if [ "$(cat /data/adb/modules/HyperOS_XJ/config/bypass_active 2>/dev/null)" = "1" ]; then
+    return 0
+  fi
 
   # ===== v2.9.9【核心修复：限流档必须同时施加 ctrl 阶梯】=====
   # 【真机实测（xuanyuan，2026-10-17 白天，充电中 SOC 69~71%，pd_pps）】
@@ -788,11 +795,55 @@ watt_to_current_ma() {
   quantize_current_ma "$_ma"
 }
 
+# 读 DTBO mca_strategy_quick_charge/div_max_curr 数组最大值（big-endian u32）
+# 这是硬件真正允许的充电泵电流顶，任何写节点的目标都不得超过它
+dt_curr_cap_ma() {
+  _f=/proc/device-tree/soc/mca_strategy_quick_charge/div_max_curr
+  [ -e "$_f" ] || { echo ""; return; }
+  od -An -tu1 -v "$_f" 2>/dev/null | awk '
+    { for(i=1;i<=NF;i++) a[++n]=$i }
+    END{
+      if(n<4){print ""; exit}
+      max=0
+      for(i=1;i+3<=n;i+=4){
+        v=a[i]*16777216+a[i+1]*65536+a[i+2]*256+a[i+3]
+        if(v>max) max=v
+      }
+      print max
+    }'
+}
+
 # 各档在 curr 机制下的目标电流（inf 固定 20000mA，与“一发er”方案一致）
 tier_target_ma() {
   _w=""
   case "$1" in
-    inf)  echo 20000; return ;;
+    inf)
+      # ===== v3.11.0：inf 档目标由「自适应功率爬坡器 apl.sh」动态决定 =====
+      # apl.sh 每 5s 采样实际功率/电流/温度，按 SOC 分 10 段学习硬件真实上限，
+      # 结果写入 state/apl_target_ma；本函数读它。
+      # 兜底顺序：apl_target_ma → DTBO div_max_curr → 20000
+      # 安全：任何情况下不超过 min(DTBO div_max_curr, apl_max_ma, 20000)
+      # 【v3.12.3 修 BUG9】绝不能把 MAX_MA 当 inf 上限！
+      #   MAX_MA 是「fast/mid/slow 档 watt 换算的电流封顶」（haotian=8000），
+      #   用它做 inf 上限会把目标压到 8A≈36W，解容直接废掉。
+      #   v3.12.1 只改了 apl.sh 的 ceiling()，漏了这里 —— 现补上。
+      #   inf 的真实上限只有 DTBO div_max_curr 说了算；可选 settings 键 apl_max_ma 覆盖。
+      _cap=20000
+      _dc=$(dt_curr_cap_ma 2>/dev/null)
+      case "$_dc" in ''|*[!0-9]*) _dc="" ;; esac
+      [ -n "$_dc" ] && [ "$_dc" -gt 0 ] && [ "$_dc" -lt "$_cap" ] && _cap="$_dc"
+      _om=$(cfg_get apl_max_ma "")
+      case "$_om" in ''|*[!0-9]*) ;; *)
+        [ "$_om" -gt 0 ] && [ "$_om" -lt "$_cap" ] && _cap="$_om" ;; esac
+      _at=$(cat "$XBT/state/apl_target_ma" 2>/dev/null)
+      case "$_at" in ''|*[!0-9]*) _at="" ;; esac
+      if [ -n "$_at" ] && [ "$_at" -ge 2000 ]; then
+        [ "$_at" -gt "$_cap" ] && _at="$_cap"
+        echo "$_at"
+      else
+        echo "$_cap"
+      fi
+      return ;;
     # v2.6.21：改为实时读取（运行中调整 fast_w/mid_w/slow_w 立即生效；thermal stop 动作依赖）
     fast) _w=$(cfg_get fast_w "${DEF_FAST_W:-40}") ;;
     mid)  _w=$(cfg_get mid_w "${DEF_MID_W:-25}") ;;

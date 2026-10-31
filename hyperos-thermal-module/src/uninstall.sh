@@ -33,6 +33,10 @@ else
 fi
 say " "
 
+setprop persist.vendor.high_temp_stop_charge true 2>/dev/null
+say "- 已恢复系统高温停充保护（high_temp_stop_charge=true）"
+say " "
+
 THERMAL_PATH=""
 if [ -s "$CONFDIR/rt_thermal_path" ]; then
     THERMAL_PATH=$(cat "$CONFDIR/rt_thermal_path" 2>/dev/null)

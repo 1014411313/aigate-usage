@@ -26,6 +26,19 @@ LOG="${LOG:-/data/local/tmp/xt_toolbox.log}"
 PIDF="$XBT/state/cg.pid"
 LASTF="$XBT/state/wd_last_restart"
 
+# v3.9.8：需要 cfg_get 读 thermal_guard 开关（common.sh 只定义函数，不会执行副作用）
+[ -f "$XBT/scripts/common.sh" ] && . "$XBT/scripts/common.sh" 2>/dev/null
+# 兜底：万一 common.sh 不可用，用最简单的实现
+if ! command -v cfg_get >/dev/null 2>&1; then
+  cfg_get() {
+    _cgf="$XBT/config/settings.conf"
+    _cgk="$1"; _cgd="$2"
+    [ -f "$_cgf" ] || { printf '%s' "$_cgd"; return; }
+    _cgv=$(grep -a "^${_cgk}=" "$_cgf" 2>/dev/null | head -n1 | cut -d= -f2-)
+    [ -n "$_cgv" ] && printf '%s' "$_cgv" || printf '%s' "$_cgd"
+  }
+fi
+
 log() { echo "$(date '+%Y-%m-%d %H:%M:%S') guard_watchdog: $*" >> "$LOG" 2>/dev/null; }
 
 # ---- 判断 charge_guard 是否活着（只靠 PID 文件 + kill -0，不读 cmdline）----
@@ -73,6 +86,53 @@ restart_cg() {
 
 # ---- 主循环 ----
 log "started (pid $$, PID-file 模式，不读 /proc/<pid>/cmdline)"
+
+# ===== v3.9.8【新增】thermal_guard 看护 =====
+# 【群友反馈的 bug】原版 guard_watchdog 只看 charge_guard，而 thermal_guard：
+#   · 只在 service.sh 开机时启动一次（L204-207）
+#   · thermal_guard.sh 有 3 个 exit 0 路径（单实例让位 / 开机时开关=0 / 循环里开关=0）
+#   · 一旦退出，settings.conf 里 thermal_guard 仍是 1
+#   · status_kv.sh 只 echo settings 的值 → WebUI 开关显示「开」，实际没有进程
+# ⇒ 表现就是「温控守护偶发失效，开关是开的」
+#
+# 本段每轮检查：开关=1 但 PID 文件缺失/进程不存在 → 重新拉起。
+# PID 文件由 thermal_guard.sh 自己写在 /data/local/tmp/xt_thermal_guard.pid，
+# 并在 trap EXIT 里清理 —— 所以「文件在但进程没了」= 被强杀，也需要重启。
+TG_PIDF=/data/local/tmp/xt_thermal_guard.pid
+TG_LAST="$XBT/state/wd_tg_last_restart"
+
+tg_enabled() { [ "$(cfg_get thermal_guard 0)" = "1" ]; }
+
+tg_alive() {
+  [ -s "$TG_PIDF" ] || return 1
+  _tp=$(cat "$TG_PIDF" 2>/dev/null)
+  case "$_tp" in ''|*[!0-9]*) return 1 ;; esac
+  [ "$_tp" -gt 1 ] 2>/dev/null || return 1
+  kill -0 "$_tp" 2>/dev/null || return 1
+  return 0
+}
+
+restart_tg() {
+  # 开关关着 → 不该有进程，什么都不做
+  tg_enabled || return 0
+  _tnow=$(date +%s)
+  _tlast=$(cat "$TG_LAST" 2>/dev/null)
+  case "$_tlast" in ''|*[!0-9]*) _tlast=0 ;; esac
+  if [ $((_tnow - _tlast)) -lt 60 ]; then
+    return 0
+  fi
+  echo "$_tnow" > "$TG_LAST" 2>/dev/null
+  log "thermal_guard 掉线（开关=1 但进程不存在），正在重启"
+  rm -f "$TG_PIDF" 2>/dev/null
+  ( setsid sh $XBT/scripts/thermal_guard.sh >/dev/null 2>&1 < /dev/null & )
+  sleep 2
+  if tg_alive; then
+    log "thermal_guard 重启成功 pid=$(cat "$TG_PIDF" 2>/dev/null)"
+  else
+    log "⚠ thermal_guard 重启后仍不存活，等待下一轮"
+  fi
+}
+
 TICK=0
 while :; do
   TICK=$((TICK + 1))
@@ -82,6 +142,10 @@ while :; do
   elif [ $((TICK % 30)) -eq 1 ]; then
     # 约每 30 分钟打一次存活心跳，便于日志核对（不刷屏）
     log "alive pid=$(cat "$PIDF" 2>/dev/null)"
+  fi
+  # thermal_guard：每轮都查（它比 charge_guard 更容易被漏）
+  if tg_enabled && ! tg_alive; then
+    restart_tg
   fi
   sleep 60
 done

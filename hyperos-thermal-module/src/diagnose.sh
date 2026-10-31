@@ -71,6 +71,8 @@ step 3 "采集配置文件（白名单）"
 for _f in settings.json current_mode rt_thermal_path mtk_fix status.json runtime.json; do
     [ -f "$CONFDIR/$_f" ] && cp -f "$CONFDIR/$_f" "$WORK/config/" 2>/dev/null
 done
+# 解容侧配置（功率档/满电电压/免费 PPS 等）不在模块目录，排障充电功率时必须带上
+[ -s /data/local/tmp/battery_tune.conf ] && cp -f /data/local/tmp/battery_tune.conf "$WORK/config/" 2>/dev/null
 for _j in "$WORK/config"/*.json; do
     [ -f "$_j" ] || continue
     sanitize < "$_j" > "$_j.tmp" 2>/dev/null && mv -f "$_j.tmp" "$_j" 2>/dev/null
@@ -104,14 +106,14 @@ fi
 step 5 "采集日志（每个文件保留尾部 300 行）"
 _n=0
 for _lf in "$MODDIR"/log/*.log "$MODDIR"/*.log "$CONFDIR"/log/*.log; do
-    [ -f "$_lf" ] || continue
+    [ -s "$_lf" ] || continue
     _base=$(basename "$_lf")
     [ -f "$WORK/log/$_base" ] && _base="more_$_base"
     tail -n 300 "$_lf" 2>/dev/null > "$WORK/log/$_base"
     _n=$((_n+1))
 done
 # 解容子模块的日志写在 /data/local/tmp（不在模块目录），单独收集，否则排障看不到它
-if [ -f /data/local/tmp/xt_toolbox.log ]; then
+if [ -s /data/local/tmp/xt_toolbox.log ]; then
     tail -n 300 /data/local/tmp/xt_toolbox.log > "$WORK/log/battery_toolbox.log" 2>/dev/null
     _n=$((_n+1))
 fi
@@ -138,14 +140,79 @@ step 6 "采集运行状态"
     echo
     echo "=== 充电节点（旁路相关）==="
     for p in /sys/class/xm_power/charger/charger_thermal/wired_chg_curr \
-             /sys/class/power_supply/usb/current_max; do
+             /sys/class/xm_power/charger/charger_thermal/wired_chg_curr2 \
+             /sys/class/xm_power/charger/charger_thermal/wired_thermal_remove \
+             /sys/class/xm_power/charger/charger_thermal/wired_ctrl_limit \
+             /sys/class/power_supply/usb/current_max \
+             /sys/class/power_supply/usb/input_current_limit \
+             /sys/class/power_supply/usb/voltage_now \
+             /sys/class/power_supply/usb/current_now \
+             /sys/class/power_supply/usb/real_type \
+             /sys/class/xm_power/charger/charger_common/real_type \
+             /sys/class/xm_power/charger/charger_common/power_max; do
         [ -f "$p" ] && echo "$p=$(cat "$p" 2>/dev/null)" || echo "$p=不存在"
     done
+    echo
+    echo "=== 满电电压节点 ==="
+    for p in /sys/class/power_supply/battery/constant_charge_voltage \
+             /sys/class/power_supply/battery/voltage_max \
+             /sys/class/power_supply/battery/charge_full \
+             /sys/class/power_supply/battery/charge_full_design; do
+        [ -f "$p" ] && echo "$p=$(cat "$p" 2>/dev/null)" || echo "$p=不存在"
+    done
+    echo
+    echo "=== 解容配置（cfg）==="
+    _cfg=/data/local/tmp/battery_tune.conf
+    if [ -f "$_cfg" ]; then
+        grep -E '^(power_limit|unlock|freepps|cloud_guard|fv_v|term_v|fv_force|thermal_guard|cycle_fake|bypass_temp_on|bypass_level)=' "$_cfg" 2>/dev/null
+    else
+        echo "（无 battery_tune.conf）"
+    fi
 } > "$WORK/battery.txt" 2>/dev/null
 
 dmesg 2>/dev/null | tail -n 200 | sanitize > "$WORK/dmesg_tail.txt" 2>/dev/null
+
+{
+    echo "=== 无线充电节点 ==="
+    for p in /sys/class/xm_power/charger/charger_thermal/wireless_chg_curr \
+             /sys/class/xm_power/charger/charger_thermal/wireless_ctrl_limit \
+             /sys/class/xm_power/charger/charger_thermal/wireless_mag_ctrl_limit \
+             /sys/class/xm_power/charger/charger_thermal/wireless_thermal_remove \
+             /sys/class/power_supply/wireless/online \
+             /sys/class/power_supply/wireless/current_now \
+             /sys/class/power_supply/wireless/voltage_now \
+             /sys/class/xm_power/wireless_master/wls_die_temp \
+             /sys/class/xm_power/wireless_master/rx_iout \
+             /sys/class/xm_power/wireless_master/rx_vout; do
+        [ -f "$p" ] && echo "$p=$(cat "$p" 2>/dev/null)" || echo "$p=不存在"
+    done
+    echo
+    echo "=== 无线充电 DT 参数（大端 4 字节：0x190=400 → 40.0℃，0x11e4=4580mV）==="
+    for p in /proc/device-tree/soc/mca_strategy_quick_wireless_class/adp_temp_max \
+             /proc/device-tree/soc/mca_strategy_quick_wireless_class/die_temp_max \
+             /proc/device-tree/soc/mca_strategy_quick_wireless_class/max_vbat \
+             /proc/device-tree/soc/mca_strategy_quick_wireless_class/min_vbat; do
+        if [ -f "$p" ]; then
+            echo "$p=$(od -An -tx1 "$p" 2>/dev/null | tr -d '\n')"
+        else
+            echo "$p=不存在"
+        fi
+    done
+    echo
+    echo "=== 充电保护相关属性 ==="
+    getprop 2>/dev/null | grep -iE 'high_temp|stop_charge|wireless|wls'
+    echo
+    echo "=== 无线/温控 dmesg（最近 120 行）==="
+    dmesg 2>/dev/null | grep -iE 'wireless|wls|mca_thermal|high_temp' \
+        | tail -n 120 | sanitize
+} > "$WORK/wireless.txt" 2>/dev/null
 logcat -d -t 400 2>/dev/null | grep -iE 'thermal|mi_thermald|hyperos|xj' \
     | tail -n 200 | sanitize > "$WORK/logcat_tail.txt" 2>/dev/null
+
+if [ -s "$MODDIR/config/stop_charge.log" ]; then
+    { echo "=== 停充现场记录（最近两次）==="; tail -n 120 "$MODDIR/config/stop_charge.log"; } \
+        | sanitize > "$WORK/stop_charge.txt" 2>/dev/null
+fi
 
 ls -l "$MODDIR" > "$WORK/module_files.txt" 2>/dev/null
 [ -f "$MODDIR/thermal_core.sh" ] && md5sum "$MODDIR/thermal_core.sh" >> "$WORK/module_files.txt" 2>/dev/null

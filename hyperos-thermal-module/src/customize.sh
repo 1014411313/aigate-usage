@@ -167,35 +167,21 @@ fi
 
 APK="$MODPATH/HyperOSxj.apk"
 
-install_apk() {
-    pm install -r -d "$1" >/dev/null 2>&1 && return 0
-    pm install -r --user 0 "$1" >/dev/null 2>&1 && return 0
-    pm install -r "$1" >/dev/null 2>&1 && return 0
-    # 本版 APK 重新签过名，与旧版签名不同 → 覆盖安装会报签名冲突，
-    # 卸载旧版后再装（控制台无本地数据，卸载不损失配置）。
-    print " - 检测到签名变更，先卸载旧版控制台…"
+# 界面改为 KernelSU 内置 WebUI（模块页直接打开，不需要给应用授权），
+# 不再安装独立控制台 APK；旧版装过的顺手卸载，避免残留入口与授权弹窗。
+frame_mid
+if pm path com.hyperos.xj >/dev/null 2>&1; then
     pm uninstall --user 0 com.hyperos.xj >/dev/null 2>&1
     pm uninstall com.hyperos.xj >/dev/null 2>&1
-    pm install -r "$1" >/dev/null 2>&1 && return 0
-    pm install "$1" >/dev/null 2>&1 && return 0
-    return 1
-}
-if [ -f "$APK" ]; then
-    frame_mid
-    print " - 正在安装控制台…"
-    _w=0
-    while [ "$_w" -lt 5 ] && ! command -v pm >/dev/null 2>&1; do sleep 1; _w=$((_w + 1)); done
-    if command -v pm >/dev/null 2>&1 && install_apk "$APK"; then
-        frame_mid
-        print " - 已安装控制台 APP"
+    if pm path com.hyperos.xj >/dev/null 2>&1; then
+        print " [!] 旧版独立控制台卸载失败，可在桌面手动卸载 com.hyperos.xj"
     else
-        frame_mid
-        print " [!] 自动安装失败，重启后请手动安装：$APK"
+        print " - 已卸载旧版独立控制台（界面改由管理器内置 WebUI 打开）"
     fi
 else
-    frame_mid
-    print " [!] 未找到 HyperOSxj.apk，跳过自动安装"
+    print " - 使用管理器内置 WebUI，无需安装控制台 APP"
 fi
+rm -f "$APK" 2>/dev/null
 
 CONFDIR="$MODPATH/config"
 mkdir -p "$CONFDIR" 2>/dev/null
@@ -238,6 +224,18 @@ if [ -n "$_LEGACY_ID" ] && [ "$LEGACY_DIR" != "$MODPATH" ] && [ -d "$LEGACY_DIR"
         if [ ! -s "$CONFDIR/$_f" ] && [ -s "$LEGACY_DIR/config/$_f" ]; then
             cp -f "$LEGACY_DIR/config/$_f" "$CONFDIR/$_f" 2>/dev/null && MIGRATED=$((MIGRATED+1))
         fi
+    done
+    # 解容子模块的用户配置（功率档/满电电压/强制覆盖/关机电压/免费 PPS/云控/循环伪装）
+    # 都存在 battery/config/settings.conf，不迁移的话每次更新都会回到默认值
+    for _d in battery/config battery/state; do
+        [ -d "$LEGACY_DIR/$_d" ] || continue
+        mkdir -p "$MODPATH/$_d" 2>/dev/null
+        for _f in "$LEGACY_DIR/$_d"/*; do
+            [ -f "$_f" ] || continue
+            _bn=$(basename "$_f")
+            [ -s "$MODPATH/$_d/$_bn" ] && continue
+            cp -f "$_f" "$MODPATH/$_d/$_bn" 2>/dev/null && MIGRATED=$((MIGRATED+1))
+        done
     done
     if [ -d "$LEGACY_DIR/profiles" ]; then
         mkdir -p "$MODPATH/profiles" 2>/dev/null

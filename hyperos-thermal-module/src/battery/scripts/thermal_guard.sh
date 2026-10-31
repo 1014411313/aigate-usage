@@ -137,20 +137,37 @@ PIDFILE=/data/local/tmp/xt_thermal_guard.pid
 #   若等待后旧实例仍在，则让位退出（旧实例会正常处理快照），避免两实例互相打架。
 _me=$$
 if command -v pgrep >/dev/null 2>&1; then
+  # ===== v3.9.8【修竞态】旧逻辑：谁看到别人就退出 =====
+  #   若 A、B 同时启动（service.sh + thermal_ctl.sh ensure 撞车），
+  #   A 看到 B 就 exit 0，B 看到 A 也 exit 0 → **两个都死了**
+  #   → settings 里 thermal_guard 仍是 1，前端显示「开」，实际没进程。
+  #   这就是群友反馈「温控守护偶发失效」的直接成因之一。
+  # 【新逻辑】按 PID 大小确定性仲裁：PID 小的（先起的）胜出，PID 大的让位。
+  #   一次比较即可，不需要重试等待，不存在双方互相让步的窗口。
   _other=""
   for _w in 1 2 3; do
     _other=""
     for _p in $(timeout 5 pgrep -f 'HyperOS_XJ/battery/scripts/thermal_guard\.sh' 2>/dev/null); do
       [ "$_p" = "$_me" ] && continue
-      kill -0 "$_p" 2>/dev/null && _other="$_p" && break
+      kill -0 "$_p" 2>/dev/null || continue
+      _other="$_p"
+      break
     done
     [ -z "$_other" ] && break
+    # 只有「对方存活且 PID 比我小」才让位；反之我留任，对方会自己让位
+    if [ "$_other" -lt "$_me" ] 2>/dev/null; then
+      tlog "another guard alive (pid $_other < $_me), yielding self=$_me"
+      exit 0
+    fi
+    # 我比对方小 = 我留任；给它 0.5 秒自行退出，再复查一次
     sleep 0.5
   done
-  if [ -n "$_other" ]; then
-    tlog "another guard alive (pid $_other), yielding self=$_me"
+  # 复查：若对方仍活着且比我小（极端情况），才让位
+  if [ -n "$_other" ] && [ "$_other" -lt "$_me" ] 2>/dev/null && kill -0 "$_other" 2>/dev/null; then
+    tlog "after wait, elder guard still alive (pid $_other), yielding self=$_me"
     exit 0
   fi
+  tlog "self=$_me takes over (no elder guard alive)"
 fi
 echo "$_me" > "$PIDFILE" 2>/dev/null
 # 退出时清理 pidfile（仅当仍属于自己）

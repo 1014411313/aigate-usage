@@ -39,12 +39,23 @@ def main():
     for root, dirs, fs in os.walk(SRC):
         dirs.sort(); fs.sort()
         for f in fs:
-            files.append(os.path.relpath(os.path.join(root, f), SRC))
+            rel = os.path.relpath(os.path.join(root, f), SRC)
+            # 控制台 APK 不再随包分发（界面已改为模块 WebUI）；仓库里保留一份方便回退
+            if rel == 'HyperOSxj.apk':
+                continue
+            files.append(rel)
     files.sort()
 
     order = ['module.prop'] + [f for f in files if f.startswith('META-INF/')] + \
             [f for f in files if f != 'module.prop' and not f.startswith('META-INF/')]
     order = [f for f in order if f in files]
+
+    # 控制台 APK 的内容哈希已不再需要（界面改走模块 WebUI）
+    extra = {}
+    web = os.path.join(SRC, 'hyperosui', 'index.html')
+    if os.path.exists(web):
+        # KernelSU 内置 WebUI：同一份界面复制到 webroot/，更新模块即更新界面，不用装 APK
+        extra['webroot/index.html'] = open(web, 'rb').read()
 
     with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as z:
         for rel in order:
@@ -52,6 +63,11 @@ def main():
             data = open(p, 'rb').read()
             zi = zipfile.ZipInfo(rel, date_time=time.localtime(os.path.getmtime(p))[:6])
             zi.external_attr = perms(rel) << 16
+            zi.compress_type = zipfile.ZIP_DEFLATED
+            z.writestr(zi, data)
+        for rel, data in extra.items():
+            zi = zipfile.ZipInfo(rel, date_time=time.localtime()[:6])
+            zi.external_attr = 0o100644 << 16
             zi.compress_type = zipfile.ZIP_DEFLATED
             z.writestr(zi, data)
 

@@ -36,8 +36,19 @@ case "$MODE" in
     _tsz=$(stat -c %s "$BAA_TGT" 2>/dev/null)
     case "$_tsz" in ''|*[!0-9]*) _tsz=0 ;; esac
     if [ "$_tsz" -le 8 ]; then
-      log "baa_ops: target empty (${_tsz}B, ROM BAA-less) -> skip mount"
-      exit 0
+      # ===== v3.9.9【修 bug】旧行为：目标为空就 exit 0 跳过挂载 =====
+      # 【实测故障】annibale / haotian 两台 15 系列，用户刷的是「官改/魔改包」，
+      #   /odm/etc/charger/BAA_config_<dev>.json 被掏空成 1 字节。
+      #   模块判定「系统BAA为空」→ 跳过挂载 → 系统无 BAA 配置 →
+      #   驱动回落到内置兜底阶梯 → charge_interface 出现
+      #      ichg_limit = buck eff_client:volt_thermal_limit 4500  (4.5A)
+      #      iin_limit  = buck eff_client:volt_limit 3000          (3A)
+      #   ⇒ 4.5A × 4.34V ≈ 19.5W，正好是用户反馈的「60% 后掉到 20W、67% 后锁死」。
+      # 【为什么旧行为是错的】「不干预」在系统本来就有配置时是保守正确的；
+      #   但系统配置为空时，「不干预」= 让驱动用兜底限流，反而更差。
+      #   空文件的语义是「这台 ROM 没有 BAA 约束」，写入我们的解容配置是纯增益。
+      # 【新行为】仍然挂载，只是额外记一条日志便于排障。
+      log "baa_ops: target is EMPTY (${_tsz}B, ROM BAA-less) -> mounting module BAA anyway (v3.9.9: empty target means no system constraint, our config is a strict improvement)"
     fi
     if grep -F " $BAA_TGT " /proc/mounts >/dev/null 2>&1; then
       umount "$BAA_TGT" 2>>"$LOG"

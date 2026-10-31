@@ -17,5 +17,6 @@
   "bypass_temp_off": 0,
   "bypass_level": 0,
   "bypass_current": 500000,
-  "hyperos4": false
+  "hyperos4": false,
+  "no_hitemp_stop": false
 }

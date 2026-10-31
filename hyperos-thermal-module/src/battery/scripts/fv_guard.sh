@@ -126,7 +126,7 @@ stop_guard() {
     [ -n "$_p" ] && kill -9 "$_p" 2>/dev/null
     rm -f "$PIDFILE"
   fi
-  for _q in $(pgrep -f "$HANDLER" 2>/dev/null); do
+  for _q in $(timeout 5 pgrep -f "$HANDLER" 2>/dev/null); do
     kill -9 "$_q" 2>/dev/null
   done
   log "fv_guard: stopped"
