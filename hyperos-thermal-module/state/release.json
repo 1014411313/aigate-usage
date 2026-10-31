@@ -16,7 +16,8 @@
     "publish": "用户说「发布」后执行；自动完成清单更新、只留 3 版、提交推送（失败重试 5 次）、CDN 校验",
     "after_publish": "必须发 CDN 直链 + raw 备用 + 3~6 条更新要点（从 更新日志.log 最新段提炼）",
     "changelog": "每次改动都要在 src/更新日志.log 末尾追加，按「界面/修复/优化」分类",
-    "session_state": "每次任务结束自动更新 SESSION_STATE.json；新会话以此文件恢复上下文"
+    "session_state": "每次任务结束自动更新 SESSION_STATE.json；新会话以此文件恢复上下文",
+    "cache_note": "同名覆盖发布后 jsDelivr 缓存需 purge；testingcf 节点滞后明显，raw 与 cdn.jsdelivr.net 更及时"
   },
   "version_history": [
     {
@@ -130,6 +131,10 @@
     {
       "v": "1.0.8",
       "note": "圆环改用 SVG 描边（轨道+渐变弧+端点亮点+SVG drop-shadow 发光），按用户给的参考效果重做（已打包待发布）"
+    },
+    {
+      "v": "1.0.0（正式版重发）",
+      "note": "versionCode 49：把 1.0.1~1.0.8 的全部改动并入，作为新的 1.0.0 正式版发布；旧的 1.0.0（versionCode 40）作废，dist 只保留这一版"
     }
   ]
 }

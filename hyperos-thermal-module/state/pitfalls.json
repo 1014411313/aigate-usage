@@ -13,7 +13,8 @@
     "主页 sCapacity/sStatus 只能由一个源写：refreshStatus 读 status.json（守护轮询快照，会滞后）与 bkRefresh 读 status_kv 实时值，两源同时写会让电量与状态来回跳",
     "圆环 mask 与 filter 互斥：同一元素或其子树带 filter 时 WebView 会丢掉 mask，进度环糊成实心盘；光效改用 background-position 动画",
     "解容子模块日志写在 /data/local/tmp/xt_toolbox.log（不在模块目录），诊断脚本需单独收集，否则导出的 battery.log 一直是空的",
-    "再往圆环加 CSS filter 会糊掉 mask；现已整体换成 SVG 描边（发光用 SVG drop-shadow），改环时不要再引入 CSS mask/filter 组合"
+    "再往圆环加 CSS filter 会糊掉 mask；现已整体换成 SVG 描边（发光用 SVG drop-shadow），改环时不要再引入 CSS mask/filter 组合",
+    "同名包覆盖发布（如重发 1.0.0）：raw 立即更新，testingcf 会长时间返回旧包，需 purge 并以 raw/cdn.jsdelivr.net 为准"
   ],
   "decisions": [
     "状态栏/取消全屏：用户确认不是必须，放弃改 dex",
