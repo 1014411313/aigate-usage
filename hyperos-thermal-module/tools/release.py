@@ -102,6 +102,13 @@ def do_build(arg=None):
     return vc, vn, out, size, sha
 
 
+def legacy_meta(name):
+    """v1.0.0 以前用 build 计数命名（_v39.zip），旧包保留时补回可读的版本名"""
+    if not name.isdigit():
+        return None
+    return {'versionName': 'K2+BT3.9.6-build' + name, 'versionCode': int(name)}
+
+
 def latest_upd(vc, vn, size, sha):
     d = json.load(open(LATEST, encoding='utf-8'))
     q = urllib.parse.quote(zip_name(vn))
@@ -123,7 +130,14 @@ def latest_upd(vc, vn, size, sha):
     }
     versions = []
     for name, path in dist_entries()[:KEEP]:
-        v = old.get(name, {'versionCode': 0, 'versionName': name, 'sha256': '', 'size': 0, 'date': '', 'note': ''})
+        v = dict(old.get(name, {}))
+        if not v.get('versionCode'):
+            v.update(legacy_meta(name) or {})
+        v.setdefault('versionName', name)
+        v.setdefault('versionCode', 0)
+        v.setdefault('sha256', '')
+        v.setdefault('date', '')
+        v.setdefault('note', '')
         v['file'] = os.path.relpath(path, ROOT)
         v['size'] = os.path.getsize(path)
         versions.append(v)
