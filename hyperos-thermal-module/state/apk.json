@@ -1,0 +1,11 @@
+{
+  "package": "com.hyperos.xj",
+  "keystore": "~/android-toolchain/hyperos-xj.keystore（别名 hyperosxj，从 v18 起使用）",
+  "webview_loading": "APK 用 su cat 读取 hyperosui/index.html 后加载到私有缓存，相对路径失效 → 页面资源一律走 exec + dataURL",
+  "icon_dedupe": "res 下 10 张图标内容相同，arsc 路径等长替换为 res/3S.png 后可删 9 张（2.35MB→259KB）",
+  "app_name": "resources.arsc 里的 app_name 已等长/追加改写为「HyperOS - 动态温控·解容」",
+  "rebuild_steps": [
+    "unzip → 改 arsc/dex → zipfile 重打包（png/arsc 用 STORED）→ arm64 zipalign → apksigner sign"
+  ],
+  "install_flow": "customize.sh 先试覆盖安装，签名冲突时自动卸载旧版再装"
+}

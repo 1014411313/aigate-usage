@@ -1,0 +1,28 @@
+{
+  "meta": {
+    "module_id": "HyperOS_XJ",
+    "name": "HyperOS - 动态温控·解容",
+    "current_version": "K2+BT3.9.6-build38",
+    "updated": "2026-10-31",
+    "maintainer": "小米热炸了（酷安 517965）",
+    "upstream": {
+      "dynamic_thermal": "Axiaojiux（动态温控 K2）",
+      "battery_toolbox": "听夜风1337（电池解容工具箱 v3.9.6）"
+    },
+    "how_to_resume": "先读 index.json；再按任务读对应分片；任务结束更新相关分片 + meta.current_version"
+  },
+  "shards": {
+    "thermal.json": "温控：档位温度阈值、四场景、旁路供电、配置文件加密格式",
+    "battery.json": "解容：BAA、smart_fv、PSS、循环伪装、电压功能、充电协议",
+    "ui.json": "WebUI：页面结构、样式规范、status_kv 字段陷阱",
+    "apk.json": "控制台 APK：签名、dex/arsc 改写、图标去重、WebView 加载方式",
+    "release.json": "发布流程、仓库结构、版本历史",
+    "pitfalls.json": "踩过的坑与红线",
+    "device.json": "本机信息与当前运行状态"
+  },
+  "pending": [
+    "电压「强制覆盖 fv_force」尚未做 UI 开关（需改写 BAA 载荷，耗时 1~6 分钟）",
+    ".git 499MB 瘦身（filter-repo，需用户确认后 force push）",
+    "关于页的「关于模块」死页面（特别鸣谢/注意事项）入口已删但内容保留，未清理"
+  ]
+}

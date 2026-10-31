@@ -1,0 +1,32 @@
+{
+  "pages": [
+    "主页 console（实时面板+电池数值+充电功率）",
+    "场景 scene（解容/循环伪装/电压/DTBO/控制/场景）",
+    "外观 appearance",
+    "关于 about（声明/设备信息/名片/更新日志/检查更新）"
+  ],
+  "styles": {
+    "must_reuse": [
+      "新增或改动的 UI 必须复用页面已有样式类：notice-mask/notice-card/notice-title/notice-body/btn/btn secondary/pref/card/mini-grid/small-title/chip",
+      "弹层沿用欢迎弹窗组件（noticeIn 动画、--fs 缩放、主题变量），zIndex 100001",
+      "弹层不跟随外观页的卡片透明度，背景按主题取近实色（浅 rgba(255,255,255,.97) / 深 rgba(28,28,30,.96)），正文用 var(--text)",
+      "颜色/圆角/字号一律走 CSS 变量",
+      "禁用系统原生 confirm/alert（会弹「file:// 的网页显示」）"
+    ],
+    "chip": "档位选择器：.chip 纵向两行，.chip-t 显示温度区间小字",
+    "modal": "弹层用 notice-mask / notice-card / notice-title / notice-body + btn，zIndex 100001"
+  },
+  "data": {
+    "one_call": "status_kv.sh 一次返回 soc/status/容量/健康度/电压/电流/功率/温度/循环/伪装/协议/功率档/DTBO 状态/fv_v 等",
+    "power_w_trap": "status_kv 的 power_w 是档位名(inf/fast/mid/slow)，真实功率用 battery_power_w",
+    "cycle_real": "qmax_cyclecount 为真实循环；cyclecount 会被伪装覆盖",
+    "refresh": "bkRefresh 每 6 秒（仅主页/场景页 active）；失败 3 次退避 30 秒"
+  },
+  "removed": [
+    "hyperosui/battery.html（旧 iframe 面板）",
+    "hyperosui/assets/chart.min.js",
+    "头像模糊面板",
+    "作者头像图 XJ1",
+    "捐赠码与内嵌公告"
+  ]
+}

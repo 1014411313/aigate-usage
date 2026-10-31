@@ -1,0 +1,17 @@
+{
+  "model": "Xiaomi 15 Pro（haotian，2410DPN6CC）",
+  "os": "HyperOS 4.0.0.19.XOBCNXM / Android 17",
+  "root": "KernelSU（另有 susfs/maphide/LSPosed 等）",
+  "slot": "_b",
+  "current_state": {
+    "unlock": 1,
+    "freepps": 1,
+    "power_limit": "inf",
+    "cloud_guard": 1,
+    "thermal_guard": 0,
+    "pss_low_soc": 25,
+    "cyclecount": "500（伪装测试值，真实 733）",
+    "smart_fv": "0（原厂 40）",
+    "baa_state": "active"
+  }
+}

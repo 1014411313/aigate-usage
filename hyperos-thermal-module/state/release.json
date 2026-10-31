@@ -1,0 +1,99 @@
+{
+  "repo": {
+    "remote": "https://github.com/1014411313/aigate-usage.git",
+    "branch": "main",
+    "layout": {
+      "src/": "模块源码（battery/ 解容子模块、hyperosui/index.html 控制台、HyperOSxj.apk）",
+      "tools/pack.py": "打包：python3 tools/pack.py [输出路径]",
+      "tools/release.py": "build（版本号+1、打包到 dist/）/ publish（清单+清旧+推送+CDN 校验）/ publish --no-push",
+      "dist/": "只留最近 3 个版本，命名「动态温控·解容工具箱_vN.zip」",
+      "latest.json": "版本清单，versions 按 dist 实际文件重建"
+    },
+    "git_size_note": ".git 约 499MB（历史含早期大包），彻底瘦身需 filter-repo 改写历史，用户尚未决定"
+  },
+  "release_flow": {
+    "build": "改完直接执行，不需征得同意，把 zip 发给用户",
+    "publish": "用户说「发布」后执行；自动完成清单更新、只留 3 版、提交推送（失败重试 5 次）、CDN 校验",
+    "after_publish": "必须发 CDN 直链 + raw 备用 + 3~6 条更新要点（从 更新日志.log 最新段提炼）",
+    "changelog": "每次改动都要在 src/更新日志.log 末尾追加，按「界面/修复/优化」分类",
+    "session_state": "每次任务结束自动更新 SESSION_STATE.json；新会话以此文件恢复上下文"
+  },
+  "version_history": [
+    {
+      "v": 9,
+      "note": "首个发布包，误打包 decrypted/ 分析产物"
+    },
+    {
+      "v": 10,
+      "note": "移除 decrypted，建立多版本并存"
+    },
+    {
+      "v": 11,
+      "note": "修复控制台内解容页打不开（改为 exec 读文件 + iframe srcdoc + postMessage 桥接）"
+    },
+    {
+      "v": 17,
+      "note": "统一改名 HyperOS - 动态温控·解容；作者改小米热炸了、头像改 MI；删捐赠码/内嵌公告；电池解容入口移入场景页"
+    },
+    {
+      "v": 18,
+      "note": "APK 重打包改桌面名（新签名），customize 增加签名冲突时自动卸载重装"
+    },
+    {
+      "v": 22,
+      "note": "修复 BAA 载荷未按机型部署（此前全机型都用默认）；放电不显示功率；二改声明多行；主页去重功率格；欢迎页改版；清理头像死代码"
+    },
+    {
+      "v": 23,
+      "note": "修复初始化中断导致数据不加载（残留的已删除函数调用）；壁纸 1.71MB→191KB；删未用头像"
+    },
+    {
+      "v": 24,
+      "note": "APK 图标去重 2.35MB→259KB"
+    },
+    {
+      "v": 25,
+      "note": "充电时电流/功率符号归正"
+    },
+    {
+      "v": 26,
+      "note": "尝试改 dex 方法名（hideSystemBars→showSystemBars）取消全屏 → 闪退"
+    },
+    {
+      "v": 27,
+      "note": "补算 dex 头 SHA-1/adler32，仍闪退"
+    },
+    {
+      "v": 28,
+      "note": "回退 dex 为原始，稳定版；状态栏需求作废"
+    },
+    {
+      "v": 32,
+      "note": "新增循环次数/伪装次数/充电协议；su 请求 3→1 次；失败退避 30s"
+    },
+    {
+      "v": 33,
+      "note": "循环次数改用真实值；未充电时协议显示「未插入充电器」"
+    },
+    {
+      "v": 34,
+      "note": "伪装卡片从主页移到场景页（此前锚点误匹配）"
+    },
+    {
+      "v": 35,
+      "note": "欢迎弹窗删更新日志；关于页新增更新日志入口（运行期读 更新日志.log）"
+    },
+    {
+      "v": 36,
+      "note": "移植电压功能（volt_guard+cfg_cli+baa_crypt）；刷入时启用 PSS 恢复健康度；pss_low_soc=25"
+    },
+    {
+      "v": 37,
+      "note": "电池电压卡片补使用范围与说明"
+    },
+    {
+      "v": 38,
+      "note": "档位选择器标注温度区间；修复日志被「跳过重复还原」刷屏（已发布）"
+    }
+  ]
+}

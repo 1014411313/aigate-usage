@@ -1,0 +1,21 @@
+{
+  "items": [
+    "改 classes.dex 后必须重算 d[12:32]=sha1(d[32:]) 与 d[8:12]=adler32(d[12:])，否则 ART 拒绝加载",
+    "不要改 dex 里的方法名（v26/v27 两次闪退，即使补了校验字段也不行）",
+    "改 resources.arsc 优先等长替换；追加字符串要同步 stringCount/size/stringsStart 并整体平移后续 chunk",
+    "zipalign/aapt2 要用 ~/android-toolchain/debs/ext/usr/bin 下的 arm64 版，LD_LIBRARY_PATH 需含 aarch64-linux-gnu/android、usr/lib、usr/lib/7zip",
+    "中文文件名在 jsDelivr/raw 实测返回 200，可用",
+    "testingcf 的 latest.json 缓存滞后明显，cdn.jsdelivr.net 与 raw 更及时；检查更新用多源取最高版本",
+    "删除 JS 函数后要检查初始化里是否还有调用（曾导致整个页面初始化中断、数据不加载）",
+    "页面用「充电功率」当锚点插入新卡片会误插到主页（该块已移到主页）",
+    "KernelSU su 授权超时表现为「点不动 + 报错弹窗」，需在管理器删记录后重新授权并勾选记住",
+    "KernelSU sulog 曾累积 3.2GB（331 个文件），来自其它模块的高频 root 调用；已清理并建议关闭 su 日志"
+  ],
+  "decisions": [
+    "状态栏/取消全屏：用户确认不是必须，放弃改 dex",
+    "解容面板由 iframe 方案改为场景页原生 UI，battery.html 与 chart.min.js 已删除",
+    "充电功率四档、电池数值均在主页；场景页只留解容开关、循环伪装、电压、DTBO",
+    "「恢复健康度.sh」只集成「启用 PSS + 重启 batteryantiaging」两步，其余（卸 BAA、smart_fv 回 40、温控归 0、取消循环伪装）会关闭解容，未集成",
+    "多版本并存只保留最近 3 个，文件名带版本号"
+  ]
+}

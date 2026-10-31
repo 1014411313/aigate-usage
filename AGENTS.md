@@ -12,13 +12,24 @@
 
 ## 会话状态（自动维护，不得遗漏）
 
-- **每次完成任务后必须更新 `hyperos-thermal-module/SESSION_STATE.json`**：
-  · `meta.current_version` 改成当前版本
-  · `version_history` 追加本版一条（版本号 + 一句话改动）
-  · `device.current_state`、`decisions`、`pending` 有变化就同步
-- **新会话开始时先读 `SESSION_STATE.json`**（再读本文件与 `src/更新日志.log`）恢复上下文，
-  不需要用户再发任何提示词。
-- 用户说「继续做 XX」时，以这三份文件为准，不要重新问项目背景。
+状态拆成多个分片，放在 `hyperos-thermal-module/state/`，避免一次加载过长上下文：
+
+| 文件 | 内容 |
+|---|---|
+| `index.json` | 必读：当前版本、分片目录、待办 |
+| `thermal.json` | 温控：档位阀值、四场景、旁路、配置加密 |
+| `battery.json` | 解容：BAA / smart_fv / PSS / 循环 / 电压 / 协议 |
+| `ui.json` | 界面：页面结构、样式规范、取数陷阱 |
+| `apk.json` | 控制台 APK：签名、dex/arsc、图标去重 |
+| `release.json` | 发布流程、仓库结构、版本历史 |
+| `pitfalls.json` | 踩坑与已定方案 |
+| `device.json` | 本机信息与当前运行状态 |
+
+规则：
+
+- **新会话：先读 `state/index.json`**，再按任务只读相关分片；不需要用户发提示词。
+- **每次任务结束：更新相关分片**（版本号写进 `index.json` 的 `meta.current_version`，版本历史追加到 `release.json`，状态/待办变化同步到 `device.json` / `index.json`）。
+- 涉及不相关模块时不要读无关分片，保持上下文精简。
 
 ## 发布类操作（硬性）
 

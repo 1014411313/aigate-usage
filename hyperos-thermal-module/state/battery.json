@@ -1,0 +1,58 @@
+{
+  "pipeline": [
+    "挂 BAA 载荷（按机型从 pool 部署）",
+    "smart_fv 守护（防回写）",
+    "禁用低电量锁容 PSS",
+    "重启 batteryantiaging"
+  ],
+  "baa": "bind mount 到 /odm/etc/charger/BAA_config_<dev_code>.json（需进 PID1 mount namespace，用 nsenter）",
+  "smart_fv": "满充降压量(mV)：0=解容、30~40=原厂抗老化保护；节点 /sys/class/xm_power/charger/smart_charge/smart_fv",
+  "pss": {
+    "name": "com.miui.securitycenter/...PowerSaveService：低电量锁容 + 电池健康度数据源；禁用则健康度不显示",
+    "pss_low_soc": "默认 25：≤25% 时禁用 PSS（防锁容），回差 5%，平时启用（健康度正常显示）",
+    "note": "禁用 PSS 会导致设置里电池健康度不显示"
+  },
+  "cycle": "节点 fg_master/cyclecount 与 battery/cycle_count 可伪装；真实值取 qmax_cyclecount",
+  "voltage": {
+    "source": "整合自「电池仅解容高级版 v1.0.22」的 volt_guard.sh",
+    "fv_node": "battery/constant_charge_voltage 或 voltage_max（µV/mV 自适应 + 读回 ±2% 校验）",
+    "fv_force": "超过原厂 vterm 上限时，改写 BAA 明文载荷 vterm 后重加密重挂载（1~6 分钟）",
+    "term_v": "OS4 无内核关机节点，改为守护轮询 voltage_now，低于阈值执行关机（充电中不触发）",
+    "ranges": "fv_v 4300~4600mV，term_v 2800~3500mV",
+    "dtbo": "不需要修改 DTBO",
+    "guard": "30 秒轮询守护，首次写入前记录原值到 state/volt_orig.txt，关闭/卸载还原"
+  },
+  "charge_protocol": {
+    "sources": [
+      "/sys/class/power_supply/usb/real_type",
+      "/sys/class/xm_power/charger/charger_common/real_type",
+      "/sys/class/qcom-battery/real_type",
+      "/sys/class/power_supply/usb/typec_mode"
+    ],
+    "display": "PD_PPS→PPS、PD、USB_DCP→DCP 等；未充电时显示「未插入充电器」"
+  },
+  "power_limit": {
+    "tiers": [
+      "inf 全速",
+      "fast 40W",
+      "mid 25W",
+      "slow 10W"
+    ],
+    "script": "power_limit.sh set <tier>"
+  },
+  "scripts": [
+    "unlock.sh",
+    "baa_ops.sh",
+    "fv_guard.sh",
+    "cycle_guard.sh",
+    "cloud_guard.sh",
+    "charge_guard.sh",
+    "power_limit.sh",
+    "thermal_guard.sh",
+    "volt_guard.sh",
+    "cfg_cli.sh",
+    "status_kv.sh",
+    "install_dtbo.sh",
+    "dtbo.sh"
+  ]
+}
