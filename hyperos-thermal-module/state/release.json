@@ -5,7 +5,7 @@
     "layout": {
       "src/": "模块源码（battery/ 解容子模块、hyperosui/index.html 控制台、HyperOSxj.apk）",
       "tools/pack.py": "打包：python3 tools/pack.py [输出路径]",
-      "tools/release.py": "build（版本号+1、打包到 dist/）/ publish（清单+清旧+推送+CDN 校验）/ publish --no-push",
+      "tools/release.py": "build（版本号 patch+1 / build x.y.z 指定版本、打包到 dist/）/ publish（清单+清旧+推送+CDN 校验）/ publish --no-push；1.0.0 起用语义化版本，包名 _vx.y.z.zip，versionCode 仍递增",
       "dist/": "只留最近 3 个版本，命名「动态温控·解容工具箱_vN.zip」",
       "latest.json": "版本清单，versions 按 dist 实际文件重建"
     },
@@ -94,6 +94,14 @@
     {
       "v": 38,
       "note": "档位选择器标注温度区间；修复日志被「跳过重复还原」刷屏（已发布）"
+    },
+    {
+      "v": 39,
+      "note": "电压卡片新增「强制覆盖原厂上限」开关（fv_force）；满电电压超上限时弹确认；volt_guard.sh 新增 restore_force"
+    },
+    {
+      "v": "1.0.0",
+      "note": "首个正式版：UI 按功能重分 5 页（主页/温控/电池/外观/关于），删除模块总开关；发布脚本改语义化版本"
     }
   ]
 }

@@ -16,7 +16,7 @@
   "voltage": {
     "source": "整合自「电池仅解容高级版 v1.0.22」的 volt_guard.sh",
     "fv_node": "battery/constant_charge_voltage 或 voltage_max（µV/mV 自适应 + 读回 ±2% 校验）",
-    "fv_force": "超过原厂 vterm 上限时，改写 BAA 明文载荷 vterm 后重加密重挂载（1~6 分钟）",
+    "fv_force": "超过原厂 vterm 上限时，改写 BAA 明文载荷 vterm 后重加密重挂载（1~6 分钟）；界面「强制覆盖原厂上限」开关控制，关闭时调用 volt_guard.sh restore_force 只还原载荷、保留配置与守护",
     "term_v": "OS4 无内核关机节点，改为守护轮询 voltage_now，低于阈值执行关机（充电中不触发）",
     "ranges": "fv_v 4300~4600mV，term_v 2800~3500mV",
     "dtbo": "不需要修改 DTBO",

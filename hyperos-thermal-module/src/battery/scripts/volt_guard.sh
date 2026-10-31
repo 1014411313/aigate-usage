@@ -512,6 +512,9 @@ case "$1" in
   start) start_guard ;;
   _spawn) _spawn ;;
   stop) stop_guard ;;
+  # 仅还原被强制改写过的 BAA 载荷，保留 fv_v/term_v 配置与守护（供 WebUI 关闭
+  # 「强制覆盖原厂上限」时调用）
+  restore_force) _restore_force ;;
   status) status_guard ;;
   *) echo "usage: $0 start|stop|status"; exit 9 ;;
 esac

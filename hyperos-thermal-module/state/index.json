@@ -2,7 +2,7 @@
   "meta": {
     "module_id": "HyperOS_XJ",
     "name": "HyperOS - 动态温控·解容",
-    "current_version": "K2+BT3.9.6-build38",
+    "current_version": "1.0.0",
     "updated": "2026-10-31",
     "maintainer": "小米热炸了（酷安 517965）",
     "upstream": {
@@ -21,7 +21,6 @@
     "device.json": "本机信息与当前运行状态"
   },
   "pending": [
-    "电压「强制覆盖 fv_force」尚未做 UI 开关（需改写 BAA 载荷，耗时 1~6 分钟）",
     ".git 499MB 瘦身（filter-repo，需用户确认后 force push）",
     "关于页的「关于模块」死页面（特别鸣谢/注意事项）入口已删但内容保留，未清理"
   ]

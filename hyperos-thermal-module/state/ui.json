@@ -1,10 +1,12 @@
 {
   "pages": [
-    "主页 console（实时面板+电池数值+充电功率）",
-    "场景 scene（解容/循环伪装/电压/DTBO/控制/场景）",
+    "主页 console（实时面板+充电功率+设备信息）：原来的模块总开关已删（模块装上即运行）",
+    "温控 thermal（温控档位/充电场景/游戏场景/游戏加速/旁路供电）",
+    "电池 battery（解容+PPS+云控+DTBO/循环伪装/电池电压）",
     "外观 appearance",
-    "关于 about（声明/设备信息/名片/更新日志/检查更新）"
+    "关于 about（声明/设备信息/名片/更新日志/检查更新 + 日志/机型档案/工具）"
   ],
+  "tabs": "底部导航 5 页：主页/温控/电池/外观/关于；tab 与 SWIPE_PAGES 顺序必须一致，bkShouldRefresh 只认主页与电池页",
   "styles": {
     "must_reuse": [
       "新增或改动的 UI 必须复用页面已有样式类：notice-mask/notice-card/notice-title/notice-body/btn/btn secondary/pref/card/mini-grid/small-title/chip",
@@ -20,7 +22,12 @@
     "one_call": "status_kv.sh 一次返回 soc/status/容量/健康度/电压/电流/功率/温度/循环/伪装/协议/功率档/DTBO 状态/fv_v 等",
     "power_w_trap": "status_kv 的 power_w 是档位名(inf/fast/mid/slow)，真实功率用 battery_power_w",
     "cycle_real": "qmax_cyclecount 为真实循环；cyclecount 会被伪装覆盖",
-    "refresh": "bkRefresh 每 6 秒（仅主页/场景页 active）；失败 3 次退避 30 秒"
+    "refresh": "bkRefresh 每 6 秒（仅主页/场景页 active）；失败 3 次退避 30 秒",
+    "kv_cache": "bkRefresh 把解析后的 kv 存到 window.__bkKv，voltApply 用它判断满电电压是否超原厂上限"
+  },
+  "voltage_card": {
+    "switches": "满电电压输入 + 「强制覆盖原厂上限」开关（voltForce → voltForceToggle）+ 关机电压输入 + 应用/关闭",
+    "force_off": "关闭开关：cfg_cli.sh set fv_force 0 → volt_guard.sh restore_force（只还原载荷，不关掉电压功能）"
   },
   "removed": [
     "hyperosui/battery.html（旧 iframe 面板）",

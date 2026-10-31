@@ -1444,128 +1444,13 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
 </div>
 
 
-<div class="page" id="page-scene">
+<div class="page" id="page-thermal">
   <div class="topbar">
-    <h1>场景选择</h1>
-    <div class="subtitle">控制 / 充电 / 游戏 / 旁路 / 功率</div>
+    <h1>温控</h1>
+    <div class="subtitle">档位 / 充电 / 游戏 / 旁路</div>
   </div>
 
-  <div class="small-title">电池解容</div>
-  <div class="card">
-    <div class="pref">
-      <div class="pref-body">
-        <div class="pref-title">电池解容</div>
-        <div class="pref-desc" id="bkUnlockDesc">挂载 BAA、防低电量锁容</div>
-      </div>
-      <div class="pref-right"><label class="hyper-switch"><input type="checkbox" id="bkUnlock" onchange="bkSet('unlock',this.checked)"><span class="track"></span><span class="thumb"></span></label></div>
-    </div>
-    <div class="pref">
-      <div class="pref-body">
-        <div class="pref-title">公版 PPS 解锁</div>
-        <div class="pref-desc">第三方充电头功率上不去时开启，开启后拔插一次充电器</div>
-      </div>
-      <div class="pref-right"><label class="hyper-switch"><input type="checkbox" id="bkPps" onchange="bkSet('pps',this.checked)"><span class="track"></span><span class="thumb"></span></label></div>
-    </div>
-    <div class="pref">
-      <div class="pref-body">
-        <div class="pref-title">云控屏蔽</div>
-        <div class="pref-desc">拦截 BAA 云端下发与巡检隔离</div>
-      </div>
-      <div class="pref-right"><label class="hyper-switch"><input type="checkbox" id="bkCloud" onchange="bkSet('cloud',this.checked)"><span class="track"></span><span class="thumb"></span></label></div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="pref" onclick="bkDtboFlash()">
-      <div class="pref-body">
-        <div class="pref-title">DTBO</div>
-        <div class="pref-desc" id="bkDtboDesc">读取中…</div>
-      </div>
-      <div class="pref-right" id="bkDtboState">--</div>
-    </div>
-  </div>
-
-  <div class="small-title">循环次数伪装</div>
-  <div class="card">
-    <div class="pref" style="cursor:default">
-      <div class="pref-body">
-        <div class="pref-title">伪装循环次数</div>
-        <div class="pref-desc" id="bkCycleDesc">把电池循环次数显示为设定值，重启后仍生效</div>
-      </div>
-      <div class="pref-right" style="font-size:calc(14px * var(--fs));color:var(--text)" id="bkCycleNow">--</div>
-    </div>
-    <div style="display:flex;gap:10px;align-items:center;margin-top:14px">
-      <input id="bkCycleInput" type="number" inputmode="numeric" placeholder="输入目标次数"
-        style="flex:1;min-width:0;height:44px;padding:0 14px;box-sizing:border-box;border:1px solid var(--divider);border-radius:12px;background:var(--input-bg);color:var(--text);font-family:inherit;font-size:calc(14px * var(--fs))">
-      <button class="btn" style="height:44px;border-radius:12px" onclick="bkCycleApply()">应用</button>
-      <button class="btn secondary" style="height:44px;border-radius:12px" onclick="bkCycleClear()">清除</button>
-    </div>
-  </div>
-
-  <div class="small-title">电池电压</div>
-  <div class="card">
-    <div class="pref" style="cursor:default">
-      <div class="pref-body">
-        <div class="pref-title">满电电压</div>
-        <div class="pref-desc" id="voltFvDesc">4300~4600 mV，超过原厂上限需开强制覆盖</div>
-      </div>
-      <div class="pref-right" style="font-size:calc(13px * var(--fs));color:var(--text)" id="voltFvNow">未设置</div>
-    </div>
-    <input id="voltFv" type="number" inputmode="numeric" placeholder="输入满电电压，如 4450（mV）"
-      style="width:100%;height:44px;padding:0 14px;box-sizing:border-box;margin-top:12px;border:1px solid var(--divider);border-radius:12px;background:var(--input-bg);color:var(--text);font-family:inherit;font-size:calc(14px * var(--fs))">
-    <div class="pref" style="cursor:default;margin-top:16px">
-      <div class="pref-body">
-        <div class="pref-title">关机电压</div>
-        <div class="pref-desc" id="voltTermDesc">2800~3500 mV，低于此值由模块执行关机</div>
-      </div>
-      <div class="pref-right" style="font-size:calc(13px * var(--fs));color:var(--text)" id="voltTermNow">未设置</div>
-    </div>
-    <input id="voltTerm" type="number" inputmode="numeric" placeholder="输入关机电压，如 3200（mV）"
-      style="width:100%;height:44px;padding:0 14px;box-sizing:border-box;margin-top:12px;border:1px solid var(--divider);border-radius:12px;background:var(--input-bg);color:var(--text);font-family:inherit;font-size:calc(14px * var(--fs))">
-    <div style="display:flex;gap:10px;margin-top:16px">
-      <button class="btn" style="flex:1;height:44px;border-radius:12px" onclick="voltApply()">应用</button>
-      <button class="btn secondary" style="flex:1;height:44px;border-radius:12px" onclick="voltDisable()">关闭</button>
-    </div>
-    <div class="pref-desc" style="margin-top:16px;line-height:1.75;white-space:normal;text-align:left">
-      · 使用范围：满电电压 4300~4600 mV，关机电压 2800~3500 mV；两项可只填一项，留空即关闭该项<br>
-      · 满电电压超过原厂上限时不会生效（上方会显示原厂上限值），硬件 OVP 是物理保护，超过也会被拦截<br>
-      · 满电电压调得越高，充电越满、电池老化越快，日常建议不超过原厂上限<br>
-      · 关机电压为软件检测：电量耗尽到该值以下由模块执行关机；充电中不会触发，避免误判<br>
-      · 应用后由守护进程维持，被系统改回会重新写入；点「关闭」或卸载时自动还原原始值
-    </div>
-  </div>
-
-  <div class="small-title">控制</div>
-  <div class="card">
-    <div class="pref" onclick="document.getElementById('enabled').click()">
-      <div class="pref-body">
-        <div class="pref-title">模块总开关</div>
-        <div class="pref-desc" id="mainSub">运行中</div>
-      </div>
-      <div class="pref-right">
-        <label class="hyper-switch" onclick="event.stopPropagation()">
-          <input type="checkbox" id="enabled" onchange="save()">
-          <span class="track"></span><span class="thumb"></span>
-        </label>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="pref" onclick="document.getElementById('hyperos4').click()">
-      <div class="pref-body">
-        <div class="pref-title">HyperOS 游戏三倍速</div>
-        <div class="pref-desc" id="hyperos4Sub">开启后立即生效，之后每次开机自动执行</div>
-      </div>
-      <div class="pref-right">
-        <label class="hyper-switch" onclick="event.stopPropagation()">
-          <input type="checkbox" id="hyperos4" onchange="toggleHyperOS4()">
-          <span class="track"></span><span class="thumb"></span>
-        </label>
-      </div>
-    </div>
-  </div>
-
+  <div class="small-title">温控档位</div>
   <div class="card">
     <div class="pref" onclick="toggleExpand('default')">
       <div class="pref-body">
@@ -1649,6 +1534,22 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
     </div>
   </div>
 
+  <div class="small-title">游戏加速</div>
+  <div class="card">
+    <div class="pref" onclick="document.getElementById('hyperos4').click()">
+      <div class="pref-body">
+        <div class="pref-title">HyperOS 游戏三倍速</div>
+        <div class="pref-desc" id="hyperos4Sub">开启后立即生效，之后每次开机自动执行</div>
+      </div>
+      <div class="pref-right">
+        <label class="hyper-switch" onclick="event.stopPropagation()">
+          <input type="checkbox" id="hyperos4" onchange="toggleHyperOS4()">
+          <span class="track"></span><span class="thumb"></span>
+        </label>
+      </div>
+    </div>
+  </div>
+
   <div class="small-title">旁路供电</div>
   <div class="card">
     <div class="pref" onclick="toggleExpand('bypass')">
@@ -1677,43 +1578,105 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
       </div>
     </div>
   </div>
+</div>
 
-  <div class="small-title">日志</div>
-  <div class="card">
-    <div class="pref" onclick="viewLog()">
-      <div class="pref-body">
-        <div class="pref-title">查看日志文件</div>
-          <div class="pref-desc" id="logSub">运行日志 log/core.log</div>
-      </div>
-      <div class="pref-right"><span class="expand-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></span></div>
-    </div>
-  </div>
-  <div class="small-title">机型档案</div>
-  <div class="card">
-    <div class="pref" onclick="openProfileConf()">
-      <div class="pref-body">
-        <div class="pref-title">配置档案</div>
-        <div class="pref-desc" id="profileSub">轮询间隔 / 温度保护 / 旁路电流等</div>
-      </div>
-      <div class="pref-right"><span class="expand-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></span></div>
-    </div>
+
+<div class="page" id="page-battery">
+  <div class="topbar">
+    <h1>电池</h1>
+    <div class="subtitle">解容 / 循环 / 电压</div>
   </div>
 
-  <div class="small-title">工具</div>
+  <div class="small-title">电池解容</div>
   <div class="card">
-    <div class="pref" onclick="runDiagnoseScript()" style="cursor:pointer">
+    <div class="pref">
       <div class="pref-body">
-        <div class="pref-title">诊断与日志打包</div>
-        <div class="pref-desc">打包配置与日志到 Download</div>
+        <div class="pref-title">电池解容</div>
+        <div class="pref-desc" id="bkUnlockDesc">挂载 BAA、防低电量锁容</div>
       </div>
-      <div class="pref-right"><span class="expand-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></span></div>
+      <div class="pref-right"><label class="hyper-switch"><input type="checkbox" id="bkUnlock" onchange="bkSet('unlock',this.checked)"><span class="track"></span><span class="thumb"></span></label></div>
     </div>
-    <div class="pref" onclick="confirmUninstallModule()" style="cursor:pointer">
+    <div class="pref">
       <div class="pref-body">
-        <div class="pref-title">卸载模块</div>
-        <div class="pref-desc">卸载并还原系统原配置（需二次确认）</div>
+        <div class="pref-title">公版 PPS 解锁</div>
+        <div class="pref-desc">第三方充电头功率上不去时开启，开启后拔插一次充电器</div>
       </div>
-      <div class="pref-right"><span class="expand-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></span></div>
+      <div class="pref-right"><label class="hyper-switch"><input type="checkbox" id="bkPps" onchange="bkSet('pps',this.checked)"><span class="track"></span><span class="thumb"></span></label></div>
+    </div>
+    <div class="pref">
+      <div class="pref-body">
+        <div class="pref-title">云控屏蔽</div>
+        <div class="pref-desc">拦截 BAA 云端下发与巡检隔离</div>
+      </div>
+      <div class="pref-right"><label class="hyper-switch"><input type="checkbox" id="bkCloud" onchange="bkSet('cloud',this.checked)"><span class="track"></span><span class="thumb"></span></label></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="pref" onclick="bkDtboFlash()">
+      <div class="pref-body">
+        <div class="pref-title">DTBO</div>
+        <div class="pref-desc" id="bkDtboDesc">读取中…</div>
+      </div>
+      <div class="pref-right" id="bkDtboState">--</div>
+    </div>
+  </div>
+
+  <div class="small-title">循环次数伪装</div>
+  <div class="card">
+    <div class="pref" style="cursor:default">
+      <div class="pref-body">
+        <div class="pref-title">伪装循环次数</div>
+        <div class="pref-desc" id="bkCycleDesc">把电池循环次数显示为设定值，重启后仍生效</div>
+      </div>
+      <div class="pref-right" style="font-size:calc(14px * var(--fs));color:var(--text)" id="bkCycleNow">--</div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;margin-top:14px">
+      <input id="bkCycleInput" type="number" inputmode="numeric" placeholder="输入目标次数"
+        style="flex:1;min-width:0;height:44px;padding:0 14px;box-sizing:border-box;border:1px solid var(--divider);border-radius:12px;background:var(--input-bg);color:var(--text);font-family:inherit;font-size:calc(14px * var(--fs))">
+      <button class="btn" style="height:44px;border-radius:12px" onclick="bkCycleApply()">应用</button>
+      <button class="btn secondary" style="height:44px;border-radius:12px" onclick="bkCycleClear()">清除</button>
+    </div>
+  </div>
+
+  <div class="small-title">电池电压</div>
+  <div class="card">
+    <div class="pref" style="cursor:default">
+      <div class="pref-body">
+        <div class="pref-title">满电电压</div>
+        <div class="pref-desc" id="voltFvDesc">4300~4600 mV，超过原厂上限需开强制覆盖</div>
+      </div>
+      <div class="pref-right" style="font-size:calc(13px * var(--fs));color:var(--text)" id="voltFvNow">未设置</div>
+    </div>
+    <input id="voltFv" type="number" inputmode="numeric" placeholder="输入满电电压，如 4450（mV）"
+      style="width:100%;height:44px;padding:0 14px;box-sizing:border-box;margin-top:12px;border:1px solid var(--divider);border-radius:12px;background:var(--input-bg);color:var(--text);font-family:inherit;font-size:calc(14px * var(--fs))">
+    <div class="pref" style="margin-top:14px">
+      <div class="pref-body">
+        <div class="pref-title">强制覆盖原厂上限</div>
+        <div class="pref-desc">改写 BAA 载荷 vterm，突破原厂最高满充电压</div>
+      </div>
+      <div class="pref-right"><label class="hyper-switch"><input type="checkbox" id="voltForce" onchange="voltForceToggle(this.checked)"><span class="track"></span><span class="thumb"></span></label></div>
+    </div>
+    <div class="pref" style="cursor:default;margin-top:16px">
+      <div class="pref-body">
+        <div class="pref-title">关机电压</div>
+        <div class="pref-desc" id="voltTermDesc">2800~3500 mV，低于此值由模块执行关机</div>
+      </div>
+      <div class="pref-right" style="font-size:calc(13px * var(--fs));color:var(--text)" id="voltTermNow">未设置</div>
+    </div>
+    <input id="voltTerm" type="number" inputmode="numeric" placeholder="输入关机电压，如 3200（mV）"
+      style="width:100%;height:44px;padding:0 14px;box-sizing:border-box;margin-top:12px;border:1px solid var(--divider);border-radius:12px;background:var(--input-bg);color:var(--text);font-family:inherit;font-size:calc(14px * var(--fs))">
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn" style="flex:1;height:44px;border-radius:12px" onclick="voltApply()">应用</button>
+      <button class="btn secondary" style="flex:1;height:44px;border-radius:12px" onclick="voltDisable()">关闭</button>
+    </div>
+    <div class="pref-desc" style="margin-top:16px;line-height:1.75;white-space:normal;text-align:left">
+      · 使用范围：满电电压 4300~4600 mV，关机电压 2800~3500 mV；两项可只填一项，留空即关闭该项<br>
+      · 满电电压超过原厂上限时不会生效（上方会显示原厂上限值），硬件 OVP 是物理保护，超过也会被拦截<br>
+      · 满电电压调得越高，充电越满、电池老化越快，日常建议不超过原厂上限<br>
+      · 关机电压为软件检测：电量耗尽到该值以下由模块执行关机；充电中不会触发，避免误判<br>
+      · 满电电压超过原厂上限时需开启「强制覆盖原厂上限」：改写 BAA 载荷 vterm 并重新加密挂载（约 1~6 分钟），关闭该开关会还原原厂载荷<br>
+      · 应用后由守护进程维持，被系统改回会重新写入；点「关闭」或卸载时自动还原原始值
     </div>
   </div>
 </div>
@@ -2505,6 +2468,46 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
     </div>
   </div>
 
+  <div class="small-title">日志</div>
+  <div class="card">
+    <div class="pref" onclick="viewLog()">
+      <div class="pref-body">
+        <div class="pref-title">查看日志文件</div>
+          <div class="pref-desc" id="logSub">运行日志 log/core.log</div>
+      </div>
+      <div class="pref-right"><span class="expand-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></span></div>
+    </div>
+  </div>
+
+  <div class="small-title">机型档案</div>
+  <div class="card">
+    <div class="pref" onclick="openProfileConf()">
+      <div class="pref-body">
+        <div class="pref-title">配置档案</div>
+        <div class="pref-desc" id="profileSub">轮询间隔 / 温度保护 / 旁路电流等</div>
+      </div>
+      <div class="pref-right"><span class="expand-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></span></div>
+    </div>
+  </div>
+
+  <div class="small-title">工具</div>
+  <div class="card">
+    <div class="pref" onclick="runDiagnoseScript()" style="cursor:pointer">
+      <div class="pref-body">
+        <div class="pref-title">诊断与日志打包</div>
+        <div class="pref-desc">打包配置与日志到 Download</div>
+      </div>
+      <div class="pref-right"><span class="expand-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></span></div>
+    </div>
+    <div class="pref" onclick="confirmUninstallModule()" style="cursor:pointer">
+      <div class="pref-body">
+        <div class="pref-title">卸载模块</div>
+        <div class="pref-desc">卸载并还原系统原配置（需二次确认）</div>
+      </div>
+      <div class="pref-right"><span class="expand-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></span></div>
+    </div>
+  </div>
+
 </div>
 
 
@@ -2747,11 +2750,17 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
     </div>
     <div class="tab-txt">主页</div>
   </div>
-  <div class="tab" data-page="scene" onclick="switchPage('scene')">
+  <div class="tab" data-page="thermal" onclick="switchPage('thermal')">
     <div class="tab-ico">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h16"/><circle cx="9" cy="7" r="2.2"/><circle cx="15" cy="12" r="2.2"/><circle cx="8" cy="17" r="2.2"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14.8V5.5a2 2 0 1 0-4 0v9.3a4 4 0 1 0 4 0z"/><path d="M12 9v5.5"/></svg>
     </div>
-    <div class="tab-txt">场景</div>
+    <div class="tab-txt">温控</div>
+  </div>
+  <div class="tab" data-page="battery" onclick="switchPage('battery')">
+    <div class="tab-ico">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="15" height="8.5" rx="2.4"/><path d="M21 11.2v1.6"/><path d="M6.6 11.2v2.1M9.9 11.2v2.1"/></svg>
+    </div>
+    <div class="tab-txt">电池</div>
   </div>
   <div class="tab" data-page="appearance" onclick="switchPage('appearance')">
     <div class="tab-ico">
@@ -2775,7 +2784,8 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
     <div class="notice-body">使用说明
 - 首次开机自动完成初始化，无需手动操作
 - 主页查看电量、容量、健康度、循环次数、充电协议与实时数据
-- 场景页切换解容、公版 PPS、云控屏蔽、循环伪装与充电功率
+- 温控页设置各场景档位、游戏加速与旁路供电
+- 电池页管理解容、公版 PPS、云控屏蔽、循环伪装与电池电压
 - 关于页可检查更新、查看更新日志与酷安名片
 
 2026年10月31日 · 小米热炸了</div>
@@ -2963,6 +2973,7 @@ async function bkRefresh(){
   try {
     const raw = await bkSh(BK_DIR + '/status_kv.sh');
     const kv = bkKV(raw);
+    window.__bkKv = kv;
     if (!raw || !kv.soc) {
       window.__bkFail++;
       // 取不到数据多半是 root 授权未通过，退避 30 秒，避免 KernelSU 反复弹窗
@@ -3002,6 +3013,7 @@ async function bkRefresh(){
     const u = document.getElementById('bkUnlock'); if (u) u.checked = (kv.unlock === '1');
     const pp = document.getElementById('bkPps'); if (pp) pp.checked = (kv.freepps === '1');
     const c = document.getElementById('bkCloud'); if (c) c.checked = (kv.cloud_guard === '1');
+    const vf = document.getElementById('voltForce'); if (vf) vf.checked = (String(kv.fv_force || '0') === '1');
     bkUnlockDescUpdate(kv.baa_state);
 
     const pl = (kv.power_limit || 'inf').trim();
@@ -3196,6 +3208,16 @@ async function voltApply(){
   if (fv && !(parseInt(fv, 10) >= 4300 && parseInt(fv, 10) <= 4600)) { toast('满电电压需在 4300~4600 mV'); return; }
   if (tv && !(parseInt(tv, 10) >= 2800 && parseInt(tv, 10) <= 3500)) { toast('关机电压需在 2800~3500 mV'); return; }
   if (!fv && !tv) { toast('至少填一项'); return; }
+  // 满电电压超过原厂 vterm 上限且未开强制覆盖 → 先确认，避免"设了不生效"
+  const kv = window.__bkKv || {};
+  const _fv = parseInt(fv, 10), _mx = parseInt(kv.vterm_max || '0', 10);
+  if (fv && _mx > 0 && _fv > _mx && String(kv.fv_force || '0') !== '1') {
+    const go = await showModal('超过原厂上限',
+      '设定值 ' + _fv + ' mV 高于原厂最高满充电压 ' + _mx + ' mV。\n\n未开启「强制覆盖原厂上限」时不会生效；开启后会改写 BAA 载荷 vterm 并重新加密挂载（约 1~6 分钟）。',
+      '开启并应用', '取消');
+    if (!go) return;
+    await bkSh(BK_DIR + '/cfg_cli.sh set fv_force 1');
+  }
   toast('正在应用…');
   await bkSh(BK_DIR + '/cfg_cli.sh set fv_v ' + fv);
   await bkSh(BK_DIR + '/cfg_cli.sh set term_v ' + tv);
@@ -3203,6 +3225,23 @@ async function voltApply(){
   const el1 = document.getElementById('voltFv'); if (el1) el1.value = '';
   const el2 = document.getElementById('voltTerm'); if (el2) el2.value = '';
   toast('已提交，守护进程会在 30 秒内生效');
+  bkRefresh();
+}
+
+async function voltForceToggle(on){
+  bkResetGuard();
+  const kv = window.__bkKv || {};
+  if (on && !kv.fv_v) { toast('请先填写并应用满电电压'); bkRefresh(); return; }
+  toast(on ? '正在开启强制覆盖…' : '正在关闭并还原原厂载荷…');
+  await bkSh(BK_DIR + '/cfg_cli.sh set fv_force ' + (on ? '1' : '0'));
+  if (on) {
+    await bkSh(BK_DIR + '/volt_guard.sh start');
+    toast('已开启，载荷改写约需 1~6 分钟');
+  } else {
+    // 关闭后还原原厂载荷；守护下一轮按新配置重新处理满电电压
+    await bkSh(BK_DIR + '/volt_guard.sh restore_force');
+    toast('已关闭并还原原厂载荷');
+  }
   bkRefresh();
 }
 
@@ -3237,9 +3276,10 @@ async function bkCycleClear(){
 }
 
 function bkShouldRefresh(){
-  const pc = document.getElementById('page-console');
-  const sc = document.getElementById('page-scene');
-  return (pc && pc.classList.contains('active')) || (sc && sc.classList.contains('active'));
+  return ['page-console', 'page-battery'].some(function(id){
+    const el = document.getElementById(id);
+    return el && el.classList.contains('active');
+  });
 }
 setInterval(function(){
   if (bkShouldRefresh()) bkRefresh();
@@ -4248,7 +4288,7 @@ function initSwipeReverse(){
 }
 
 
-const SWIPE_PAGES = ['console', 'scene', 'appearance', 'about'];
+const SWIPE_PAGES = ['console', 'thermal', 'battery', 'appearance', 'about'];
 const swSt = {
   active: false, decided: false, horizontal: false,
   startX: 0, startY: 0, dx: 0
@@ -6866,7 +6906,7 @@ async function saveImpl(){
   const old=settings||{};
   const out={
     schema:2,
-    enabled:chk('enabled',true),
+    enabled:true,
     default_mode:old.default_mode||'default',
     charge_mode:chk('charge_mode',true),
     charge_level:old.charge_level||'unlimited',
@@ -6909,7 +6949,7 @@ async function saveImpl(){
     if((parseInt((chk.stdout||'0').trim())||0)<=0){ toast('保存失败：配置写入为空'); return false; }
     exec(`(nohup sh ${MODDIR}/thermal_core.sh apply >/dev/null 2>&1 &) 2>/dev/null`);
     
-    logOp(`保存设置｜启用=${out.enabled?1:0} 默认=${out.default_mode} 充电=${out.charge_mode?1:0}/${out.charge_level} 息屏=${out.sleep_level} 游戏=${out.game_mode?1:0}/${out.game_level} 旁路温=${out.bypass_temp_on}/${out.bypass_temp_off} 旁路电=${out.bypass_level} 三倍速=${out.hyperos4?1:0}`);
+    logOp(`保存设置｜默认=${out.default_mode} 充电=${out.charge_mode?1:0}/${out.charge_level} 息屏=${out.sleep_level} 游戏=${out.game_mode?1:0}/${out.game_level} 旁路温=${out.bypass_temp_on}/${out.bypass_temp_off} 旁路电=${out.bypass_level} 三倍速=${out.hyperos4?1:0}`);
     updateSubs();
     toast('已保存');
     return true;
@@ -6943,7 +6983,6 @@ async function load(){
   if(repaired){
     try{ await writeJsonToPath(JSON.stringify(settings,null,2)+'\n',CONF+'.new'); await exec(`cat '${CONF}.new' > '${CONF}' 2>/dev/null && rm -f '${CONF}.new' && sync 2>/dev/null`); }catch(e){}
   }
-  document.getElementById('enabled').checked=settings.enabled!==false;
   document.getElementById('charge_mode').checked=settings.charge_mode!==false;
   document.getElementById('game_mode').checked=settings.game_mode!==false;
   document.getElementById('game_bypass').checked=settings.game_bypass===true;
@@ -7089,7 +7128,6 @@ async function refreshStatus(){
   document.getElementById('sMode').textContent=MODE_NAMES[s.mode]||s.mode||'--';
 
   const st = s.status==='Charging'?'充电中':s.status==='Full'?'已充满':'放电中';
-  document.getElementById('mainSub').textContent=st;
   const sStatusEl=document.getElementById('sStatus');
   if(sStatusEl) sStatusEl.textContent=st;
 }

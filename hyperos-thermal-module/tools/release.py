@@ -2,10 +2,13 @@
 """发布工具
 
 用法:
-  python3 tools/release.py build                 # 版本号 +1、打包到 dist/，不发不推（给你测试）
-  python3 tools/release.py publish               # 更新 latest.json、清理旧版本、提交推送、校验 CDN
-  python3 tools/release.py publish --no-push     # 只改本地文件，不提交不推送（干跑）
+  python3 tools/release.py build                # 版本号 patch +1、打包到 dist/，不发不推（给你测试）
+  python3 tools/release.py build 1.1.0          # 指定版本号打包（功能更新时手动指定）
+  python3 tools/release.py publish              # 更新 latest.json、清理旧版本、提交推送、校验 CDN
+  python3 tools/release.py publish --no-push    # 只改本地文件，不提交不推送（干跑）
 
+版本号：语义化 x.y.z，文件名「动态温控·解容工具箱_vx.y.z.zip」；
+versionCode 仍为递增整数，供客户端比较新旧版本。
 约定：build 之后等你确认，才执行 publish。
 """
 import os, re, sys, json, time, hashlib, subprocess, urllib.parse, urllib.request
@@ -18,6 +21,8 @@ LATEST = os.path.join(ROOT, 'latest.json')
 PACK = os.path.join(ROOT, 'tools', 'pack.py')
 NAME = '动态温控·解容工具箱'
 KEEP = 3
+SEMVER = re.compile(r'(\d+)\.(\d+)\.(\d+)')
+ZIP_RE = re.compile(re.escape(NAME) + r'_v(.+)\.zip$')
 
 REPO_SLUG = '1014411313/aigate-usage'
 BRANCH = 'main'
@@ -40,25 +45,45 @@ def set_prop(key, val):
     open(PROP, 'w', encoding='utf-8').write(txt)
 
 
-def bump():
+def bump(arg=None):
     vc = int(prop('versionCode') or 0) + 1
     vn = prop('version')
-    new = re.sub(r'build\d+', 'build%d' % vc, vn)
-    if new == vn:
-        new = vn + '-build%d' % vc
+    if arg:
+        if not SEMVER.fullmatch(arg):
+            print('版本号需形如 1.0.0，收到：%s' % arg)
+            sys.exit(1)
+        new = arg
+    else:
+        m = SEMVER.fullmatch(vn)
+        new = '%s.%s.%d' % (m.group(1), m.group(2), int(m.group(3)) + 1) if m else '1.0.0'
     set_prop('versionCode', vc)
     set_prop('version', new)
     return vc, new
 
 
-def zip_path(vc):
-    return os.path.join(DIST, '%s_v%d.zip' % (NAME, vc))
+def zip_name(vn):
+    return '%s_v%s.zip' % (NAME, vn)
 
 
-def do_build():
-    vc, vn = bump()
+def zip_path(vn):
+    return os.path.join(DIST, zip_name(vn))
+
+
+def dist_entries():
+    """dist 里的发布包，按修改时间从新到旧：(versionName, 路径)"""
+    out = []
+    for f in os.listdir(DIST):
+        m = ZIP_RE.match(f)
+        if m:
+            out.append((m.group(1), os.path.join(DIST, f)))
+    out.sort(key=lambda x: os.path.getmtime(x[1]), reverse=True)
+    return out
+
+
+def do_build(arg=None):
+    vc, vn = bump(arg)
     os.makedirs(DIST, exist_ok=True)
-    out = zip_path(vc)
+    out = zip_path(vn)
     r = subprocess.run([sys.executable, PACK, out], capture_output=True, text=True)
     if r.returncode != 0:
         print(r.stdout, r.stderr)
@@ -79,7 +104,7 @@ def do_build():
 
 def latest_upd(vc, vn, size, sha):
     d = json.load(open(LATEST, encoding='utf-8'))
-    q = urllib.parse.quote('%s_v%d.zip' % (NAME, vc))
+    q = urllib.parse.quote(zip_name(vn))
     d['versionName'] = vn
     d['versionCode'] = vc
     d['zip'] = CDN + REL + 'dist/' + q
@@ -89,37 +114,29 @@ def latest_upd(vc, vn, size, sha):
     d['size'] = size
     d['updated'] = time.strftime('%Y-%m-%d')
     # 以 dist 目录实际存在的文件为准重建 versions，避免清单里出现已删除的版本 / 漏掉现有版本
-    old = {v.get('versionCode'): v for v in d.get('versions', []) if isinstance(v, dict)}
-    old[vc] = {
+    old = {v.get('versionName'): v for v in d.get('versions', []) if isinstance(v, dict)}
+    old[vn] = {
         'versionCode': vc, 'versionName': vn,
-        'file': 'dist/%s_v%d.zip' % (NAME, vc),
+        'file': 'dist/' + zip_name(vn),
         'sha256': sha, 'size': size, 'date': time.strftime('%Y-%m-%d'),
-        'note': old.get(vc, {}).get('note', '')
+        'note': old.get(vn, {}).get('note', '')
     }
-    present = []
-    for f in os.listdir(DIST):
-        m = re.search(r'_v(\d+)\.zip$', f)
-        if m:
-            present.append(int(m.group(1)))
     versions = []
-    for n in sorted(present, reverse=True)[:KEEP]:
-        v = old.get(n, {'versionCode': n, 'versionName': '', 'sha256': '', 'size': 0, 'date': '', 'note': ''})
-        v['file'] = 'dist/%s_v%d.zip' % (NAME, n)
+    for name, path in dist_entries()[:KEEP]:
+        v = old.get(name, {'versionCode': 0, 'versionName': name, 'sha256': '', 'size': 0, 'date': '', 'note': ''})
+        v['file'] = os.path.relpath(path, ROOT)
+        v['size'] = os.path.getsize(path)
         versions.append(v)
     d['versions'] = versions
     json.dump(d, open(LATEST, 'w', encoding='utf-8'), ensure_ascii=False, indent=2)
     return d
 
 
-def prune(vc):
+def prune():
     removed = []
-    for f in sorted(os.listdir(DIST)):
-        m = re.search(r'_v(\d+)\.zip$', f)
-        if not m:
-            continue
-        if int(m.group(1)) < vc - (KEEP - 1):
-            os.remove(os.path.join(DIST, f))
-            removed.append(f)
+    for name, path in dist_entries()[KEEP:]:
+        os.remove(path)
+        removed.append(os.path.basename(path))
     return removed
 
 
@@ -151,28 +168,28 @@ def verify(url, size, tries=6, wait=20):
 def do_publish(no_push):
     vc = int(prop('versionCode') or 0)
     vn = prop('version')
-    f = zip_path(vc)
+    f = zip_path(vn)
     if not os.path.exists(f):
         print('缺少 %s，请先执行 build' % f)
         sys.exit(1)
     size = os.path.getsize(f)
     sha = hashlib.sha256(open(f, 'rb').read()).hexdigest()
     d = latest_upd(vc, vn, size, sha)
-    removed = prune(vc)
-    print('latest.json -> %d / %s' % (d['versionCode'], vn))
+    removed = prune()
+    print('latest.json -> %s / %s' % (vc, vn))
     if removed:
         print('清理旧版本:', ', '.join(removed))
     if no_push:
         print('（--no-push：未提交、未推送）')
         return
     ok, out = git(['add', 'hyperos-thermal-module'])
-    ok2, out2 = git(['commit', '-m', 'chore(release): %s v%d' % (NAME, vc)])
+    ok2, out2 = git(['commit', '-m', 'chore(release): %s v%s' % (NAME, vn)])
     ok3, out3 = git(['push', 'origin', BRANCH])
     if not ok3:
         print('推送失败：', out3.strip()[:200])
         sys.exit(1)
     print('已推送')
-    q = urllib.parse.quote('%s_v%d.zip' % (NAME, vc))
+    q = urllib.parse.quote(zip_name(vn))
     okv, msg = verify(CDN_CN + REL + 'dist/' + q, size)
     print('CDN(大陆):', msg)
     print('\n下载链接：\n  ' + CDN_CN + REL + 'dist/' + q)
@@ -183,7 +200,7 @@ def main():
         print(__doc__)
         sys.exit(1)
     if sys.argv[1] == 'build':
-        do_build()
+        do_build(sys.argv[2] if len(sys.argv) > 2 else None)
     else:
         do_publish('--no-push' in sys.argv)
 
