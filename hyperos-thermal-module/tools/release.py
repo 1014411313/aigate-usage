@@ -88,16 +88,25 @@ def latest_upd(vc, vn, size, sha):
     d['sha256'] = sha
     d['size'] = size
     d['updated'] = time.strftime('%Y-%m-%d')
-    d['versions'] = [v for v in d.get('versions', []) if v.get('versionCode') != vc]
-    d['versions'].insert(0, {
+    # 以 dist 目录实际存在的文件为准重建 versions，避免清单里出现已删除的版本 / 漏掉现有版本
+    old = {v.get('versionCode'): v for v in d.get('versions', []) if isinstance(v, dict)}
+    old[vc] = {
         'versionCode': vc, 'versionName': vn,
         'file': 'dist/%s_v%d.zip' % (NAME, vc),
         'sha256': sha, 'size': size, 'date': time.strftime('%Y-%m-%d'),
-        'note': ''
-    })
-    d['versions'] = sorted(d['versions'], key=lambda v: -v['versionCode'])[:KEEP]
-    for v in d['versions']:
-        v['file'] = 'dist/%s_v%d.zip' % (NAME, v['versionCode'])
+        'note': old.get(vc, {}).get('note', '')
+    }
+    present = []
+    for f in os.listdir(DIST):
+        m = re.search(r'_v(\d+)\.zip$', f)
+        if m:
+            present.append(int(m.group(1)))
+    versions = []
+    for n in sorted(present, reverse=True)[:KEEP]:
+        v = old.get(n, {'versionCode': n, 'versionName': '', 'sha256': '', 'size': 0, 'date': '', 'note': ''})
+        v['file'] = 'dist/%s_v%d.zip' % (NAME, n)
+        versions.append(v)
+    d['versions'] = versions
     json.dump(d, open(LATEST, 'w', encoding='utf-8'), ensure_ascii=False, indent=2)
     return d
 
