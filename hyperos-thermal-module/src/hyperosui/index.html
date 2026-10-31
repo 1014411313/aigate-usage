@@ -625,9 +625,18 @@ html[data-theme="dark"] body.glass .gauge::after {
   margin: 10px 0;
   align-items: stretch;
 }
+.chip-t {
+  display: block;
+  margin-top: 3px;
+  font-size: calc(11px * var(--fs));
+  color: var(--font-desc);
+  letter-spacing: .2px;
+}
+.chip.active .chip-t { color: rgba(255,255,255,.85); }
 .chip {
   width: 100%;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
@@ -2785,7 +2794,14 @@ function logOp(action){
 }
 let settings={}, gameApps=[];
 
-const LEVELS=[{id:'unlimited',l:'无限制'},{id:'level_1',l:'一档'},{id:'level_2',l:'二档'},{id:'level_3',l:'三档'},{id:'level_4',l:'四档'},{id:'level_5',l:'五档'}];
+const LEVELS=[
+  {id:'unlimited',l:'无限制',t:'55~58℃'},
+  {id:'level_1',l:'一档',t:'45~55℃'},
+  {id:'level_2',l:'二档',t:'40~50℃'},
+  {id:'level_3',l:'三档',t:'35~45℃'},
+  {id:'level_4',l:'四档',t:'31~40℃'},
+  {id:'level_5',l:'五档',t:'26~35℃'}
+];
 const MODES=[{id:'default',l:'系统默认'},...LEVELS];
 const MODE_NAMES={default:'默认',unlimited:'无限制',level_1:'一档',level_2:'二档',level_3:'三档',level_4:'四档',level_5:'五档',bypass:'旁路',off:'关闭'};
 
@@ -5946,7 +5962,7 @@ async function openProfileConf(){
 function renderChips(containerId, items, current, onSelect){
   const el=document.getElementById(containerId);
   if(!el) return;
-  el.innerHTML=items.map(i=>`<div class="chip${current===i.id?' active':''}" onclick="${onSelect}('${i.id}')">${i.l}</div>`).join('');
+  el.innerHTML=items.map(i=>`<div class="chip${current===i.id?' active':''}" onclick="${onSelect}('${i.id}')"><span>${i.l}</span>${i.t?`<span class="chip-t">${i.t}</span>`:''}</div>`).join('');
 }
 function selectChargeLevel(id){settings.charge_level=id;renderChips('chargeLevelChips',LEVELS,id,'selectChargeLevel');save();}
 function selectSleepLevel(id){settings.sleep_level=id;renderChips('sleepLevelChips',LEVELS,id,'selectSleepLevel');save();}

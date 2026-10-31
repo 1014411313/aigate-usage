@@ -526,7 +526,6 @@ apply_default() {
     sig=$(thermal_sig "$THERMAL_PATH")
     last=$(cat "$CONFDIR/.default_sig" 2>/dev/null)
     if [ "$cur" = "default" ] && [ -n "$last" ] && [ "$sig" = "$last" ]; then
-        log "已是系统默认且配置未变更，跳过重复还原"
         return 0
     fi
     ensure_thermal_dir
