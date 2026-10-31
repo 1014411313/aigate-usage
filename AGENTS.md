@@ -34,8 +34,9 @@ latest.json     版本清单
 ### 发布流程
 
 1. 改完执行 `python3 tools/release.py build`，把 zip 发到聊天里给用户测试。
-2. 用户说「发布」后执行 `python3 tools/release.py publish`（一条命令完成清单更新、清理旧版、提交推送、CDN 校验）。
-3. 干跑用 `publish --no-push`。
+2. **每次发布前必须更新 `src/更新日志.log`**：在文件末尾追加本版改动，按「界面 / 修复 / 优化」三类分条写，不要等用户提醒。
+3. 用户说「发布」后执行 `python3 tools/release.py publish`（一条命令完成清单更新、清理旧版、提交推送、CDN 校验）。
+4. 干跑用 `publish --no-push`。
 
 ### 界面统一性（强制，不要等用户提醒）
 
