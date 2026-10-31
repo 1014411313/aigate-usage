@@ -1396,6 +1396,12 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
         <div class="mini"><div class="mini-val" id="pcCur">--</div><div class="mini-lbl">电流 A</div></div>
         <div class="mini"><div class="mini-val" id="pcTemp">--</div><div class="mini-lbl">温度 ℃</div></div>
       </div>
+
+      <div class="mini-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="mini"><div class="mini-val" id="pcCycle">--</div><div class="mini-lbl">循环次数</div></div>
+        <div class="mini"><div class="mini-val" id="pcFake">--</div><div class="mini-lbl">伪装次数</div></div>
+        <div class="mini"><div class="mini-val" id="pcProto" style="font-size:calc(12.5px * var(--fs))">--</div><div class="mini-lbl">充电协议</div></div>
+      </div>
     </div>
   </div>
 
@@ -1467,6 +1473,23 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
         <div class="pref-desc" id="bkDtboDesc">读取中…</div>
       </div>
       <div class="pref-right" id="bkDtboState">--</div>
+    </div>
+  </div>
+
+  <div class="small-title">循环次数伪装</div>
+  <div class="card">
+    <div class="pref" style="cursor:default">
+      <div class="pref-body">
+        <div class="pref-title">伪装循环次数</div>
+        <div class="pref-desc" id="bkCycleDesc">把电池循环次数显示为设定值，重启后仍生效</div>
+      </div>
+      <div class="pref-right" style="font-size:calc(14px * var(--fs));color:var(--text)" id="bkCycleNow">--</div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;margin-top:14px">
+      <input id="bkCycleInput" type="number" inputmode="numeric" placeholder="输入目标次数"
+        style="flex:1;min-width:0;height:44px;padding:0 14px;box-sizing:border-box;border:1px solid var(--divider);border-radius:12px;background:var(--input-bg);color:var(--text);font-family:inherit;font-size:calc(14px * var(--fs))">
+      <button class="btn" style="height:44px;border-radius:12px" onclick="bkCycleApply()">应用</button>
+      <button class="btn secondary" style="height:44px;border-radius:12px" onclick="bkCycleClear()">清除</button>
     </div>
   </div>
 
@@ -2699,15 +2722,15 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
     <div class="notice-title">欢迎使用 动态温控·解容</div>
     <div class="notice-body">使用说明
 - 首次开机自动完成初始化，无需手动操作
-- 主页查看电量、容量、健康度与实时数据，圆圈显示充电功率
-- 场景页切换解容、公版 PPS、云控屏蔽
+- 主页查看电量、容量、健康度、循环次数、充电协议与实时数据
+- 场景页切换解容、公版 PPS、云控屏蔽、循环伪装与充电功率
 - 关于页可检查更新、查看酷安名片
 
 本次更新
-- 主页圆圈改为显示充电功率（放电时不显示）
-- 充电功率四档移至主页
-- 解容功能并入场景页，删除旧面板
-- 修复控制台内解容页打不开
+- 循环次数显示真实值，伪装次数单独一格
+- 未插充电器时充电协议显示「未插入充电器」
+- 循环次数伪装移到场景页
+- 修复 root 授权超时导致数据不加载、功率档点不动
 
 2026年10月31日 · 小米热炸了</div>
     <button class="notice-btn" id="noticeBtn" disabled>我知道了（10）</button>
@@ -2854,7 +2877,7 @@ const BK_DIR = MODDIR + '/battery/scripts';
 let bkBusy = false;
 
 function bkSh(cmd){
-  return exec('sh ' + cmd + ' 2>&1', 25000)
+  return exec('sh ' + cmd + ' 2>&1', 12000)
     .then(function(r){ return (r && r.stdout) ? r.stdout : ''; })
     .catch(function(){ return ''; });
 }
@@ -2875,11 +2898,28 @@ function bkPair(key, v){
   bkTxt('pc' + key, v);
 }
 
+window.__bkFail = 0;
+window.__bkPauseUntil = 0;
+
+function bkResetGuard(){ window.__bkFail = 0; window.__bkPauseUntil = 0; }
+
 async function bkRefresh(){
   if (bkBusy) return;
+  if (Date.now() < window.__bkPauseUntil) return;
   bkBusy = true;
   try {
-    const kv = bkKV(await bkSh(BK_DIR + '/status_kv.sh'));
+    const raw = await bkSh(BK_DIR + '/status_kv.sh');
+    const kv = bkKV(raw);
+    if (!raw || !kv.soc) {
+      window.__bkFail++;
+      // 取不到数据多半是 root 授权未通过，退避 30 秒，避免 KernelSU 反复弹窗
+      if (window.__bkFail === 3) {
+        window.__bkPauseUntil = Date.now() + 30000;
+        toast('读取失败：请在 KernelSU 中授予本应用 root 权限');
+      }
+      return;
+    }
+    window.__bkFail = 0;
     const stMap = { Charging: '充电中', Discharging: '放电中', Full: '已充满', 'Not charging': '未充电' };
     const stCn = stMap[kv.status] || kv.status;
     bkPair('Soc', kv.soc);
@@ -2911,15 +2951,23 @@ async function bkRefresh(){
     const c = document.getElementById('bkCloud'); if (c) c.checked = (kv.cloud_guard === '1');
     bkUnlockDescUpdate(kv.baa_state);
 
-    const cfgtxt = await bkSh('/system/bin/grep -m1 "^power_limit=" ' + MODDIR + '/battery/config/settings.conf');
-    const pl = ((cfgtxt.split('=')[1] || 'inf').trim()) || 'inf';
+    const pl = (kv.power_limit || 'inf').trim();
     document.querySelectorAll('.bk-pbtn').forEach(function(b){
       b.classList.toggle('on', b.getAttribute('data-p') === pl);
     });
     const wmap = { inf: '全速', fast: (kv.fast_w || 40) + 'W', mid: (kv.mid_w || 25) + 'W', slow: (kv.slow_w || 10) + 'W' };
     bkTxt('bkPowerDesc', '当前：' + (wmap[pl] || pl) + ' 上限');
 
-    const has = (await bkSh(BK_DIR + '/dtbo.sh haslocal')).trim();
+    // 循环次数显示真实值（qmax_cyclecount，不受伪装影响）
+    bkPair('Cycle', kv.cycle_real || kv.cycle);
+    bkPair('Fake', kv.cycle_fake ? kv.cycle_fake : '未设置');
+    const protoMap = { PD_PPS: 'PPS', PD: 'PD', USB_DCP: 'DCP', USB_CDP: 'CDP', USB_SDP: 'SDP', UNKNOWN: '未知' };
+    const plugged = (kv.status === 'Charging' || kv.status === 'Full' || kv.status === 'Not charging');
+    bkTxt('pcProto', plugged ? (protoMap[(kv.charge_proto || '').toUpperCase()] || kv.charge_proto || '--') : '未插入充电器');
+    bkTxt('bkCycleNow', kv.cycle_fake ? ('当前伪装 ' + kv.cycle_fake) : '未启用');
+    bkTxt('bkCycleDesc', kv.cycle ? ('真实循环 ' + kv.cycle + ' 次，可改为任意显示值') : '把电池循环次数显示为设定值');
+    const hasImg = (kv.dtbo_local === '1') ? 'yes' : 'no';
+    const has = hasImg;
     if (has === 'yes') {
       bkTxt('bkDtboState', '可刷入');
       bkTxt('bkDtboDesc', '点击刷入内置的本机解容 DTBO（刷前自动备份）');
@@ -2937,6 +2985,7 @@ function bkUnlockDescUpdate(baa){
 }
 
 async function bkSet(kind, on){
+  bkResetGuard();
   const map = { unlock: 'unlock.sh', pps: 'freepps.sh', cloud: 'cloud_guard.sh' };
   const script = map[kind];
   if (!script) return;
@@ -2948,6 +2997,7 @@ async function bkSet(kind, on){
 }
 
 async function bkSetPower(p){
+  bkResetGuard();
   toast('正在切换功率…');
   const out = await bkSh(BK_DIR + '/power_limit.sh set ' + p);
   const tail = (out || '').trim().split(/\r?\n/).slice(-1)[0];
@@ -2955,14 +3005,102 @@ async function bkSetPower(p){
   setTimeout(bkRefresh, 1200);
 }
 
+// 统一复用页面已有的弹层组件（notice-mask / notice-card / btn），保持与欢迎弹窗一致
+function showModal(title, body, okText, cancelText){
+  return new Promise(function(resolve){
+    const mask = document.createElement('div');
+    mask.className = 'notice-mask';
+    mask.style.zIndex = '100001';
+    const card = document.createElement('div');
+    card.className = 'notice-card';
+    card.style.webkitBackdropFilter = 'blur(26px)';
+    card.style.backdropFilter = 'blur(26px)';
+    // 弹层需要看得清：不跟随用户的卡片透明度，按当前主题给接近实色的背景
+    const _dark = document.documentElement.getAttribute('data-theme') === 'dark' ||
+      (!document.documentElement.getAttribute('data-theme') && window.matchMedia &&
+       window.matchMedia('(prefers-color-scheme: dark)').matches);
+    card.style.background = _dark ? 'rgba(28,28,30,.96)' : 'rgba(255,255,255,.97)';
+    const t = document.createElement('div');
+    t.className = 'notice-title';
+    t.textContent = title;
+    const b = document.createElement('div');
+    b.className = 'notice-body';
+    b.style.color = 'var(--text)';
+    b.style.opacity = '0.82';
+    b.textContent = body;
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:10px;margin-top:20px;flex-shrink:0;';
+    function mk(txt, secondary){
+      const el = document.createElement('button');
+      el.className = 'btn' + (secondary ? ' secondary' : '');
+      el.style.cssText = 'flex:1;height:46px;border-radius:14px;';
+      el.textContent = txt;
+      return el;
+    }
+    let closed = false;
+    function done(v){
+      if (closed) return;
+      closed = true;
+      mask.classList.remove('show');
+      setTimeout(function(){ mask.remove(); }, 200);
+      resolve(v);
+    }
+    if (cancelText){
+      const c = mk(cancelText, true);
+      c.onclick = function(){ done(false); };
+      row.appendChild(c);
+    }
+    const ok = mk(okText || '确定', false);
+    ok.onclick = function(){ done(true); };
+    row.appendChild(ok);
+    mask.addEventListener('click', function(e){ if (e.target === mask && cancelText) done(false); });
+    card.appendChild(t); card.appendChild(b); card.appendChild(row);
+    mask.appendChild(card);
+    document.body.appendChild(mask);
+    requestAnimationFrame(function(){ mask.classList.add('show'); });
+  });
+}
+
 async function bkDtboFlash(){
   const st = document.getElementById('bkDtboState');
   if (!st || st.textContent !== '可刷入') { toast('本机没有可刷入的镜像'); return; }
-  if (!confirm('将把内置的解容 DTBO 写入当前槽，刷前会自动备份到 Download/dtbo_backup，确定继续？')) return;
-  toast('正在刷入 DTBO…');
+  const go = await showModal(
+    '刷入解容 DTBO',
+    '将把内置的本机解容 DTBO 写入当前槽。\n\n刷写前会自动整分区备份到 Download/dtbo_backup，写入后按整分区校验；重启后生效。',
+    '刷入', '取消');
+  if (!go) return;
+  const prev = st.textContent;
+  st.textContent = '刷入中…';
   const out = await bkSh(BK_DIR + '/dtbo.sh flashlocal');
-  const tail = (out || '').trim().split(/\r?\n/).slice(-1)[0];
-  toast(tail ? tail.slice(0, 60) : '已执行，重启后生效');
+  const lines = (out || '').trim().split(/\r?\n/).map(function(l){ return l.trim(); }).filter(Boolean);
+  const done = lines.some(function(l){ return /刷入成功|校验一致/.test(l); });
+  const fail = lines.slice().reverse().find(function(l){ return /失败|不一致|中止|错误|不存在|跳过/.test(l); });
+  if (done) {
+    await showModal('刷入完成', '已写入当前槽并通过整分区校验。\n重启后生效。', '知道了');
+  } else {
+    st.textContent = prev;
+    await showModal('刷入未完成', (fail || lines.slice(-1)[0] || '未取得执行结果，请重试').slice(0, 140), '知道了');
+  }
+  bkRefresh();
+}
+
+async function bkCycleApply(){
+  bkResetGuard();
+  const el = document.getElementById('bkCycleInput');
+  const v = ((el && el.value) || '').trim();
+  if (!/^\d+$/.test(v)) { toast('请输入数字'); return; }
+  toast('正在设置…');
+  await bkSh(BK_DIR + '/unlock.sh cycle ' + v);
+  if (el) el.value = '';
+  toast('已设置伪装循环次数：' + v);
+  bkRefresh();
+}
+
+async function bkCycleClear(){
+  bkResetGuard();
+  toast('正在清除…');
+  await bkSh(BK_DIR + '/unlock.sh cycle clear');
+  toast('已清除循环伪装');
   bkRefresh();
 }
 

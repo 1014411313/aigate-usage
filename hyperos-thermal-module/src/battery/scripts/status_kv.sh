@@ -78,3 +78,22 @@ echo "dev_name=$DEV_NAME"
 # v2.6.23：下发机型最大功率，消除前端硬编码机型表（新增机型时两处必漂移）
 echo "dev_maxw=$DEV_MAXW"
 echo "version=$(grep '^version=' "$XBT/module.prop" 2>/dev/null | head -n1 | cut -d= -f2)"
+
+# ---- 附加项：供主页/场景页一次取齐，减少前端 su 请求次数 ----
+echo "power_limit=$(cfg_get power_limit inf)"
+echo "cycle_fake=$(cfg_get cycle_fake '')"
+echo "cycle_real=$(cycle_real_read)"
+if [ -f "$XBT/dtbo/local.img" ]; then echo "dtbo_local=1"; else echo "dtbo_local=0"; fi
+_proto=""
+for _p in /sys/class/power_supply/usb/real_type \
+          /sys/class/xm_power/charger/charger_common/real_type \
+          /sys/class/qcom-battery/real_type \
+          /sys/class/power_supply/usb/typec_mode; do
+  if [ -f "$_p" ]; then
+    _proto=$(cat "$_p" 2>/dev/null)
+    [ -n "$_proto" ] && break
+  fi
+done
+echo "charge_proto=$_proto"
+_pmax=$(cat /sys/class/xm_power/charger/charger_common/power_max 2>/dev/null)
+case "$_pmax" in ''|*[!0-9]*) ;; *) echo "power_max_w=$((_pmax / 1000000))" ;; esac
