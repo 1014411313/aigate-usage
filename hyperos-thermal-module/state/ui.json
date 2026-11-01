@@ -87,13 +87,5 @@
     "section": "自动任务",
     "position": "场景/游戏加速之后、高温保护之前",
     "verified": "浏览器实测：卡片在 page-thermal 内、主页无残留、plan_on 唯一"
-  },
-  "power_card": {
-    "page": "page-console",
-    "diy_id": "console-2",
-    "layout": "五档按键（全速/40W/25W/10W/5W）+ 当前功率大字",
-    "slider_removed": "自定义功率滑块已按用户要求移除，未留样式残留",
-    "note": "外观页 range 样式保持原有（4px 轨道），未被功率滑块样式污染",
-    "verified": "浏览器实测：5 个按钮、无滑块、外观页滑块仍为原样式"
   }
 }

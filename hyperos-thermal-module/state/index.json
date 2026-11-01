@@ -2,7 +2,7 @@
   "meta": {
     "module_id": "HyperOS_XJ",
     "name": "HyperOS - 动态温控·解容",
-    "current_version": "1.0.51",
+    "current_version": "1.0.52",
     "updated": "2026-11-01",
     "maintainer": "小米热炸了（酷安 517965）",
     "upstream": {
@@ -22,8 +22,8 @@
     "device.json": "本机信息与当前运行状态"
   },
   "pending": [
-    "v1.0.51 已本地打包（未发布）：功率五档（含 5W），等真机验证 5W 档实际功率",
-    ".git 499MB 瘦身（filter-repo，需用户确认后 force push）"
+    ".git 499MB 瘦身（filter-repo，需用户确认后 force push）",
+    "三项审计遗留：PPS 与旧模块共存、MiThermald 对 SIC-BAT max==min 的行为、inf 安顿/APL 状态机"
   ],
   "audit": {
     "date": "2026-11-01",
@@ -73,5 +73,22 @@
       ]
     }
   },
-  "cancelled": []
+  "cancelled": [
+    {
+      "versions": [
+        "1.0.50",
+        "1.0.51"
+      ],
+      "reason": "用户要求作废",
+      "removed": [
+        "功率滑块与大字体",
+        "五档功率（含 5W eco 档）",
+        "custom / eco 后端档位",
+        "两份发布包",
+        "更新日志里对应条目"
+      ],
+      "final": "代码回退到 v1.0.49，功率仍为四档（全速/40W/25W/10W）",
+      "note": "版本号 1.0.50 / 1.0.51 已弃用不再复用，后续从 1.0.52 继续"
+    }
+  ]
 }

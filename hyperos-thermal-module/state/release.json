@@ -240,20 +240,12 @@
       "status": "本地打包，未发布"
     },
     {
-      "version": "1.0.50",
+      "version": "1.0.52",
       "code": 99,
-      "size": 5538586,
-      "sha256": "dd1529a8131b955c3a83cb9111f8b3c746e70262e1250369c5f199ce68705b09",
+      "size": 5535144,
+      "sha256": "9b908588d6d544a93bc86ed0b48e9b546720e6c6ede6d140e08ec5e64f0f1a0d",
       "status": "本地打包，未发布",
-      "note": "功率改为按键+滑块+大字；解容新增 custom 档"
-    },
-    {
-      "version": "1.0.51",
-      "code": 100,
-      "size": 5537118,
-      "sha256": "8a6d07073daca8cc2f79e53c2a9354e208d6aee8d749fec343f023f66709bdb4",
-      "status": "本地打包，未发布",
-      "note": "滑块移除，新增 5W 档（eco）"
+      "note": "跳过已作废的 1.0.50/1.0.51；本次仅关于页文案修正（AxiaojiuY 副标题去掉 K2、二改声明改为 K3）"
     }
   ],
   "published": [
@@ -266,7 +258,14 @@
       "sha256": "be020261c3da6d52f2cc22564c99fa23c7b68fe86f5c6d09159771db51a72f6f",
       "size": 5530757,
       "verified": "CDN 大陆/国际 + raw 均 HTTP 200，字节一致"
+    },
+    {
+      "version": "1.0.49",
+      "code": 98,
+      "size": 5535074,
+      "sha256": "cd8478aeace916eced1144a044fcf995be29e1430fd7a4d2d201166e4c8b7581",
+      "date": "2026-11-01",
+      "note": "CDN 大陆/国际与 raw 校验 200，content-length 与本地一致"
     }
-  ],
-  "cancelled": []
+  ]
 }
