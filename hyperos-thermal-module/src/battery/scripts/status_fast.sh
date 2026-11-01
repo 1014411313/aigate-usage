@@ -13,13 +13,15 @@ eval "$(awk 'FNR==1 { n=split(FILENAME,p,"/"); v[p[n]]=$0 }
 END {
     i=v["current_now"]; u=v["voltage_now"];
     if(i=="" ) i=0; if(u=="") u=0;
-    im=i/1000; if(im<0) im=-im;
+    im=i/1000; ima=im; if(ima<0) ima=-ima;
     printf "soc=\"%s\"\n", v["capacity"];
     printf "status=\"%s\"\n", v["status"];
     printf "temp_c=\"%s\"\n", v["temp"];
+    # 保留符号：放电为负。旧版在这里取绝对值，和 status_kv 的符号相反，
+    # 快读/全读交替时界面电流会周期性跳正负。
     printf "battery_current_ma=\"%d\"\n", im;
     printf "voltage_uv=\"%s\"\n", u;
-    printf "battery_power_w=\"%.1f\"\n", im*u/1000000000;
+    printf "battery_power_w=\"%.1f\"\n", ima*u/1000000000;
 }' $_f 2>/dev/null)"
 
 [ -n "$soc" ] || exit 0

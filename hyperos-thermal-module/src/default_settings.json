@@ -18,5 +18,6 @@
   "bypass_level": 0,
   "bypass_current": 500000,
   "hyperos4": false,
-  "no_hitemp_stop": false
+  "no_hitemp_stop": false,
+  "charge_gov": true
 }

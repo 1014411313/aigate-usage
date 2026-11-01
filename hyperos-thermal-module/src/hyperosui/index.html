@@ -146,6 +146,10 @@ body {
 }
 
 body.wallpaper { background: none !important; }
+/* 壁纸开启时让出全屏底图层：.ambient 的不透明底色与 .amb-grad 渐变会盖住壁纸。
+   光斑/噪点子层保留（用户可以单独开关）。 */
+body.wallpaper .ambient { background: none; }
+body.wallpaper .amb-grad { opacity: 0; }
 body.wallpaper::before {
   content: '';
   position: fixed;
@@ -2049,6 +2053,23 @@ body.fx-lite .card,body.fx-lite .panel,body.fx-lite .mini{ box-shadow:0 4px 16px
 
   <div class="small-title">高温保护</div>
   <div class="card" data-diy-id="thermal-5">
+    <div class="pref" onclick="document.getElementById('charge_gov').click()">
+      <div class="pref-body">
+        <div class="pref-title">高温自动降充电功率</div>
+        <div class="pref-desc" id="chargeGovSub">已开启 · 电池到档位温度就降低充电功率</div>
+      </div>
+      <div class="pref-right">
+        <label class="hyper-switch" onclick="event.stopPropagation()">
+          <input type="checkbox" id="charge_gov" onchange="toggleChargeGov()">
+          <span class="track"></span><span class="thumb"></span>
+        </label>
+      </div>
+    </div>
+    <div class="pref" style="padding-top:0">
+      <div class="pref-body">
+        <div class="pref-desc">温控自己不做限流：到档位温度后调用电池解容的功率档降功率（全速→40W→25W→10W），温度回落 2℃ 以上再改回你原来的档位；你手动改过功率档就不再接管。无限制档不参与。</div>
+      </div>
+    </div>
     <div class="pref" onclick="document.getElementById('no_hitemp_stop').click()">
       <div class="pref-body">
         <div class="pref-title">解除系统高温停充</div>
@@ -2138,7 +2159,7 @@ body.fx-lite .card,body.fx-lite .panel,body.fx-lite .mini{ box-shadow:0 4px 16px
     <div class="pref" style="cursor:default">
       <div class="pref-body">
         <div class="pref-title">温控守护</div>
-        <div class="pref-desc" id="bkTgDesc">解容侧的自定义温度上限守护，默认不启用（降功率由温控档位统一负责）</div>
+        <div class="pref-desc" id="bkTgDesc">解容侧的自定义温度上限守护，默认不启用（温控档位已不再限制充电电流）</div>
       </div>
       <div class="pref-right"><span id="bkTgState" style="font-size:calc(13px * var(--fs));color:var(--text-secondary)">--</span></div>
     </div>
@@ -3319,11 +3340,11 @@ body.fx-lite .card,body.fx-lite .panel,body.fx-lite .mini{ box-shadow:0 4px 16px
             <div class="expand-inner">
               <div class="doc-text">
                 <b>零档（无限制）</b> 不设温度阈值<br>
-                <b>一档</b> 45~55℃<br>
-                <b>二档</b> 40~50℃<br>
-                <b>三档</b> 35~45℃<br>
-                <b>四档</b> 30~40℃<br>
-                <b>五档</b> 25~35℃
+                <b>一档</b> 45~50℃<br>
+                <b>二档</b> 40~45℃<br>
+                <b>三档</b> 35~40℃<br>
+                <b>四档</b> 31~35.5℃<br>
+                <b>五档</b> 26~30.5℃
               </div>
             </div>
           </div>
@@ -3530,17 +3551,17 @@ body.fx-lite .card,body.fx-lite .panel,body.fx-lite .mini{ box-shadow:0 4px 16px
 · 充电功率：全速（不限流）/ 40W / 25W / 10W。无线充电发热大，温度高时建议降一档
 
 【温控】
-· 温控档位：无限制或一~五档，数字越大温度越低（对应 26~58℃ 区间）
+· 温控档位：无限制或一~五档，数字越大温度越低（对应 26~50℃ 区间）
 · 场景：亮屏充电 / 息屏 / 时间段分别设档位
 · 游戏加速：指定应用内切到游戏档位；HyperOS 三倍速可单独开
-· 高温保护：解除系统高温停充，避免高温时被系统强制停充
+· 高温保护：解除系统高温停充；另有一项「高温自动降充电功率」，到档位温度自动降功率
 · 旁路供电：达到设定温度或电量时转为旁路供电，减少边充边放发热
 
 【电池】
 · 电池解容（挂载 BAA，防低电量锁容）/ 公版 PPS 解锁 / 云控屏蔽
-· 自适应功率爬坡（APL）：全速档按实测硬件上限动态上探，默认关闭，需要全速档
-· 温控守护：显示解容侧守护进程是否真的在跑（默认不启用）
-· DTBO：刷入内置的本机解容 DTBO（刷前自动备份）
+· 自适应功率爬坡（APL）：全速档按实测硬件上限动态上探，默认关闭，切到全速自动启停
+· 温控守护：显示解容侧守护进程是否真的在跑（默认不启用；温控档位已不再限制充电电流）
+· DTBO：刷入内置的本机解容 DTBO（刷前自动备份）；安装时可用音量键选择刷不刷
 · 循环次数伪装、电池电压（满电电压 / 关机电压）
 
 【外观】
@@ -3592,11 +3613,11 @@ let settings={}, gameApps=[];
 
 const LEVELS=[
   {id:'unlimited',l:'无限制',t:'55~58℃'},
-  {id:'level_1',l:'一档',t:'45~55℃'},
-  {id:'level_2',l:'二档',t:'40~50℃'},
-  {id:'level_3',l:'三档',t:'35~45℃'},
-  {id:'level_4',l:'四档',t:'31~40℃'},
-  {id:'level_5',l:'五档',t:'26~35℃'}
+  {id:'level_1',l:'一档',t:'45~50℃'},
+  {id:'level_2',l:'二档',t:'40~45℃'},
+  {id:'level_3',l:'三档',t:'35~40℃'},
+  {id:'level_4',l:'四档',t:'31~35.5℃'},
+  {id:'level_5',l:'五档',t:'26~30.5℃'}
 ];
 const MODES=[{id:'default',l:'系统默认'},...LEVELS];
 const MODE_NAMES={default:'默认',unlimited:'无限制',level_1:'一档',level_2:'二档',level_3:'三档',level_4:'四档',level_5:'五档',bypass:'旁路',off:'关闭'};
@@ -3627,6 +3648,15 @@ function toast(m){const s=document.getElementById('snackbar');s.textContent=m;s.
 
 const USAGE_TEXT = `使用说明（按页面看）
 
+━━ 安装时 ━━
+
+· 全新安装时，安装界面会用音量键逐项问你（每项 10 秒，不按键就保持默认）：
+  电池解容 / 公版 PPS 解锁 / 云控屏蔽 / 温控守护 / 自适应爬坡（APL）
+  音量 + = 开，音量 - = 关。最后一步问 DTBO 刷不刷：音量 + 现在刷（重启生效），音量 - 跳过，
+  之后随时可在「电池 → DTBO」卡片自己刷。
+· 升级安装不询问：直接沿用你上一版的设置，避免覆盖。
+· 安装时不想选？什么都不按，10 秒后自动跳过，装上后到对应页面改即可。
+
 ━━ 主页 ━━
 
 · 能量光环
@@ -3646,7 +3676,7 @@ const USAGE_TEXT = `使用说明（按页面看）
 ━━ 温控 ━━
 
 · 温控档位
-  无限制 / 一档 ~ 五档。数字越大温度上限越低（26~58℃ 区间，档位按钮上有小字标注）。
+  无限制 / 一档 ~ 五档。数字越大温度上限越低（26~50℃ 区间，档位按钮上有小字标注）。
   「无限制」= 不改温控表，等于放行。
 · 场景
   亮屏充电、息屏充电、指定时间段，分别用哪个档位；时间段的开始/结束小时可填。
@@ -3654,6 +3684,10 @@ const USAGE_TEXT = `使用说明（按页面看）
   为指定应用设置独立档位；可限制帧率；可让游戏时走旁路供电；
   「HyperOS 三倍速」单独开关，只对支持的机型生效，开启后立即生效并随模块开机自动执行。
 · 高温保护
+  「高温自动降充电功率」（默认开）：温控自己不写充电节点，只做判断——
+  电池温度到当前档位阈值（一档 45℃ / 二档 40℃ / 三档 35℃ / 四档 31℃ / 五档 26℃）
+  就调用电池解容的功率档降功率（全速 → 40W → 25W → 10W），越高越狠；
+  温度回落 2℃ 以上改回你原来的档位。你手动改过功率档就不再接管；无限制档不参与。
   「解除系统高温停充」：把 persist.vendor.high_temp_stop_charge 置 false，
   避免温度偏高时被系统直接停止充电。开关下面会显示该属性的实际值，显示 false 才算生效。
   说明：这是系统层开关，无线充电器自身的过热保护、芯片级保护无法从软件关闭。
@@ -3672,23 +3706,27 @@ const USAGE_TEXT = `使用说明（按页面看）
   拦截 BAA 云端下发与巡检隔离，避免云端把解容参数改回去。
 · 自适应功率爬坡（APL）
   全速档下按实测硬件上限动态上探/退让，不再写死电流上限。
-  默认关闭；需要功率档为「全速」才真正运行。开关状态与当前目标电流会在描述里显示。
+  默认关闭；只有功率档为「全速」且开关为开、且进程真的在跑时才会采用它的目标值。
+  切换到全速会自动拉起，切到限流档会自动停掉；开关状态与当前目标电流在描述里显示。
 · 温控守护
   解容侧的自定义温度上限守护，默认不启用（降功率统一交给温控档位）。
   右侧显示「未启用 / 运行中 / 已停止（异常）」，异常时说明开关是开但进程没在跑。
+  新：温控档位不再直接限制充电电流（SIC-BAT 已放开），降功率改由温控页的
+  「高温自动降充电功率」调用解容的功率档完成；想用自定义温度上限也可另开本守护。
 · DTBO
   刷入内置的本机解容 DTBO（刷前自动整分区备份、写入后校验），**重启后生效**。
-  安装模块时会自动刷一次（仅 OS4 且机型在支持列表内）；卡片右侧会显示结果：
-  「已刷入」（带时间，可点击重刷）/「失败」（带原因）；分区已是该镜像时显示「已刷入 · 无需重复刷入」。
+  刷不刷由你定：安装时会问一次（音量 + 刷 / 音量 - 跳过），也可以在「电池 → DTBO」卡片随时刷。
+  卡片右侧会显示结果：「已刷入」（带时间，可点击重刷）/「失败」（带原因）；
+  分区已是该镜像时显示「已刷入 · 无需重复刷入」。
 · 循环次数伪装
   输入目标次数后点「应用」，把电池循环次数显示为设定值，重启后仍生效；「清除」恢复真实值。
 · 电池电压
   满电电压（4300~4600mV）、关机电压（2800~3500mV），可只填一项。
   满电电压超过原厂上限时需打开「强制覆盖原厂上限」（改写 BAA 载荷 vterm 并重新加密挂载）。
-  卡片副标题会直接显示是否生效：已生效会写「载荷 vterm 已改写为 xxxx mV」，
-  未生效会告诉你原因（超过上限且未开强制覆盖 / 正在应用）。
-  · 注意：充满后停充、电压回落到 4.4V 左右是正常现象（静置电压），不代表没生效，
-    以副标题里的「已生效 vterm」为准
+  卡片副标题按证据分三种：节点实际读回「已写入节点 · 当前节点值 xxxx mV」、
+  载荷改写「载荷 vterm 已改写为 xxxx mV」、或「已保存 · 尚未确认写入」。
+  · 载荷改写不等于截止电压一定提高：实际停充点还受 DT 充电参数与硬件保护限制；
+    充满后电压回落到 4.4V 左右是静置值，不能据此判断生效与否
   关机电压是模块软件检测：电量耗尽到该值以下执行关机，充电中不触发。
 
 ━━ 外观 ━━
@@ -3713,6 +3751,7 @@ const USAGE_TEXT = `使用说明（按页面看）
   悬浮底栏（宽度、高度、透明度、纯色、模糊、扭曲、隐藏文字、跟随卡片透明度、图标优化、滑动方向）。
 · 自定义背景
   选一张图片做背景，可调背景模糊；卡片可选毛玻璃。
+  新：之前壁纸被背景底图层盖住不显示，已修复。
 · 颜色
   分类字体、卡片字体、说明字体各自的颜色与透明度；字体族；
   温度圈低温/中温/高温配色与阈值；分割线颜色；底栏指示气泡的宽高、颜色、透明度。
@@ -3941,7 +3980,9 @@ function bkApplyFast(kv){
   bkPair('Temp', isFinite(tc) ? (tc / 10).toFixed(1) : '--');
 }
 
-/* 高频刷新只跑 status_fast.sh（一次 awk，几十毫秒），慢变字段交给定期完整刷新 */
+/* 高频刷新只跑 status_fast.sh（一次 awk，几十毫秒），慢变字段交给定期完整刷新。
+   两把独立的锁：完整刷新慢（可能几百毫秒到数秒）时不能把高频采样一起冻住——
+   共用一把锁的旧写法在慢读期间会让界面停止更新，看起来像“刷新卡住”。 */
 async function bkRefreshFast(){
   if (bkBusy) return;
   if (Date.now() < window.__bkPauseUntil) return;
@@ -3962,19 +4003,21 @@ async function bkRefreshFast(){
   }
 }
 
-/* 每拍走快速刷新，每 6 拍补一次完整刷新（容量/健康度/循环/协议/APL/温控守护等） */
+/* 每拍走快速刷新，每 6 拍补一次完整刷新（容量/健康度/循环/协议/APL/温控守护等）
+   自动巡检不再传 force：force 会绕过读取失败后的 30 秒退避，导致取不到数据时
+   KernelSU 弹窗刷屏。force 只留给用户点「立即刷新」。 */
 let _bkPollN = 0;
 async function bkPoll(){
   if (!bkShouldRefresh()) return;
   _bkPollN++;
-  if (_bkPollN % 6 === 0 || _bkPollN === 1) await bkRefresh(true);
+  if (_bkPollN % 6 === 0 || _bkPollN === 1) await bkRefresh(false);
   else await bkRefreshFast();
 }
 
 async function bkRefresh(force){
-  if (bkBusy) return;
+  if (window.__bkFullBusy) return;
   if (!force && Date.now() < window.__bkPauseUntil) return;
-  bkBusy = true;
+  window.__bkFullBusy = true;
   const _now = () => ((window.performance && performance.now) ? performance.now() : Date.now());
   const _t0 = _now();
   try {
@@ -4016,7 +4059,7 @@ async function bkRefresh(force){
     if (tg) {
       const on = kv.thermal_guard === '1';
       const alive = kv.thermal_guard_alive === '1';
-      if (!on) { tg.textContent = '未启用'; tg.style.color = 'var(--text-secondary)'; if (tgd) tgd.textContent = '解容侧的自定义温度上限守护，默认不启用（降功率由温控档位统一负责）'; }
+      if (!on) { tg.textContent = '未启用'; tg.style.color = 'var(--text-secondary)'; if (tgd) tgd.textContent = '解容侧的自定义温度上限守护，默认不启用（温控档位已不再限制充电电流）'; }
       else if (alive) { tg.textContent = '运行中'; tg.style.color = 'var(--success)'; if (tgd) tgd.textContent = '上限 ' + (kv.thermal_limit || '--') + '℃ · 动作 ' + (kv.thermal_action || '--'); }
       else { tg.textContent = '已停止（异常）'; tg.style.color = 'var(--warn)'; if (tgd) tgd.textContent = '开关为开但守护进程没在跑，可关闭后重开或重启设备'; }
     }
@@ -4040,17 +4083,21 @@ async function bkRefresh(force){
     bkTxt('pcProto', plugged ? (protoMap[(kv.charge_proto || '').toUpperCase()] || kv.charge_proto || '--') : '未插入充电器');
     bkTxt('bkCycleNow', kv.cycle_fake ? ('当前伪装 ' + kv.cycle_fake) : '未启用');
     bkTxt('voltFvNow', kv.fv_v ? (kv.fv_v + ' mV') : '未设置');
-    // 满电电压是否真的生效：设置值 vs 当前加载的 vterm 上限
+    // 满电电压是否真的生效：
+    // 旧版把「设定值 <= 原厂上限」直接当成「已写入节点」，实际什么都没验证。
+    // 现在分三类证据：节点实际读回值 > 载荷改写标记 > 仅保存。
     const _fvSet = parseInt(kv.fv_set || kv.fv_v || 0, 10) || 0;
     const _fvVt = parseInt(kv.fv_vterm || 0, 10) || 0;
     const _fvAp = parseInt(kv.fv_applied || 0, 10) || 0;
+    const _fvRaw = parseInt(kv.fv_node_now || 0, 10) || 0;
+    const _fvNode = _fvRaw > 100000 ? Math.round(_fvRaw / 1000) : _fvRaw;
     const fvd = document.getElementById('voltFvDesc');
     if (fvd) {
       if (!_fvSet) fvd.textContent = '4300~4600 mV，超过原厂上限需开强制覆盖';
-      else if (_fvAp && _fvAp === _fvSet) fvd.textContent = '已生效 · 载荷 vterm 已改写为 ' + _fvAp + ' mV（重启后仍保持）';
-      else if (_fvVt && _fvSet > _fvVt) fvd.textContent = '未生效 · 设定 ' + _fvSet + ' mV 超过当前上限 ' + _fvVt + ' mV，需开启「强制覆盖原厂上限」';
-      else if (_fvVt && _fvSet <= _fvVt) fvd.textContent = '已写入节点 · 设定 ' + _fvSet + ' mV（当前上限 ' + _fvVt + ' mV）';
-      else fvd.textContent = '设定 ' + _fvSet + ' mV · 正在应用…';
+      else if (_fvNode && Math.abs(_fvNode - _fvSet) <= 30) fvd.textContent = '已写入节点 · 当前节点值 ' + _fvNode + ' mV';
+      else if (_fvAp && _fvAp === _fvSet) fvd.textContent = '载荷 vterm 已改写为 ' + _fvAp + ' mV（重启后保持）· 实际截止电压仍由 DT/硬件决定';
+      else if (_fvVt && _fvSet > _fvVt) fvd.textContent = '未生效 · 设定 ' + _fvSet + ' mV 超过原厂上限 ' + _fvVt + ' mV，需开启「强制覆盖原厂上限」';
+      else fvd.textContent = '已保存 ' + _fvSet + ' mV · 尚未确认写入（等电压守护应用）';
     }
     bkTxt('voltTermNow', kv.term_v ? (kv.term_v + ' mV') : '未设置');
     // 副标题由上面的生效状态逻辑负责（这行旧文案会把「已生效」盖掉）
@@ -4078,8 +4125,8 @@ async function bkRefresh(force){
       bkTxt('bkDtboDesc', '未找到本机镜像，可在 KernelSU 管理器中重装模块');
     }
   } finally {
-    bkBusy = false;
-    window.__bkLastMs = Math.round(_now() - _t0);
+    window.__bkFullBusy = false;
+    window.__bkLastFullMs = Math.round(_now() - _t0);
     if (typeof diyUpdateRefreshUI === 'function') diyUpdateRefreshUI();
   }
 }
@@ -7978,6 +8025,26 @@ async function toggleHiTemp(){
   updateSubs();
 }
 
+function paintChargeGov(){
+  const sub = document.getElementById('chargeGovSub');
+  const el = document.getElementById('charge_gov');
+  if(!sub || !el) return;
+  sub.textContent = el.checked
+    ? '已开启 · 电池到档位温度就降低充电功率（调用解容的功率档）'
+    : '已关闭 · 温控只换 trip 表，不改充电功率';
+}
+
+async function toggleChargeGov(){
+  const el = document.getElementById('charge_gov');
+  if(!el) return;
+  const ok = await save();
+  if(!ok){ el.checked = !el.checked; paintChargeGov(); toast('写入配置失败'); return; }
+  // 关闭时让温控立即把之前压低的功率档还回去
+  await __kexec(`sh ${MODDIR}/thermal_core.sh apply >/dev/null 2>&1 &`);
+  paintChargeGov();
+  toast(el.checked ? '已开启高温降充电功率' : '已关闭高温降充电功率');
+}
+
 async function toggleHyperOS4(){
   const el=document.getElementById('hyperos4');
   if(!el) return;
@@ -8080,11 +8147,12 @@ function updateSubs(){
   if(bt>0)parts.push(`温度≥${bt}°C`);if(bl>0)parts.push(`电量≥${bl}%`);
   document.getElementById('bypassSub').textContent=parts.length?parts.join(' / '):'点击展开';
   paintHiTemp();
+  paintChargeGov();
   const h4s=document.getElementById('hyperos4Sub');
   if(h4s) h4s.textContent=document.getElementById('hyperos4').checked?'已开启 · 立即生效 + 每次开机自动执行':'开启后立即生效 · 每次开机自动执行（仅 HyperOS 可用）';
 }
 
-const DEF_SETTINGS={schema:2,enabled:true,default_mode:'default',charge_mode:true,charge_level:'unlimited',sleep_level:'level_1',time_start:0,time_end:0,time_level:'level_1',game_mode:true,game_level:'unlimited',game_apps:'',game_fps:0,game_bypass:false,bypass_temp_on:0,bypass_temp_off:0,bypass_level:0,bypass_current:500000,hyperos4:false,no_hitemp_stop:false};
+const DEF_SETTINGS={schema:2,enabled:true,default_mode:'default',charge_mode:true,charge_level:'unlimited',sleep_level:'level_1',time_start:0,time_end:0,time_level:'level_1',game_mode:true,game_level:'unlimited',game_apps:'',game_fps:0,game_bypass:false,bypass_temp_on:0,bypass_temp_off:0,bypass_level:0,bypass_current:500000,hyperos4:false,no_hitemp_stop:false,charge_gov:true};
 
 
 let _saveChain = Promise.resolve();
@@ -8117,7 +8185,8 @@ async function saveImpl(){
     bypass_level:num('bypass_level',0),
     bypass_current:old.bypass_current||500000,
     hyperos4:chk('hyperos4',false),
-    no_hitemp_stop:chk('no_hitemp_stop',false)
+    no_hitemp_stop:chk('no_hitemp_stop',false),
+    charge_gov:chk('charge_gov',true)
   };
   settings=out;
   const json=JSON.stringify(out,null,2)+'\n';
@@ -8186,6 +8255,8 @@ async function load(){
   if(_h4el) _h4el.checked=settings.hyperos4===true;
   const _htel=document.getElementById('no_hitemp_stop');
   if(_htel) _htel.checked=settings.no_hitemp_stop===true;
+  const _cgel=document.getElementById('charge_gov');
+  if(_cgel) _cgel.checked=settings.charge_gov!==false;
   document.getElementById('game_fps').value=settings.game_fps||0;
   document.getElementById('bypass_temp_on').value=settings.bypass_temp_on||0;
   document.getElementById('bypass_temp_off').value=settings.bypass_temp_off||0;
@@ -8335,6 +8406,9 @@ async function refreshStatus(){
   // 主页电量/状态以 status_kv 实时值为准；status.json 是守护进程的轮询快照（可能滞后或被卡住），
   // 只在实时取数接连失败时兜底，否则两个来源交替写同一元素会来回跳
   document.getElementById('sMode').textContent=MODE_NAMES[s.mode]||s.mode||'--';
+  // 用户把「数据刷新」设为关闭时，这里也不能偷偷写电量/状态——否则看起来"关了还在刷新"。
+  // 模式名仍更新（它来自温控守护的快照，不属于主页数据刷新）。
+  if (typeof diyBkInterval === 'function' && diyBkInterval() === 0) return;
   if (!window.__bkFresh || Date.now() - window.__bkFresh > 12000){
     document.getElementById('sCapacity').textContent=s.capacity;
     const st = s.status==='Charging'?'充电中':s.status==='Full'?'已充满':'放电中';
@@ -8898,15 +8972,45 @@ function diyRenderSchemes(){
   const all = diySchemes();
   const names = Object.keys(all);
   if(el){
-    el.innerHTML = names.length
-      ? names.map(n => `<div class="pref" style="padding:10px 0;margin:0">
-          <div class="pref-body"><div class="pref-title" style="font-size:calc(14px * var(--fs))">${n}</div>
-          <div class="pref-desc">${Object.keys(all[n]).length} 项设置</div></div>
-          <div class="pref-right" style="gap:8px">
-            <span class="btn secondary" style="padding:6px 14px;font-size:calc(13px * var(--fs))" onclick="event.stopPropagation();diyApplyScheme('${encodeURIComponent(n)}')">应用</span>
-            <span class="btn secondary" style="padding:6px 14px;font-size:calc(13px * var(--fs))" onclick="event.stopPropagation();diyDelScheme('${encodeURIComponent(n)}')">删除</span>
-          </div></div>`).join('')
-      : '<div class="field-label">还没有保存的方案</div>';
+    el.innerHTML = '';
+    if(!names.length){
+      el.innerHTML = '<div class="field-label">还没有保存的方案</div>';
+    } else {
+      names.forEach(function(n){
+        // 方案名来自用户输入/导入的 JSON，属于外部字符串：
+        // 旧版直接拼进 innerHTML + 内联 onclick，标题里带标签就能在 root 页面执行脚本。
+        const row = document.createElement('div');
+        row.className = 'pref';
+        row.style.padding = '10px 0';
+        row.style.margin = '0';
+        const body = document.createElement('div');
+        body.className = 'pref-body';
+        const t = document.createElement('div');
+        t.className = 'pref-title';
+        t.style.fontSize = 'calc(14px * var(--fs))';
+        t.textContent = n;
+        const d = document.createElement('div');
+        d.className = 'pref-desc';
+        d.textContent = Object.keys(all[n]).length + ' 项设置';
+        body.appendChild(t); body.appendChild(d);
+        const right = document.createElement('div');
+        right.className = 'pref-right';
+        right.style.gap = '8px';
+        const bApply = document.createElement('span');
+        bApply.className = 'btn secondary';
+        bApply.style.cssText = 'padding:6px 14px;font-size:calc(13px * var(--fs))';
+        bApply.textContent = '应用';
+        bApply.onclick = function(ev){ ev.stopPropagation(); diyApplyScheme(encodeURIComponent(n)); };
+        const bDel = document.createElement('span');
+        bDel.className = 'btn secondary';
+        bDel.style.cssText = 'padding:6px 14px;font-size:calc(13px * var(--fs))';
+        bDel.textContent = '删除';
+        bDel.onclick = function(ev){ ev.stopPropagation(); diyDelScheme(encodeURIComponent(n)); };
+        right.appendChild(bApply); right.appendChild(bDel);
+        row.appendChild(body); row.appendChild(right);
+        el.appendChild(row);
+      });
+    }
   }
   const sub = document.getElementById('diySchemeSub');
   if(sub) sub.textContent = '已保存 ' + names.length + ' 套方案';
@@ -8922,10 +9026,24 @@ function diyImportSchemes(){
   if(!box || !box.value.trim()){ toast('输入框为空'); return; }
   let obj = null;
   try{ obj = JSON.parse(box.value); }catch(e){ toast('JSON 解析失败'); return; }
-  if(!obj || typeof obj !== 'object'){ toast('格式不正确'); return; }
+  if(!obj || typeof obj !== 'object' || Array.isArray(obj)){ toast('格式不正确'); return; }
   const all = diySchemes();
+  // 只接受本页面会写的键，避免导入对象往 localStorage 塞任意内容
+  const allowed = {};
+  getAllBackupKeys().forEach(function(k){ allowed[k] = 1; });
   let n = 0;
-  Object.keys(obj).forEach(k => { if(obj[k] && typeof obj[k] === 'object'){ all[k] = obj[k]; n++; } });
+  Object.keys(obj).forEach(function(name){
+    const s = obj[name];
+    if(!s || typeof s !== 'object' || Array.isArray(s)) return;
+    const clean = {};
+    Object.keys(s).forEach(function(k){
+      if(!allowed[k]) return;
+      if(s[k] === null || s[k] === undefined) return;
+      clean[k] = String(s[k]).slice(0, 4000);
+    });
+    all[String(name).slice(0, 40)] = clean;
+    n++;
+  });
   diySaveJson('ht_schemes', all);
   diyRenderSchemes();
   toast('已导入 ' + n + ' 套方案');

@@ -29,6 +29,23 @@ for p in "$MODDIR"/profiles/*.conf; do
     cp -f "$p" "$BAK/profiles/$bn" 2>/dev/null && n=$((n + 1))
 done
 
+# 运行态里需要跨升级保留的只有“恢复资料”，不是 PID/节流时间戳：
+# fv_force_backup 是强改电压前的原载荷，cloud_quarantine 是云控隔离的系统文件，
+# extra_dirs.txt 是用户自己加的 DTBO 扫描目录。升级替换模块目录时就靠这份备份找回。
+for d in fv_force_backup cloud_quarantine; do
+    [ -d "$MODDIR/battery/state/$d" ] || continue
+    if ! diff -rq "$MODDIR/battery/state/$d" "$BAK/battery/state/$d" >/dev/null 2>&1; then
+        mkdir -p "$BAK/battery/state" 2>/dev/null
+        cp -af "$MODDIR/battery/state/$d" "$BAK/battery/state/" 2>/dev/null && n=$((n + 1))
+    fi
+done
+if [ -s "$MODDIR/battery/state/extra_dirs.txt" ]; then
+    cmp -s "$MODDIR/battery/state/extra_dirs.txt" "$BAK/battery/state/extra_dirs.txt" 2>/dev/null || {
+        mkdir -p "$BAK/battery/state" 2>/dev/null
+        cp -f "$MODDIR/battery/state/extra_dirs.txt" "$BAK/battery/state/extra_dirs.txt" 2>/dev/null && n=$((n + 1))
+    }
+fi
+
 if [ "$n" -gt 0 ]; then
     echo "已同步 $n 项设置到备份"
 else

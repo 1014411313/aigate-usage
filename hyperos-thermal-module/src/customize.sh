@@ -227,13 +227,28 @@ if [ -n "$_LEGACY_ID" ] && [ "$LEGACY_DIR" != "$MODPATH" ] && [ -d "$LEGACY_DIR"
     done
     # 解容子模块的用户配置（功率档/满电电压/强制覆盖/关机电压/免费 PPS/云控/循环伪装）
     # 都存在 battery/config/settings.conf，不迁移的话每次更新都会回到默认值
+    # 【v1.0.42】旧逻辑“目标非空就跳过”导致新包自带的非空默认值把迁移彻底挡死：
+    #   只要包里有 settings.conf，旧目录里的用户设置永远不会被采用。
+    #   改为：目标仍是包内默认值时，允许旧用户值覆盖。
+    _pack_def_hash=""
+    if [ -s "$MODPATH/battery/config/settings.conf" ]; then
+        _pack_def_hash=$(sha256sum "$MODPATH/battery/config/settings.conf" 2>/dev/null | awk '{print $1}')
+    fi
     for _d in battery/config battery/state; do
         [ -d "$LEGACY_DIR/$_d" ] || continue
         mkdir -p "$MODPATH/$_d" 2>/dev/null
         for _f in "$LEGACY_DIR/$_d"/*; do
             [ -f "$_f" ] || continue
             _bn=$(basename "$_f")
-            [ -s "$MODPATH/$_d/$_bn" ] && continue
+            if [ -s "$MODPATH/$_d/$_bn" ]; then
+                # 只有“目标仍等于包内默认值”才用旧值覆盖；已改过的目标保持不动
+                _same_default=0
+                if [ "$_d" = "battery/config" ] && [ "$_bn" = "settings.conf" ] && [ -n "$_pack_def_hash" ]; then
+                    _cur_h=$(sha256sum "$MODPATH/$_d/$_bn" 2>/dev/null | awk '{print $1}')
+                    [ "$_cur_h" = "$_pack_def_hash" ] && _same_default=1
+                fi
+                [ "$_same_default" = "1" ] || continue
+            fi
             cp -f "$_f" "$MODPATH/$_d/$_bn" 2>/dev/null && MIGRATED=$((MIGRATED+1))
         done
     done
@@ -452,9 +467,86 @@ if [ -d "$BATDIR" ]; then
     setprop ctl.restart batteryantiaging >/dev/null 2>&1
     print " - 已启用 PSS 并重启 batteryantiaging（恢复健康度显示）"
 
+    # ===== 功能开关选择（只在全新安装时问；升级沿用用户原设置） =====
+    _old_conf=/data/adb/modules/HyperOS_XJ/battery/config/settings.conf
+    _can_ask=1
+    command -v getevent >/dev/null 2>&1 || _can_ask=0
+
+    conf_set_install() {
+        _f="$BATDIR/config/settings.conf"; _k="$1"; _v="$2"
+        [ -f "$_f" ] || return 1
+        if grep -q "^${_k}=" "$_f" 2>/dev/null; then
+            sed -i "s|^${_k}=.*|${_k}=${_v}|" "$_f" 2>/dev/null
+        else
+            printf '%s=%s\n' "$_k" "$_v" >> "$_f" 2>/dev/null
+        fi
+    }
+
+    ask_install_switch() {
+        _label="$1"; _key="$2"; _def="$3"
+        if [ "$_def" = "1" ]; then _cs=开; else _cs=关; fi
+        print "   - ${_label}（默认：${_cs}）  音量+ = 开 / 音量- = 关"
+        sleep 1
+        _end=$(( $(date +%s) + 10 ))
+        while [ "$(date +%s)" -lt "$_end" ]; do
+            _ev=$(timeout 1 getevent -qlc 1 2>/dev/null)
+            case "$_ev" in
+                *KEY_VOLUMEUP*)   conf_set_install "$_key" 1; print "      -> 已设为开"; sleep 1; return 0 ;;
+                *KEY_VOLUMEDOWN*) conf_set_install "$_key" 0; print "      -> 已设为关"; sleep 1; return 0 ;;
+            esac
+        done
+        print "      -> 未按键，保持默认"
+    }
+
+    if [ -f "$_old_conf" ]; then
+        print " - 功能开关：检测到旧版配置，沿用你原来的设置（不询问）"
+    elif [ "$_can_ask" = "0" ]; then
+        print " - 功能开关：本环境不支持音量键选择，使用默认值"
+    else
+        print " "
+        print " - 功能开关设置（每项 10 秒，不按键则保持默认）"
+        ask_install_switch "电池解容（防低电量锁容）"        unlock        1
+        ask_install_switch "公版 PPS 解锁（第三方充电头提速）"  freepps       0
+        ask_install_switch "云控屏蔽（防止云端改回参数）"        cloud_guard   1
+        ask_install_switch "温控守护（高温自动降充电功率）"      thermal_guard 0
+        ask_install_switch "自适应功率爬坡（APL）"              apl_enable    0
+        print " - 功能开关设置完成"
+    fi
+
+    # 【v1.0.47】安装时让用户自己选：在这个界面刷，还是跳过、稍后在控制台刷。
+    #   用音量键选（安装界面无法输入文字）；15 秒不按 = 默认跳过，宁可不刷也不卡住安装。
+    #   高级用户想安装时直接刷，可在包里放 dtbo/auto_install 标记文件。
     _dbg="$BATDIR/scripts/install_dtbo.sh"
-    if [ -f "$_dbg" ]; then
-        print " - DTBO：校验系统版本与分区后刷入"
+    _dtbo_want=0
+    if [ ! -f "$_dbg" ]; then
+        print " - DTBO：包里没有刷写脚本，跳过"
+    elif [ -f "$BATDIR/dtbo/auto_install" ]; then
+        _dtbo_want=1
+        print " - DTBO：检测到 auto_install 标记，直接刷入"
+    else
+        print " "
+        print " - DTBO 刷写选择（10 秒内用音量键选）"
+        print "     音量 +  ：现在刷入（重启后生效）"
+        print "     音量 -  ：跳过，稍后在控制台「电池 -> DTBO」自己刷"
+        print "     不按键  ：超时后默认跳过"
+        _dtbo_end=$(( $(date +%s) + 10 ))
+        sleep 1
+        if ! command -v getevent >/dev/null 2>&1; then
+            print "     -> 本环境不支持音量键选择，已跳过（请在控制台刷）"
+        else
+            while [ "$(date +%s)" -lt "$_dtbo_end" ]; do
+                _ev=$(timeout 1 getevent -qlc 1 2>/dev/null)
+                case "$_ev" in
+                    *KEY_VOLUMEUP*)   _dtbo_want=1; print "     -> 已选择：现在刷入"; break ;;
+                    *KEY_VOLUMEDOWN*) print "     -> 已选择：跳过，稍后可在控制台刷"; break ;;
+                esac
+            done
+            if [ "$_dtbo_want" != "1" ] && [ "${_ev#*KEY_VOLUME}" = "$_ev" ]; then
+                print "     -> 未按键/超时，已跳过（随时可在控制台刷）"
+            fi
+        fi
+    fi
+    if [ "$_dtbo_want" = "1" ] && [ -f "$_dbg" ]; then
         _dout=/data/local/tmp/xj_dtbo_install.out
         XBT="$BATDIR" sh "$_dbg" > "$_dout" 2>&1
         _drc=$?
@@ -463,6 +555,7 @@ if [ -d "$BATDIR" ]; then
         fi
         rm -f "$_dout" 2>/dev/null
         if [ "$_drc" = "0" ]; then
+            print "   DTBO 已写入，重启后生效"
             _code=$(grep -E '^dev_code=' "$BATDIR/config/settings.conf" 2>/dev/null | tail -1 | cut -d= -f2-)
             for _img in "$BATDIR/dtbo"/*.img; do
                 [ -f "$_img" ] || continue
@@ -473,6 +566,8 @@ if [ -d "$BATDIR" ]; then
                 esac
             done
         fi
+    elif [ "$_dtbo_want" != "1" ] && [ -f "$_dbg" ]; then
+        :   # 已在上方提示过跳过原因
     fi
 fi
 

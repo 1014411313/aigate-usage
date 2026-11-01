@@ -30,5 +30,59 @@
     "guard": "电池 ≥ temp_guard(默认60℃) 时把 default/unlimited/1/2 档强制降为三档",
     "sources": "t_blank=无限制、t_bypass_0/1=旁路、thermal/N/thermal-scene.conf=1~5 档"
   },
-  "hitemp_stop": "温控档位管不到系统高温停充：档位只替换 mi_thermald 的 trip 表 + charger_thermal 的 wired/wireless_thermal_remove（实测两个节点都已置 1），而「温度过高，无线充电已停止」来自小米充电 HAL 的 persist.vendor.high_temp_stop_charge。v1.0.16 起温控页「高温保护」可把它写 false（thermal_core.sh 的 hitemp_guard，每轮校验、30 秒重试、关闭模块/卸载恢复 true）"
+  "hitemp_stop": "温控档位管不到系统高温停充：档位只替换 mi_thermald 的 trip 表 + charger_thermal 的 wired/wireless_thermal_remove（实测两个节点都已置 1），而「温度过高，无线充电已停止」来自小米充电 HAL 的 persist.vendor.high_temp_stop_charge。v1.0.16 起温控页「高温保护」可把它写 false（thermal_core.sh 的 hitemp_guard，每轮校验、30 秒重试、关闭模块/卸载恢复 true）",
+  "audit_20261101": {
+    "status": "待修",
+    "config_decrypted": "真实解密t_blank、t_bypass_0、一档、五档。t_blank仍含SIC-BAT thermal_fcc_override，40~45℃对应20000→10000，MONITOR-BAT/WIRELESS与BATTERY-MONITOR充电动作；非旁路充电所有权拆分未完成。",
+    "bypass": "正常退出调用once可被inf幂等早退；禁用分支漏清bypass_active；让路只覆盖一个电流写函数。",
+    "diagnostic": "stop_charge_watch在稳定状态提前返回，.last_plugged不是每拍更新；第一次online掉0的停充仍漏记（模拟已复现）。",
+    "correction": "RX_INT_POWER_OFF/0xa1只证明掉电中断，未核实错误码定义不可断言OTP/FOD或软件无解。"
+  },
+  "charge_gov": {
+    "enabled_default": true,
+    "limits": {
+      "1": 45,
+      "2": 40,
+      "3": 35,
+      "4": 31,
+      "5": 26
+    },
+    "mapping": "阈值起 mid(25W)，阈值+4℃ 起 slow(10W)，保护区回落给 fast(40W)，回落满 2℃ 退出并恢复原档",
+    "safe_guards": [
+      "用户原本更严的档位不放宽",
+      "手动改档检测后停止接管",
+      "无限制档不介入",
+      "关闭开关/禁用模块时恢复原档"
+    ],
+    "state_file": "config/charge_gov.state（原档 当前档）"
+  },
+  "level_temp_20261101": {
+    "change": "档位区间压缩：一档 45~50℃，其余等比例（起点回原厂、宽度 10℃→5℃）",
+    "levels": {
+      "1": "45~50℃",
+      "2": "40~45℃",
+      "3": "35~40℃",
+      "4": "31~35.5℃",
+      "5": "26~30.5℃",
+      "unlimited": "55~58℃"
+    },
+    "charge_gov_limits": {
+      "1": 45,
+      "2": 40,
+      "3": 35,
+      "4": 31,
+      "5": 26
+    },
+    "origin": {
+      "1": "45~55℃",
+      "2": "40~50℃",
+      "3": "35~45℃",
+      "4": "31~40℃",
+      "5": "26~35℃"
+    },
+    "formula": "new = (start-5000) + (v-start)/2，四舍五入到 100（起点回到原厂、宽度减半）",
+    "migrate": "跳过 2000/1000（SIC 首项）、0/1（SOC 阈值）、85000/84000（统一高温降频）",
+    "backup": "~/workspace/.aicode/tmp/audit_1_0_41/thermal_conf_backup_1046/（压缩前）",
+    "note": "SIC-BAT 起点比 MONITOR 低 5℃（原厂如此），但 SIC 的 max=min=22000 不限流，实际限流点看 MONITOR"
+  }
 }

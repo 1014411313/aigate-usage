@@ -42,7 +42,7 @@ now() { date +%s; }
 _me=$$
 if command -v pgrep >/dev/null 2>&1; then
   _other=""
-  for _p in $(timeout 5 pgrep -f 'battery_tune/scripts/apl\.sh' 2>/dev/null); do
+  for _p in $(timeout 5 pgrep -f 'HyperOS_XJ/battery/scripts/apl\.sh' 2>/dev/null); do
     [ "$_p" = "$_me" ] && continue
     kill -0 "$_p" 2>/dev/null || continue
     _other="$_p"; break

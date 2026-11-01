@@ -60,7 +60,38 @@
   "ownership": "充电归电池解容：温控非旁路不回写 chg_curr；旁路期间 direct_set_current_ma 见 config/bypass_active=1 直接让路，旁路结束温控调 charge_guard.sh once 交还",
   "dtbo_voltage_limits": {
     "haotian_rtx": "解包 src/battery/dtbo/haotian.img 得到：mca_strategy_quick_charge/max_vbat=4580（off 50188）、mca_strategy_quick_wireless_class/max_vbat=4580（off 59060）、mca_buckchg_jeita/jeita_para_ffc 各段=4580mV；普通 jeita_para 为 4530mV（≥57℃ 降 4060mV）",
-    "note": "fv_force 只改 BAA 载荷 vterm，充电策略仍按 DT 的 max_vbat 停；要真上 4600 必须同时改这三处 DTBO 再重刷+重启（用户 11-01 选择先不改）"
+    "note": "解包确认haotian相关max_vbat/FFC为4580mV；这里只是镜像的软件策略配置，未证明本次实际执行到哪条策略，也未证明其等于硬件OVP。用户选择不改DTBO。"
   },
-  "fv_chain_test": "实测结论（2026-11-01）：① 原版 v3.12.6、无 fv_v 干预，95%~涓流充满：voltage_now=4.452V / current_now=21mA / status=Full；② 二改版 fv_v=4600 且 fv_force=1、载荷已改写（fv_force_applied=4600）：满电 4.446~4.511V，与原版持平。→ BAA 载荷 vterm 改写不会抬高实际满电电压，真正上限是 DT mca_strategy_quick_charge/max_vbat=4580（+硬件 OVP）。要提高必须改 DTBO 同三处并重刷重启。"
+  "fv_chain_test": "历史原版/二改满电静态读数约4.45V、标记fv_force_applied=4600。2026-11-01审计纠正：静态读数和成功标记不能证明实际截止阈值、也不能证明BAA改写完全无效；DT max_vbat是软件策略参数，不是已核实的硬件OVP，需实际控制阈值和充满时间线。",
+  "audit_20261101": {
+    "status": "待修，审计发现不是修复记录",
+    "findings": [
+      "common.sh:840无条件读取残留APL目标；APL消费者与开关脱节",
+      "charge_guard.sh:370/396 inf标记和第二道60s阻断动态目标/urgent；固定10A判据误伤低目标",
+      "power_limit切档不启停APL；apl.sh仍pgrep旧路径",
+      "unlock关闭后watchdog可重新启动charge_guard",
+      "volt_guard写节点后才记原值；所有温区vterm被覆盖；失败删成功标记导致恢复早退；卸载恢复可重新mount",
+      "battery/state子目录未持久化，旧备份可覆盖新配置",
+      "DTBO入口缺有效镜像校验、未知槽位猜b、备份去重仅搜日志hash"
+    ],
+    "evidence": "临时模拟已复现APL残留8000、inf低电流判断通过、电压原值记成新值、失败恢复早退、旧备份覆盖新配置。"
+  },
+  "install_prompts": {
+    "version": "1.0.47",
+    "mechanism": "customize.sh 用 getevent -qlc 1 读音量键；每项 10 秒超时；不按键保持默认",
+    "items": [
+      "unlock=1",
+      "freepps=0",
+      "cloud_guard=1",
+      "thermal_guard=0",
+      "apl_enable=0",
+      "dtbo（刷/不刷）"
+    ],
+    "guard": [
+      "升级安装（旧 settings.conf 存在）跳过询问",
+      "无 getevent 时跳过询问",
+      "auto_install 标记可跳过 DTBO 询问"
+    ],
+    "tested": "假 getevent 模拟：音量+ → 写 1、音量- → 写 0、不按键/无关按键 → 保持原值"
+  }
 }

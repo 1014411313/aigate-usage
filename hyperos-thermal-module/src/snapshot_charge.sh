@@ -20,7 +20,7 @@ _dump_dir() {
     # $1=标题 $2=目录 $3=深度
     echo "[$1]"
     [ -d "$2" ] || { echo "dir=不存在"; echo; return 0; }
-    find "$2" -maxdepth "${3:-2}" -type f 2>/dev/null | sort | while IFS= read -r f; do
+    find -L "$2" -maxdepth "${3:-2}" -type f 2>/dev/null | sort | while IFS= read -r f; do
         base=$(basename "$f")
         case "$base" in
             uevent|modalias|device|subsystem|power|driver|of_node|dev|name) continue ;;
@@ -91,13 +91,14 @@ _dump_dir() {
     _dump_dir wireless_master      /sys/class/xm_power/wireless_master 1
 
     echo "[dt]"
+    # 【v1.0.42】旧版把 DT 属性截到 96 字符，JEITA 整表根本看不全；这里保留完整内容。
     for d in /proc/device-tree/soc/mca_strategy_quick_charge \
              /proc/device-tree/soc/mca_strategy_quick_wireless_class \
              /proc/device-tree/soc/mca_buckchg_jeita; do
         [ -d "$d" ] || { echo "$d=不存在"; continue; }
         for f in "$d"/*; do
             [ -f "$f" ] || continue
-            echo "${f}=$(od -An -tx1 "$f" 2>/dev/null | tr -d ' \n' | cut -c1-96)"
+            echo "${f}=$(od -An -tx1 "$f" 2>/dev/null | tr -d ' \n')"
         done
     done
     echo

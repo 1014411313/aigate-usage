@@ -181,5 +181,48 @@
       "v": "1.0.30",
       "note": "首页刷新 6s→1s；模块升级保留设置（运行期备份到 /data/adb/HyperOS_XJ_data，安装时恢复）；欢迎页使用说明按页面重写；新增「新功能必须写使用说明」硬规则（AGENTS.md+记忆）（待发布）"
     }
+  ],
+  "audit_20261101": {
+    "version": "1.0.41",
+    "runtime_changed": false,
+    "manifest_sha256": "645c10dc2be9d24eb8661a1bccdfc79c26a87063c402e459e4b777257bfe4ccc",
+    "result": "发布包与源码一致；审计结论见state/index.json的audit与报告。同步工具有冲突/跳过项仍推进整体基线的维护缺陷待修。"
+  },
+  "builds": [
+    {
+      "version": "1.0.43",
+      "code": 92,
+      "size": 5670223,
+      "sha256": "bacf17b7ee5a8f1c84fe0a07890d6e6d2c17b56d38d957fe90f4b851347a6432",
+      "status": "本地打包，未发布"
+    },
+    {
+      "version": "1.0.44",
+      "code": 93,
+      "size": 5528547,
+      "sha256": "544993a0ff466dbd8f01bb51f5f127eb82461abbf97fda9da54fe7c2a12a34f5",
+      "status": "本地打包，未发布"
+    },
+    {
+      "version": "1.0.45",
+      "code": 94,
+      "size": 5528690,
+      "sha256": "ddf36db828a34de0c457dbac796a22073437fb016b2b376c272380059f152f3e",
+      "status": "本地打包，未发布"
+    },
+    {
+      "version": "1.0.46",
+      "code": 95,
+      "size": 5528894,
+      "sha256": "24de18adb854d285aefb45cff54892102ef726c0a668f663ec266d6354ffe90c",
+      "status": "本地打包，未发布"
+    },
+    {
+      "version": "1.0.47",
+      "code": 96,
+      "size": 5530757,
+      "sha256": "be020261c3da6d52f2cc22564c99fa23c7b68fe86f5c6d09159771db51a72f6f",
+      "status": "本地打包，未发布"
+    }
   ]
 }

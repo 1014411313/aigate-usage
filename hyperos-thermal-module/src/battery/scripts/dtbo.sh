@@ -169,10 +169,24 @@ do_flash() {
   [ -e "$dev" ] || { echo "分区不存在: $dev"; return 1; }
 
   fsz=$(stat -c %s "$f" 2>/dev/null)
+  case "$fsz" in ''|*[!0-9]*|0) echo "错误: 镜像大小无效或为空文件，中止"; return 1 ;; esac
+  # 【v1.0.42】旧版只检查文件存在与可选大小：空文件/非 DTBO 文件可以补零后写入并"哈希一致"，
+  #   而哈希一致只证明写入了该文件，不证明它是合法镜像。这里补上基础合法性检查。
+  _mg=$(od -An -tx1 -N4 "$f" 2>/dev/null | tr -d ' \n')
+  if [ "$_mg" != "d7b7ab1e" ]; then
+    echo "错误: 不是标准 DTBO 镜像头（magic=$_mg），中止"
+    return 1
+  fi
+  [ -b "$dev" ] || { echo "错误: $dev 不是块设备，中止"; return 1; }
+
   dsz=$(blockdev --getsize64 "$dev" 2>/dev/null)
+  case "$dsz" in ''|*[!0-9]*|0)
+    echo "错误: 拿不到分区大小，中止"
+    return 1 ;;
+  esac
   echo "目标分区: $dev ($dsz bytes)"
   echo "镜像文件: $f ($fsz bytes)"
-  if [ -n "$dsz" ] && [ "$fsz" -gt "$dsz" ]; then
+  if [ "$fsz" -gt "$dsz" ]; then
     echo "错误: 镜像大于分区，中止"
     return 1
   fi
@@ -182,7 +196,20 @@ do_flash() {
 
   _bsha=$(blk_sha "$dev")
   _dup=""
-  [ -f "$MANIFEST" ] && _dup=$(grep -F "$_bsha" "$MANIFEST" | head -n 1)
+  # 【v1.0.42】只认真正的备份记录：旧版对整个 manifest 搜哈希，
+  #   flash_OK 等"刷入成功"记录也含该哈希 → 会把刷写记录当成可恢复备份，跳过备份。
+  if [ -f "$MANIFEST" ]; then
+    _dup=$(grep -F "$_bsha" "$MANIFEST" 2>/dev/null | grep -E 'auto_before_flash|manual_backup|install_backup' | head -n 1)
+    # 备份文件必须真的还在且大小与分区一致，否则重新备份
+    if [ -n "$_dup" ]; then
+      _df=$(echo "$_dup" | awk '{print $NF}')
+      case "$_df" in
+        ''|*/*) _dp="$BK/$_df" ;;
+        *) _dp="$BK/$_df" ;;
+      esac
+      [ -s "$_dp" ] || _dup=""
+    fi
+  fi
   if [ -z "$_dup" ]; then
     mkdir -p "$BK"
     _bf="$BK/dtbo_${s}_before_$(date +%Y%m%d-%H%M%S).img"

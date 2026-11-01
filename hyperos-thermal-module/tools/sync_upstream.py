@@ -62,7 +62,12 @@ def read_zip(path):
         for n in z.namelist():
             if n.endswith('/'):
                 continue
-            out[n] = z.read(n)
+            # 上游 zip 是不可信输入：绝对路径与 .. 会写到目标目录之外
+            norm = os.path.normpath(n)
+            if norm.startswith('..') or os.path.isabs(norm):
+                print('跳过可疑路径条目：%s' % n)
+                continue
+            out[norm.replace(os.sep, '/')] = z.read(n)
     return out
 
 
@@ -177,6 +182,13 @@ def cmd_apply(name, zippath, include_new, skip_files, dry=False):
     base = c['files']
     tdir = os.path.join(ROOT, c['target_dir'])
     applied, merged, conflicts, added = [], [], [], []
+    # 冲突时整体回滚本次写盘：不能在"还有未合并文件"的情况下就宣称基线已经对齐。
+    backups = {}
+
+    def remember(rel, p):
+        if rel in backups:
+            return
+        backups[rel] = open(p, 'rb').read() if os.path.isfile(p) else None
 
     for rel, data in sorted(up.items()):
         if skip(c, rel) or rel in skip_files:
@@ -185,9 +197,11 @@ def cmd_apply(name, zippath, include_new, skip_files, dry=False):
         h = sha(data)
         if rel not in base:
             if rel in include_new:
+                p_new = os.path.join(tdir, rel)
                 if not dry:
-                    os.makedirs(os.path.dirname(p), exist_ok=True)
-                    open(p, 'wb').write(data)
+                    remember(rel, p_new)
+                    os.makedirs(os.path.dirname(p_new), exist_ok=True)
+                    open(p_new, 'wb').write(data)
                 added.append(rel)
             continue
         if base[rel] == h:
@@ -195,6 +209,7 @@ def cmd_apply(name, zippath, include_new, skip_files, dry=False):
         ours = sha(open(p, 'rb').read()) if os.path.isfile(p) else None
         if ours is None or ours == base[rel]:
             if not dry:
+                remember(rel, p)
                 os.makedirs(os.path.dirname(p), exist_ok=True)
                 open(p, 'wb').write(data)
             applied.append(rel)
@@ -239,6 +254,21 @@ def cmd_apply(name, zippath, include_new, skip_files, dry=False):
         return 0 if not conflicts else 2
 
     # 更新 manifest
+    if conflicts:
+        # 回滚本次自动写入，保留 .merge 供人工合并；基线不推进，重跑才能重新判断。
+        for rel, orig in backups.items():
+            p2 = os.path.join(tdir, rel)
+            try:
+                if orig is None:
+                    if os.path.isfile(p2):
+                        os.unlink(p2)
+                else:
+                    open(p2, 'wb').write(orig)
+            except OSError as e:
+                print('  回滚失败 %s：%s' % (rel, e))
+        print('  存在冲突：已回滚本次自动改动，基线未更新。处理完 .merge 后重跑 apply。')
+        return 2
+
     c['files'] = {rel: sha(d) for rel, d in up.items() if not skip(c, rel)}
     c['base_version'] = up_version(zippath) or c['base_version']
     c['integrated_version'] = c['base_version']

@@ -66,5 +66,19 @@
     "cards_order": "卡片显隐与排序：key = pageId|卡片首个 .pref-title（无则 #序号），存 ht_diy_hidden_cards / ht_diy_order_<pageId>；排序按 .small-title 分段保存与恢复，长按 0.45s 拖动，输入框/开关/色板/按钮上不触发",
     "schemes": "ht_schemes 存多套外观快照（除 ht_schemes/ht_backup_path 外的全部 ht_* 键），应用=清空后回写并刷新；支持 JSON 导入导出；自定义 CSS 存 ht_diy_css 并注入 #diyCssStyle",
     "bg_filter": "光斑容器默认不加 filter（避免隔离 mix-blend-mode），只在背景模糊>0、饱和度≠1 或开着自动变色时才挂 body.bg-filter"
-  }
+  },
+  "audit_20261101": {
+    "status": "待修",
+    "findings": [
+      "快慢刷新共享bkBusy，慢读阻塞高频采样；bkPoll自动force绕过失败退避；刷新关闭仍有兜底timer",
+      "status_fast电流绝对值化与完整读符号不一致，放电电流可跳号",
+      "电压副标题只看标记或全局最大vterm就宣称已生效/节点写入，缺真实核验",
+      "diyRenderSchemes方案名直接innerHTML、内联事件拼接；外部方案可注入高权限WebUI",
+      "snapshot_charge默认find不跟class入口软链接，DT值截断且UI可能超时",
+      "慢字段快速刷清空问题已经修正，Node回归6100仍保持6100"
+    ],
+    "validation": "Node VM已复现无节点核验显示已写节点、自动完整读绕过暂停、无害HTML方案名未转义。"
+  },
+  "wallpaper_fix": "v1.0.43：body.wallpaper .ambient{background:none} + .amb-grad{opacity:0}，此前底图层不透明底色盖住壁纸",
+  "appearance_audit": "v1.0.43 浏览器实测：滑块/开关/卡片显隐/字段显隐/方案/皮肤切换/IP/字体均有效；光环类需对应元素存在，属预期"
 }

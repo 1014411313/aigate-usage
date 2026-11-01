@@ -40,13 +40,15 @@ FV_CANDS="
 /sys/class/power_supply/battery/voltage_max
 "
 
-# ---- 数字匹配（读回 vs 期望，±2% 容差，兼容驱动取整/截断）----
+# ---- 数字匹配（读回 vs 期望）----
+# 【v1.0.42】旧版统一用 ±2%：4500mV 允许 90mV 偏差，驱动拒写时只要原值落在容差内
+#   也会被判成功。改成按驱动典型步进量给容差（µV 25mV / mV 25mV）。
 _num() { echo "$1" | tr -cd '0-9'; }
 _match() {
   _r=$(_num "$1"); _e="$2"
   case "$_r" in ''|0) return 1 ;; esac
   _d=$(( _r - _e )); [ "$_d" -lt 0 ] && _d=$(( -_d ))
-  _lim=$(( _e / 50 ))   # 2%
+  if [ "$_e" -gt 100000 ]; then _lim=25000; else _lim=25; fi
   [ "$_d" -le "$_lim" ]
 }
 
@@ -58,23 +60,27 @@ _write_voltage() {
   _perm=$(stat -c %A "$_n" 2>/dev/null)
   case "$_perm" in *w*) ;; *) return 1 ;; esac
   _tuv=$(( _t * 1000 ))
-  # 先试 µV（constant_charge_voltage 等标准单位）
-  echo "$_tuv" > "$_n" 2>/dev/null
-  _r=$(cat "$_n" 2>/dev/null)
-  if _match "$_r" "$_tuv"; then echo "uv"; return 0; fi
+  # 先试 µV（constant_charge_voltage 等标准单位）；写命令失败时不再靠读回判成功
+  if echo "$_tuv" > "$_n" 2>/dev/null; then
+    _r=$(cat "$_n" 2>/dev/null)
+    if _match "$_r" "$_tuv"; then echo "uv"; return 0; fi
+  fi
   # 再试 mV
-  echo "$_t" > "$_n" 2>/dev/null
-  _r=$(cat "$_n" 2>/dev/null)
-  if _match "$_r" "$_t"; then echo "mv"; return 0; fi
+  if echo "$_t" > "$_n" 2>/dev/null; then
+    _r=$(cat "$_n" 2>/dev/null)
+    if _match "$_r" "$_t"; then echo "mv"; return 0; fi
+  fi
   return 1
 }
 
 # ---- 记录原始值（仅首次，供还原）----
-_save_orig() {  # $1=node $2=unit
-  _n="$1"; _u="$2"
+# 【v1.0.42】必须由调用方在【写入之前】把原值传进来。旧版在写入成功后重读节点，
+#   记下来的"原值"就是刚写进去的新值 —— 关闭/卸载时原样回写用户值，等于没还原。
+_save_orig() {  # $1=node $2=unit $3=写入前的原值
+  _n="$1"; _u="$2"; _o="${3:-}"
   [ -e "$_n" ] || return
   grep -qF "$_n|" "$ORIG" 2>/dev/null && return
-  _o=$(cat "$_n" 2>/dev/null)
+  if [ -z "$_o" ]; then _o=$(cat "$_n" 2>/dev/null); fi
   case "$_o" in ''|*[!0-9]*) _o="" ;; esac
   mkdir -p "$XBT/state" 2>/dev/null
   echo "$_n|$_o|$_u" >> "$ORIG" 2>/dev/null
@@ -217,6 +223,7 @@ _apply_fv_force() {
   _rc=$?
   if [ "$_rc" != "0" ] || [ ! -s "$XBT/baa/modes/normal.json" ]; then
     echo "$(date +%s 2>/dev/null)" > "$XBT/state/fv_force_fail" 2>/dev/null
+    echo 1 > "$XBT/state/fv_force_dirty" 2>/dev/null
     rm -f "$XBT/state/fv_force_plain.json" "$XBT/state/fv_force_applied" 2>/dev/null
     log "volt: 载荷加密失败/超时（rc=$_rc），已记录退避，10 分钟后自动重试"
     return 1
@@ -231,6 +238,7 @@ _apply_fv_force() {
   _rc=$?
   if [ "$_rc" != "0" ]; then
     echo "$(date +%s 2>/dev/null)" > "$XBT/state/fv_force_fail" 2>/dev/null
+    echo 1 > "$XBT/state/fv_force_dirty" 2>/dev/null
     rm -f "$XBT/state/fv_force_applied" 2>/dev/null
     log "volt: 载荷重挂载失败/超时（rc=$_rc），已记录退避，10 分钟后自动重试"
     return 1
@@ -242,7 +250,9 @@ _apply_fv_force() {
 }
 
 _restore_force() {
-  [ -f "$XBT/state/fv_force_applied" ] || return 0
+  # 【v1.0.42】旧版以 fv_force_applied 作为恢复门控，而这个标记只在"全部成功"后才写：
+  #   加密失败/挂载失败时会删标记，但正式载荷已经被改过 → 恢复流程直接 return，
+  #   文件永久停在半成品状态。改为「备份目录存在 = 曾改写过」即恢复。
   _bk="$XBT/state/fv_force_backup"
   [ -d "$_bk" ] || return 0
   for _f in normal.json normal_nocloud.json normal_plain.json normal_nocloud_plain.json; do
@@ -250,8 +260,14 @@ _restore_force() {
   done
   baa_refresh_src >/dev/null 2>&1
   timeout 30 sh "$XBT/scripts/baa_ops.sh" mount >>"$LOG" 2>&1
-  rm -f "$XBT/state/fv_force_applied" "$XBT/state/fv_force_plain.json" "$XBT/state/fv_force_fail" 2>/dev/null
+  if [ $? -ne 0 ]; then
+    log "volt: 载荷还原后重挂载失败，保留备份下次重试"
+    return 1
+  fi
+  rm -f "$XBT/state/fv_force_applied" "$XBT/state/fv_force_plain.json" "$XBT/state/fv_force_fail" "$XBT/state/fv_force_dirty" 2>/dev/null
+  rm -rf "$_bk" 2>/dev/null
   log "volt: 已还原 BAA vterm 上限（恢复原载荷）"
+  return 0
 }
 
 _apply_fv() {
@@ -297,9 +313,10 @@ _apply_fv() {
         ;;
     esac
     _has_any=1
+    _raw_orig=$(cat "$_n" 2>/dev/null)
     _u=$(_write_voltage "$_n" "$_t")
     [ -n "$_u" ] || continue
-    _save_orig "$_n" "$_u"
+    _save_orig "$_n" "$_u" "$_raw_orig"
     echo "$_n|$_u" > "$XBT/state/volt_fv_node" 2>/dev/null
     log "volt: fv_v 应用 -> $_n ($_u, $_t)"
     return 0
@@ -326,6 +343,9 @@ _apply_fv() {
   # v3.00.39：设定值恰好 = 系统 vterm 上限 → 等于默认值，无需改写载荷
   if [ "$_mx" -gt 0 ] && [ "$_t" -eq "$_mx" ]; then
     log "volt: fv_v=$_t 等于系统最高满充电压 ${_mx}mV（默认值，无需改写载荷）"
+    # 【v1.0.42】以前改写过（备份还在）就必须还原，否则用户把设置改回默认值后
+    #   旧载荷会一直留在系统里。
+    _restore_force
     return 0
   fi
   log "volt: 无 constant_charge_voltage 类节点（新平台），改写 BAA 载荷 vterm=$_t mV"

@@ -2,12 +2,12 @@
   "meta": {
     "module_id": "HyperOS_XJ",
     "name": "HyperOS - 动态温控·解容",
-    "current_version": "1.0.41",
-    "updated": "2026-10-31",
+    "current_version": "1.0.47",
+    "updated": "2026-11-01",
     "maintainer": "小米热炸了（酷安 517965）",
     "upstream": {
       "dynamic_thermal": "Axiaojiux（动态温控 K2）",
-      "battery_toolbox": "听夜风1337（电池解容工具箱 v3.9.6）"
+      "battery_toolbox": "听夜风1337（电池解容工具箱 v3.12.6）"
     },
     "how_to_resume": "先读 index.json；再按任务读对应分片；任务结束更新相关分片 + meta.current_version"
   },
@@ -21,8 +21,37 @@
     "device.json": "本机信息与当前运行状态"
   },
   "pending": [
-    "v1.0.41 为最终测试版（用户决定不再测试）：包含 1.0.22~1.0.41 全部改动，等用户说「发布」后再执行 tools/release.py publish",
-    ".git 499MB 瘦身（filter-repo，需用户确认后 force push）",
-    "关于页的「关于模块」死页面（特别鸣谢/注意事项）入口已删但内容保留，未清理"
-  ]
+    "v1.0.47 已本地打包（未发布），等真机验证：安装时音量键选项 + 档位压缩后的充电表现",
+    ".git 499MB 瘦身（filter-repo，需用户确认后 force push）"
+  ],
+  "audit": {
+    "date": "2026-11-01",
+    "audited_version": "1.0.41",
+    "fixed_in": "1.0.47",
+    "report": "~/workspace/.aicode/tmp/audit_1_0_41/模块审计报告_v1.0.41.txt",
+    "fixed": [
+      "温控 SIC-BAT 全段放开（六份配置），充电归电池解容",
+      "旁路退出/关闭/禁用统一交还并失效执行快照",
+      "APL 消费门控（开关+进程+全速）、切档启停、单实例路径修正",
+      "watchdog 尊重 unlock/disable，unlock.sh 先停看护",
+      "电压写前记录原值、容差收紧、失败保留可回滚状态、改回默认值自动还原载荷",
+      "卸载顺序修正（先还原载荷再 umount）",
+      "配置启动不再被旧备份覆盖、旧目录迁移允许覆盖包内默认值",
+      "DTBO 刷写安全门（magic/块设备/大小/备份核验/不猜槽位）",
+      "快慢刷新双锁、退避不被绕过、关闭刷新不再兜底写值",
+      "电压状态按真实证据分级、快速刷新保留电流符号",
+      "快照 -L 软链接与 DT 完整导出、停充取证每拍记录 plugged",
+      "方案列表 DOM 渲染+导入校验、同步工具冲突回滚与 zip 路径过滤",
+      "温控页新增「高温自动降充电功率」：按档位阈值调用解容 power_limit 降档，尊重用户手动改档，不高放宽",
+      "安装不再自动刷 DTBO，改为页面手动刷（高级用户可放 dtbo/auto_install 标记）",
+      "修复自定义背景不生效：.ambient 底图层遮挡壁纸",
+      "外观页逐项实测：除背景外功能均有效，未删除任何项"
+    ],
+    "still_open": [
+      "PPS 与原 battery_tune 实例共存时无显式协调（仅检测自身进程）",
+      "MiThermald 对 SIC-BAT max==min 的运行时视为未验证，需真机观察",
+      "安顿标记（inf_settled/inf_node_capped）与 APL 目标变更的状态机仍是增量修补，未重写"
+    ],
+    "validation": "40 Shell + 4 Python + WebUI 语法通过；温控配置解密往返一致且不限流；charge_gov 九种温度/档位/开关组合模拟全部符合预期（含用户手动改档不放宽、回落恢复原档）；浏览器实测壁纸显示、DIY 滑块与开关均有视觉变化。真机充电效果未验证。"
+  }
 }

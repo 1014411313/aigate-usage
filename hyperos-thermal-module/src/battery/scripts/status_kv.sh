@@ -157,6 +157,16 @@ echo "fv_set=$(cfg_get fv_v '')"
 echo "fv_applied=$(cat "$XBT/state/fv_force_applied" 2>/dev/null)"
 echo "fv_vterm=$(get_vterm_max 2>/dev/null)"
 echo "fv_vterm_orig=$(cat "$XBT/state/fv_vterm_orig" 2>/dev/null)"
+# 电压节点实际当前值：界面判断「是否真写进去」只能靠它，不能只看设定值与上限比较
+_vfn=$(cut -d'|' -f1 "$XBT/state/volt_fv_node" 2>/dev/null)
+if [ -n "$_vfn" ] && [ -r "$_vfn" ]; then
+  _vnv=$(cat "$_vfn" 2>/dev/null | tr -cd '0-9')
+  case "$_vnv" in ''|0) ;; *)
+    echo "fv_node_now=$_vnv"
+    echo "fv_node_path=$_vfn" ;;
+  esac
+fi
+
 _proto=""
 for _p in /sys/class/power_supply/usb/real_type \
           /sys/class/xm_power/charger/charger_common/real_type \

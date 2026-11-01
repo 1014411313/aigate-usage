@@ -818,6 +818,14 @@ dt_curr_cap_ma() {
     }'
 }
 
+# APL 是否真的在跑（消费者用：开关关掉或进程已死时不能采信它的目标文件）
+apl_alive() {
+  _ap=$(cat "$XBT/state/apl.pid" 2>/dev/null)
+  case "$_ap" in ''|*[!0-9]*) return 1 ;; esac
+  kill -0 "$_ap" 2>/dev/null || return 1
+  return 0
+}
+
 # 各档在 curr 机制下的目标电流（inf 固定 20000mA，与“一发er”方案一致）
 tier_target_ma() {
   _w=""
@@ -840,7 +848,15 @@ tier_target_ma() {
       _om=$(cfg_get apl_max_ma "")
       case "$_om" in ''|*[!0-9]*) ;; *)
         [ "$_om" -gt 0 ] && [ "$_om" -lt "$_cap" ] && _cap="$_om" ;; esac
-      _at=$(cat "$XBT/state/apl_target_ma" 2>/dev/null)
+      # 【v1.0.42】只有开关=1 且 APL 进程活着时才采信动态目标。
+      #   旧行为无条件读 state/apl_target_ma：APL 关掉后残留的低目标仍会压在 inf 上，
+      #   表现为「全速档功率上不去，但界面显示 APL 已关闭」。残留文件同时清掉。
+      _at=""
+      if [ "$(cfg_get apl_enable 0)" = "1" ] && apl_alive; then
+        _at=$(cat "$XBT/state/apl_target_ma" 2>/dev/null)
+      else
+        rm -f "$XBT/state/apl_target_ma" 2>/dev/null
+      fi
       case "$_at" in ''|*[!0-9]*) _at="" ;; esac
       if [ -n "$_at" ] && [ "$_at" -ge 2000 ]; then
         [ "$_at" -gt "$_cap" ] && _at="$_cap"

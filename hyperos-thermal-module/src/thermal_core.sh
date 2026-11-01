@@ -799,20 +799,22 @@ charge_tail_sample() {
 # 高温停充分好几层（HAL 的 persist.vendor.high_temp_stop_charge、charger_thermal 旋钮、
 # 无线 IC 自身保护），只报「还是断充」无法定位，这里把每次现场落到 config/stop_charge.log。
 stop_charge_watch() {
-    local cur="$BAT_STATUS"
-    local prev=$(cat "$CONFDIR/.last_chg_status" 2>/dev/null)
-    [ "$cur" = "$prev" ] && return 0
-    printf '%s' "$cur" > "$CONFDIR/.last_chg_status" 2>/dev/null
-    case "$prev" in Charging|Full) ;; *) return 0 ;; esac
+    # 【v1.0.42】供电在线状态必须【每拍】更新：旧版只在电量状态变化时才写 .last_plugged，
+    #   而无线 RX 保护会在同一次 tick 里把 wireless/online 一起置 0 →
+    #   拿不到"上一拍还在充电"的证据，第一次停充反而漏记。
     local ac=$(cat /sys/class/power_supply/ac/online 2>/dev/null)
     local usb=$(cat /sys/class/power_supply/usb/online 2>/dev/null)
     local wls=$(cat /sys/class/power_supply/wireless/online 2>/dev/null)
     local plug=0
     case "$ac$usb$wls" in *1*) plug=1 ;; esac
-    # 无线停充时 RX 会先把 wireless/online 置 0，本次插着电的标志会跟着丢；
-    # 所以用上一拍的插件状态判定，否则真停充反而记不下来。
     local prev_plug=$(cat "$CONFDIR/.last_plugged" 2>/dev/null)
     printf '%s' "$plug" > "$CONFDIR/.last_plugged" 2>/dev/null
+
+    local cur="$BAT_STATUS"
+    local prev=$(cat "$CONFDIR/.last_chg_status" 2>/dev/null)
+    [ "$cur" = "$prev" ] && return 0
+    printf '%s' "$cur" > "$CONFDIR/.last_chg_status" 2>/dev/null
+    case "$prev" in Charging|Full) ;; *) return 0 ;; esac
     [ "$plug" = "1" ] || [ "$prev_plug" = "1" ] || return 0
     local t="$BAT_TEMP"
     case "$t" in ''|*[!0-9]*) t=0 ;; esac
@@ -839,36 +841,161 @@ stop_charge_watch() {
     log "检测到停充：$prev -> $cur（温度 $((t / 10)).$((t % 10))℃，已记入 stop_charge.log）"
 }
 
-# 启动时从模块目录外的备份恢复一次：customize.sh 的恢复如果没跑到（部分管理器的更新路径），
-# 这里可以兜住。备份由 cfg_set / UI 保存实时同步，内容不同就以备份为准（新版本新增的键由脚本默认值兜底）。
+# 启动时从模块目录外的备份恢复：只堵“当前配置缺失”这个洞。
+# 【v1.0.42】旧逻辑是“内容不同就以备份为准”。问题：用户改了设置但备份还没跟上、
+#   或备份是上一次安装的旧快照时，普通启动会把新设置回退成旧值（模拟已复现：
+#   当前 PPS 开/4500mV 被旧备份覆盖成 PPS 关/4400mV）。
+#   安装迁移由 customize.sh 负责；这里只做失而复得的兑底，绝不拿旧备份覆盖现有值。
 restore_from_backup() {
     local bak=/data/adb/HyperOS_XJ_data
     [ -d "$bak" ] || return 0
     local cur="$MODDIR/battery/config/settings.conf"
     local bf="$bak/battery/config/settings.conf"
-    if [ -s "$bf" ]; then
-        if [ ! -s "$cur" ] || ! cmp -s "$bf" "$cur" 2>/dev/null; then
-            mkdir -p "$MODDIR/battery/config" 2>/dev/null
-            cp -f "$bf" "$cur" 2>/dev/null && log "已从备份恢复解容配置（功率档/电压/PPS/循环/APL）"
-        fi
+    if [ -s "$bf" ] && [ ! -s "$cur" ]; then
+        mkdir -p "$MODDIR/battery/config" 2>/dev/null
+        cp -f "$bf" "$cur" 2>/dev/null && log "解容配置缺失，已从备份恢复（功率档/电压/PPS/循环/APL）"
     fi
     local cfg="$CONFDIR/settings.json"
     local bcfg="$bak/config/settings.json"
-    if [ -s "$bcfg" ]; then
-        if [ ! -s "$cfg" ] || ! cmp -s "$bcfg" "$cfg" 2>/dev/null; then
-            mkdir -p "$CONFDIR" 2>/dev/null
-            cp -f "$bcfg" "$cfg" 2>/dev/null && log "已从备份恢复温控配置"
-        fi
+    if [ -s "$bcfg" ] && [ ! -s "$cfg" ]; then
+        mkdir -p "$CONFDIR" 2>/dev/null
+        cp -f "$bcfg" "$cfg" 2>/dev/null && log "温控配置缺失，已从备份恢复"
     fi
     return 0
+}
+
+# 把充电所有权交还电池解容（旁路退出、模块关闭/禁用时统一走这里）
+# 【v1.0.42】旧实现只删 bypass_active 再调 charge_guard once，但 charge_guard 的
+#   inf 幂等判断【不校验电流节点】，once 会认定"已应用"直接早退 ——
+#   旁路写下的 500mA 就永久留在节点上，表现为"关了旁路/关掉温控，功率还是上不来"。
+#   交还前先让执行快照和 inf 安顿标记失效，逼它按当前功率档重新安顿一次。
+release_charge_to_battery() {
+    local bs=/data/adb/modules/HyperOS_XJ/battery/state
+    rm -f "$CONFDIR/bypass_active" 2>/dev/null
+    rm -f "$bs/inf_settled" "$bs/inf_settle_ts" "$bs/inf_selfcheck_ts" \
+          "$bs/inf_settle_fail" "$bs/inf_node_capped" \
+          "$bs/direct_applied" "$bs/power_mode_applied" 2>/dev/null
+    local _bk=/data/adb/modules/HyperOS_XJ/battery/scripts/charge_guard.sh
+    if [ -f "$_bk" ]; then
+        ( setsid sh "$_bk" once >/dev/null 2>&1 < /dev/null & )
+        log "已交还电池解容：执行状态已失效，按当前功率档重新安顿"
+        return 0
+    fi
+    local t=$(cat "$CONFDIR/rt_charge_orig" 2>/dev/null)
+    case "$t" in
+        ''|*[!0-9]*) log "交还失败：无 charge_guard，且无原值可回写" ;;
+        *) set_charge_current "$t"; log "交还失败：已回写原电流 $t" ;;
+    esac
+}
+
+# ===== 温控联动充电功率（决策在温控，执行走电池解容的 power_limit）=====
+# 档位温度上限与 thermal/N/thermal-scene.conf 的 [SIC-BAT] trig 起点一致：
+#   一档 45℃ / 二档 40℃ / 三档 35℃ / 四档 31℃ / 五档 26℃；无限制档不介入。
+charge_gov_limit() {
+    case "$1" in
+        1) echo 45 ;; 2) echo 40 ;; 3) echo 35 ;; 4) echo 31 ;; 5) echo 26 ;;
+        *) echo "" ;;
+    esac
+}
+
+# 档位宽紧排序：越大越宽松（inf > fast > mid > slow）
+charge_gov_rank() {
+    case "$1" in inf) echo 3 ;; fast) echo 2 ;; mid) echo 1 ;; slow) echo 0 ;; *) echo 3 ;; esac
+}
+
+battery_power_tier() {
+    local f="$MODDIR/battery/config/settings.conf" v=""
+    [ -f "$f" ] && v=$(grep -a '^power_limit=' "$f" 2>/dev/null | tail -n 1 | cut -d= -f2-)
+    case "$v" in inf|fast|mid|slow) echo "$v" ;; *) echo inf ;; esac
+}
+
+charge_gov_release() {
+    local stf="$CONFDIR/charge_gov.state"
+    [ -f "$stf" ] || return 0
+    local prev=$(cut -d' ' -f1 "$stf" 2>/dev/null)
+    rm -f "$stf" 2>/dev/null
+    case "$prev" in
+        inf|fast|mid|slow)
+            sh "$MODDIR/battery/scripts/power_limit.sh" set "$prev" >/dev/null 2>&1
+            log "温控联动：温度回落，充电功率恢复 $prev" ;;
+    esac
+}
+
+# 温度高了让电池解容降充电功率，温度回落恢复用户原档。
+# 用户手动改过档就不再接管（否则会把用户的选择覆盖掉）。
+charge_gov() {
+    [ "$(conf charge_gov true)" = "true" ] || return 0
+    local pl="$MODDIR/battery/scripts/power_limit.sh"
+    [ -f "$pl" ] || return 0
+    local mode=$(cat "$CONFDIR/current_mode" 2>/dev/null)
+    local lim=$(charge_gov_limit "$mode")
+    local stf="$CONFDIR/charge_gov.state" stp="" applied="" orig=""
+    [ -f "$stf" ] && stp=$(cat "$stf" 2>/dev/null)
+    if [ -n "$stp" ]; then
+        orig=$(echo "$stp" | cut -d' ' -f1)
+        applied=$(echo "$stp" | cut -d' ' -f2)
+    fi
+
+    if [ -z "$lim" ]; then
+        [ -n "$stp" ] && charge_gov_release
+        return 0
+    fi
+
+    local t=$((BAT_TEMP / 10))
+    local active=0
+    if [ -n "$stp" ]; then
+        # 严格大于：回落满 2℃ 就退出保护区（等于 lim-2 时直接恢复原档）
+        [ "$t" -gt $((lim - 2)) ] && active=1
+    else
+        [ "$t" -ge "$lim" ] && active=1
+    fi
+    if [ "$active" = "0" ]; then
+        [ -n "$stp" ] && charge_gov_release
+        return 0
+    fi
+
+    # 越高越狠：limit 起 mid，limit+4 起 slow，回落滞回内给 fast
+    local want=mid
+    [ "$t" -lt "$lim" ] && want=fast
+    [ "$t" -ge $((lim + 4)) ] && want=slow
+
+    local now=$(battery_power_tier)
+    if [ -z "$stp" ]; then
+        # 用户原本就设得比目标档更严（例如已经是 10W）→ 不要放宽，只记下状态
+        if [ "$(charge_gov_rank "$want")" -ge "$(charge_gov_rank "$now")" ]; then
+            printf '%s %s' "$now" "$now" > "$stf" 2>/dev/null
+            return 0
+        fi
+        printf '%s %s' "$now" "$want" > "$stf" 2>/dev/null
+        sh "$pl" set "$want" >/dev/null 2>&1
+        log "温控联动：电池 ${t}℃ ≥ ${lim}℃，充电功率 $now → $want"
+        return 0
+    fi
+    if [ "$now" != "$applied" ] && [ "$now" != "$want" ]; then
+        rm -f "$stf" 2>/dev/null
+        log "温控联动：检测到手动改档（$now），停止自动接管"
+        return 0
+    fi
+    if [ "$want" != "$applied" ]; then
+        printf '%s %s' "$orig" "$want" > "$stf" 2>/dev/null
+        sh "$pl" set "$want" >/dev/null 2>&1
+        log "温控联动：电池 ${t}℃，充电功率 $applied → $want"
+    fi
 }
 
 tick() {
     ensure_thermal_dir
     hitemp_guard
 
+    # 旁路还没退出就被关闭/禁用时，同样要把所有权交还，否则 bypass_active 会永久留着，
+    # 电池侧一直"让路"不再写电流。
+    if [ "$(cat "$CONFDIR/bypass_active" 2>/dev/null)" = "1" ]; then
+        release_charge_to_battery
+    fi
+
     if [ -f "$MODDIR/disable" ]; then
         if [ "$(cat "$CONFDIR/current_mode" 2>/dev/null)" != "disabled" ]; then
+            charge_gov_release
             apply_default
             printf 'disabled' > "$CONFDIR/current_mode"
             update_status disabled
@@ -879,6 +1006,7 @@ tick() {
 
     if [ "$(conf enabled true)" = "false" ]; then
         if [ "$(cat "$CONFDIR/current_mode" 2>/dev/null)" != "off" ]; then
+            charge_gov_release
             apply_default
             printf 'off' > "$CONFDIR/current_mode"
             update_status off
@@ -890,6 +1018,7 @@ tick() {
     hyperos_keepalive
 
     BAT_TEMP=$(cat /sys/class/power_supply/battery/temp 2>/dev/null); [ -z "$BAT_TEMP" ] && BAT_TEMP=0
+    charge_gov
     BAT_CUR=$(cat /sys/class/power_supply/battery/current_now 2>/dev/null); [ -z "$BAT_CUR" ] && BAT_CUR=0
     BAT_CAP=$(cat /sys/class/power_supply/battery/capacity 2>/dev/null); [ -z "$BAT_CAP" ] && BAT_CAP=0
     BAT_STATUS=$(cat /sys/class/power_supply/battery/status 2>/dev/null); [ -z "$BAT_STATUS" ] && BAT_STATUS="Unknown"
@@ -949,19 +1078,7 @@ tick() {
         return 0
     fi
     if [ "$(cat "$CONFDIR/bypass_active" 2>/dev/null)" = "1" ]; then
-        rm -f "$CONFDIR/bypass_active" 2>/dev/null
-        # 旁路结束后交还给电池解容：让它按当前功率档重新写一次；拿不到再用原值兑底
-        local _bk="/data/adb/modules/HyperOS_XJ/battery/scripts/charge_guard.sh"
-        if [ -f "$_bk" ]; then
-            ( setsid sh "$_bk" once >/dev/null 2>&1 < /dev/null & )
-            log "旁路关闭：已交还电池解容重新施加功率档"
-        else
-            local t=$(cat "$CONFDIR/rt_charge_orig" 2>/dev/null)
-            case "$t" in
-                ''|*[!0-9]*) log "旁路关闭：无原值可回写" ;;
-                *) set_charge_current "$t"; log "旁路关闭：充电电流恢复 $t" ;;
-            esac
-        fi
+        release_charge_to_battery
     fi
 
     local target="default"

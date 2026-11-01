@@ -62,8 +62,23 @@ cg_alive() {
   return 0
 }
 
+# ---- 本轮是否应该维持 charge_guard ----
+# 【v1.0.42】用户关掉解容（unlock=0）或禁用模块后，旧版看护仍在 60 秒后把 charge_guard 拉回来，
+#   表现为"关了解容/关掉了，过一会儿又开始改充电节点"。守护必须和启用状态一致。
+cg_expected() {
+  [ -f "/data/adb/modules/HyperOS_XJ/disable" ] && return 1
+  [ "$(cfg_get unlock 1)" = "1" ] || return 1
+  return 0
+}
+
 # ---- 重启 charge_guard ----
 restart_cg() {
+  if ! cg_expected; then
+    # 不该本守护运行时顺手把残留 PID 文件清掉，下次开启时从头安顿
+    rm -f "$PIDF" "$XBT/state/cg_started_ts" 2>/dev/null
+    log "解容已关闭或模块禁用，不重启 charge_guard"
+    return 1
+  fi
   _now=$(date +%s)
   _last=$(cat "$LASTF" 2>/dev/null)
   case "$_last" in ''|*[!0-9]*) _last=0 ;; esac
@@ -136,6 +151,12 @@ restart_tg() {
 TICK=0
 while :; do
   TICK=$((TICK + 1))
+  # 解容关闭/模块禁用时本守护自行退出，不再干预充电节点
+  if ! cg_expected; then
+    log "解容未启用（unlock=$(cfg_get unlock 1)），看护退出"
+    rm -f "$XBT/state/wd.pid" 2>/dev/null
+    exit 0
+  fi
   # 每 60 秒巡检一次
   if ! cg_alive; then
     restart_cg

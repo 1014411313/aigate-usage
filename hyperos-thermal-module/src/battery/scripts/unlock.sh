@@ -74,6 +74,10 @@ do_off() {
   fi
 
   echo "-> 3/5 停止守护进程..."
+  # v1.0.42：先停看护，否则它 60 秒后会把刚停掉的 charge_guard 又拉起来
+  for _wp in $(timeout 5 pgrep -f 'HyperOS_XJ/battery/scripts/guard_watchdog\.sh' 2>/dev/null); do
+    kill -TERM "$_wp" 2>/dev/null
+  done
   sh $XBT/scripts/fv_guard.sh stop
   sh $XBT/scripts/cycle_guard.sh stop 2>/dev/null
   # v2.7.13：charge_guard 原本没有任何停止入口（全仓 grep 零命中），

@@ -41,6 +41,27 @@ case "$1" in
   set)
     _p=$(normalize_power "$2")
     cfg_set power_limit "$_p"
+    # 【v1.0.42】APL 只在全速档工作：切到全速且开关=1 时要把它拉起来，
+    #   切到限流档时要停掉。旧版两边都不管，导致「开关开着但进程没跑」。
+    if [ -f "$XBT/scripts/apl.sh" ]; then
+      case "$_p" in
+        inf)
+          if [ "$(cfg_get apl_enable 0)" = "1" ]; then
+            for _ap in $(timeout 5 pgrep -f 'HyperOS_XJ/battery/scripts/apl\.sh' 2>/dev/null); do
+              kill -TERM "$_ap" 2>/dev/null
+            done
+            rm -f "$XBT/state/apl_target_ma" "$XBT/state/apl_lock_until" "$XBT/state/apl_urgent" 2>/dev/null
+            ( setsid sh "$XBT/scripts/apl.sh" >/dev/null 2>&1 < /dev/null & )
+            log "power_limit: 切到全速，已启动 APL"
+          fi ;;
+        *)
+          for _ap in $(timeout 5 pgrep -f 'HyperOS_XJ/battery/scripts/apl\.sh' 2>/dev/null); do
+            kill -TERM "$_ap" 2>/dev/null
+          done
+          rm -f "$XBT/state/apl_target_ma" "$XBT/state/apl_urgent" 2>/dev/null
+          ;;
+      esac
+    fi
     sh $XBT/scripts/charge_guard.sh once
     _rc=$?
     echo "已选择 $(power_label)（$(power_hint)）。"

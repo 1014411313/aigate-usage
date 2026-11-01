@@ -40,6 +40,14 @@ cat > "$BK/还原说明.txt" 2>/dev/null <<'XEOF'
 XEOF
 
 
+# 1) 卸载电压改写（必须在 BAA umount 之前）
+# 【v1.0.42】旧顺序是先 umount BAA、再 volt_guard stop；而 stop → _restore_force
+#   会重新 mount 模块原载荷 —— 结果是"刚卸掉又挂回来"。改为先还原文件并把
+#   模块原载荷挂回去，紧接着的 umount 再统一卸掉，最后系统读到的就是原厂文件。
+if [ -f "$XBT/scripts/volt_guard.sh" ]; then
+  sh "$XBT/scripts/volt_guard.sh" stop >/dev/null 2>&1
+fi
+
 # 1) 卸载 BAA bind mount（PID1 命名空间内），并让 batteryantiaging 重读原厂文件
 sh $XBT/scripts/baa_ops.sh umount 2>/dev/null
 setprop ctl.restart batteryantiaging 2>/dev/null
@@ -69,7 +77,7 @@ xbt_kill 'HyperOS_XJ/battery/scripts/cloud_guard\.sh'    'HyperOS_XJ/battery/scr
 xbt_kill 'HyperOS_XJ/battery/scripts/diag_log\.sh'       'HyperOS_XJ/battery/scripts/diag_log.sh'
 xbt_kill 'HyperOS_XJ/battery/scripts/fv_guard\.sh'       'HyperOS_XJ/battery/scripts/fv_guard.sh'
 xbt_kill 'HyperOS_XJ/battery/scripts/fv_handler\.sh'     'HyperOS_XJ/battery/scripts/fv_handler.sh'
-# 电压守护：先停进程再还原被改写的电压节点 / BAA 载荷
+# 电压守护：进程上面已按路径杀过，这里只补一次 stop（幂等，文件已还原则快速返回）
 if [ -f "$XBT/scripts/volt_guard.sh" ]; then
   sh "$XBT/scripts/volt_guard.sh" stop >/dev/null 2>&1
 fi

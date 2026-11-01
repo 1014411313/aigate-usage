@@ -43,6 +43,9 @@ def main():
             # 控制台 APK 不再随包分发（界面已改为模块 WebUI）；仓库里保留一份方便回退
             if rel == 'HyperOSxj.apk':
                 continue
+            # 开发期的旧版备份（*.bak / *.glass-bak 等）不进包
+            if '.bak' in f or f.endswith('-bak') or f.endswith('.orig'):
+                continue
             files.append(rel)
     files.sort()
 

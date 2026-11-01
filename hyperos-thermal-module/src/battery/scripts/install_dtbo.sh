@@ -45,7 +45,12 @@ fi
 SLOT=$(getprop ro.boot.slot_suffix)
 SLOT=${SLOT#_}
 if [ -z "$SLOT" ]; then SLOT=$(getprop ro.boot.slot 2>/dev/null); fi
-if [ -z "$SLOT" ]; then SLOT=b; fi
+# 【v1.0.42】旧版取不到槽位就默认 b：猜错槽会刷错分区，甚至刷到不该动的槽。
+#   拿不到就跳过刷入（安装可以继续，只是不刷镜像）。
+if [ -z "$SLOT" ]; then
+    say "跳过 DTBO：无法确定当前槽位"
+    exit 6
+fi
 case "$SLOT" in
     a|b) ;;
     *) say "跳过 DTBO：槽位无法识别（$SLOT）"; exit 6 ;;
