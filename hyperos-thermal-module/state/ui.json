@@ -80,5 +80,20 @@
     "validation": "Node VM已复现无节点核验显示已写节点、自动完整读绕过暂停、无害HTML方案名未转义。"
   },
   "wallpaper_fix": "v1.0.43：body.wallpaper .ambient{background:none} + .amb-grad{opacity:0}，此前底图层不透明底色盖住壁纸",
-  "appearance_audit": "v1.0.43 浏览器实测：滑块/开关/卡片显隐/字段显隐/方案/皮肤切换/IP/字体均有效；光环类需对应元素存在，属预期"
+  "appearance_audit": "v1.0.43 浏览器实测：滑块/开关/卡片显隐/字段显隐/方案/皮肤切换/IP/字体均有效；光环类需对应元素存在，属预期",
+  "power_plan_card": {
+    "page": "page-thermal",
+    "diy_id": "thermal-7",
+    "section": "自动任务",
+    "position": "场景/游戏加速之后、高温保护之前",
+    "verified": "浏览器实测：卡片在 page-thermal 内、主页无残留、plan_on 唯一"
+  },
+  "power_card": {
+    "page": "page-console",
+    "diy_id": "console-2",
+    "layout": "五档按键（全速/40W/25W/10W/5W）+ 当前功率大字",
+    "slider_removed": "自定义功率滑块已按用户要求移除，未留样式残留",
+    "note": "外观页 range 样式保持原有（4px 轨道），未被功率滑块样式污染",
+    "verified": "浏览器实测：5 个按钮、无滑块、外观页滑块仍为原样式"
+  }
 }

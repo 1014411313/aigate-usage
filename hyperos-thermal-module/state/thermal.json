@@ -84,5 +84,42 @@
     "migrate": "跳过 2000/1000（SIC 首项）、0/1（SOC 阈值）、85000/84000（统一高温降频）",
     "backup": "~/workspace/.aicode/tmp/audit_1_0_41/thermal_conf_backup_1046/（压缩前）",
     "note": "SIC-BAT 起点比 MONITOR 低 5℃（原厂如此），但 SIC 的 max=min=22000 不限流，实际限流点看 MONITOR"
+  },
+  "power_plan": {
+    "version": "K3-1.0.48",
+    "keys": [
+      "power_plan_on",
+      "power_plan_start",
+      "power_plan_end",
+      "power_plan_mode"
+    ],
+    "defaults": {
+      "on": false,
+      "start": 23,
+      "end": 7,
+      "mode": "slow"
+    },
+    "logic": "跨夜按 start>end 识别；进入时段降档到设定值并记录原档；时段结束恢复；用户手动改档则本时段不再接管；更严档位不放宽",
+    "execution": "只写 power_limit（解容），不直接写充电节点，避免与 charge_guard 抢控制权",
+    "order": "power_plan 先于 charge_gov 执行，高温降档在计划档基础上再降",
+    "tests": "8 组小时/时段/开关组合模拟通过；浏览器实测开关、模式高亮、非法时间回退正常"
+  },
+  "power_tiers": {
+    "order": [
+      "inf",
+      "fast",
+      "mid",
+      "slow",
+      "eco"
+    ],
+    "rank": {
+      "inf": 4,
+      "fast": 3,
+      "mid": 2,
+      "slow": 1,
+      "eco": 0
+    },
+    "eco_w_default": 5,
+    "note": "eco 为最低档，charge_gov_rank 已扩展，保证高温降档不会把 5W 放宽"
   }
 }

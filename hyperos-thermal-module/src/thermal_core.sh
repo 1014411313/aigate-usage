@@ -923,6 +923,74 @@ charge_gov_release() {
 
 # 温度高了让电池解容降充电功率，温度回落恢复用户原档。
 # 用户手动改过档就不再接管（否则会把用户的选择覆盖掉）。
+# ===== 充电计划（时间段 → 功率档）=====
+# 只决定「目标功率档」，执行仍走电池解容的 power_limit，不新增写充电节点的路径。
+# 时段命中：把功率压到设定档；时段结束：恢复进入前的档位。
+# 跨夜（如 23 点到次日 7 点）按「开始 > 结束」自动识别。
+power_plan_release() {
+    local stf="$CONFDIR/power_plan.state"
+    [ -f "$stf" ] || return 0
+    local base=$(cut -d' ' -f1 "$stf" 2>/dev/null)
+    rm -f "$stf" 2>/dev/null
+    case "$base" in
+        inf|fast|mid|slow)
+            sh "$MODDIR/battery/scripts/power_limit.sh" set "$base" >/dev/null 2>&1
+            log "充电计划：时段结束，功率恢复 $base" ;;
+    esac
+}
+
+power_plan() {
+    [ "$(conf power_plan_on false)" = "true" ] || { power_plan_release; return 0; }
+    local s=$(conf power_plan_start 23) e=$(conf power_plan_end 7) m=$(conf power_plan_mode slow)
+    case "$s" in ''|*[!0-9]*) s=23 ;; esac
+    case "$e" in ''|*[!0-9]*) e=7 ;; esac
+    case "$m" in inf|fast|mid|slow) ;; *) m=slow ;; esac
+    s=${s#0}; [ -n "$s" ] || s=0
+    e=${e#0}; [ -n "$e" ] || e=0
+    local h=$(date +%H)
+    case "$h" in ''|*[!0-9]*) h=0 ;; esac
+    # 去前导零："08" 直接进算术会被当成八进制（POSIX sh 不支持 10# 前缀）
+    h=${h#0}
+    [ -n "$h" ] || h=0
+
+    local in=0
+    if [ "$s" -eq "$e" ]; then
+        in=1
+    elif [ "$s" -lt "$e" ]; then
+        [ "$h" -ge "$s" ] && [ "$h" -lt "$e" ] && in=1
+    else
+        [ "$h" -ge "$s" ] || [ "$h" -lt "$e" ] && in=1
+    fi
+
+    local stf="$CONFDIR/power_plan.state" stp=""
+    [ -f "$stf" ] && stp=$(cat "$stf" 2>/dev/null)
+
+    if [ "$in" = "0" ]; then
+        [ -n "$stp" ] && power_plan_release
+        return 0
+    fi
+
+    local now=$(battery_power_tier)
+    if [ -z "$stp" ]; then
+        # 用户当前已经比计划档更严，就不放宽（比如手动设了 10W）
+        if [ "$(charge_gov_rank "$m")" -ge "$(charge_gov_rank "$now")" ]; then
+            printf '%s %s' "$now" "$now" > "$stf" 2>/dev/null
+            return 0
+        fi
+        printf '%s %s' "$now" "$m" > "$stf" 2>/dev/null
+        sh "$MODDIR/battery/scripts/power_limit.sh" set "$m" >/dev/null 2>&1
+        log "充电计划：进入时段 ${s}点-${e}点，充电功率 $now → $m"
+        return 0
+    fi
+
+    local applied=$(echo "$stp" | cut -d' ' -f2)
+    # 用户手动改过档（当前既不是我们设的、也不是计划值）→ 本时段不再接管
+    if [ "$now" != "$applied" ] && [ "$now" != "$m" ]; then
+        rm -f "$stf" 2>/dev/null
+        log "充电计划：检测到手动改档（$now），本时段不再接管"
+    fi
+}
+
 charge_gov() {
     [ "$(conf charge_gov true)" = "true" ] || return 0
     local pl="$MODDIR/battery/scripts/power_limit.sh"
@@ -996,6 +1064,7 @@ tick() {
     if [ -f "$MODDIR/disable" ]; then
         if [ "$(cat "$CONFDIR/current_mode" 2>/dev/null)" != "disabled" ]; then
             charge_gov_release
+            power_plan_release
             apply_default
             printf 'disabled' > "$CONFDIR/current_mode"
             update_status disabled
@@ -1007,6 +1076,7 @@ tick() {
     if [ "$(conf enabled true)" = "false" ]; then
         if [ "$(cat "$CONFDIR/current_mode" 2>/dev/null)" != "off" ]; then
             charge_gov_release
+            power_plan_release
             apply_default
             printf 'off' > "$CONFDIR/current_mode"
             update_status off
@@ -1018,6 +1088,7 @@ tick() {
     hyperos_keepalive
 
     BAT_TEMP=$(cat /sys/class/power_supply/battery/temp 2>/dev/null); [ -z "$BAT_TEMP" ] && BAT_TEMP=0
+    power_plan
     charge_gov
     BAT_CUR=$(cat /sys/class/power_supply/battery/current_now 2>/dev/null); [ -z "$BAT_CUR" ] && BAT_CUR=0
     BAT_CAP=$(cat /sys/class/power_supply/battery/capacity 2>/dev/null); [ -z "$BAT_CAP" ] && BAT_CAP=0

@@ -49,13 +49,15 @@ def bump(arg=None):
     vc = int(prop('versionCode') or 0) + 1
     vn = prop('version')
     if arg:
-        if not SEMVER.fullmatch(arg):
-            print('版本号需形如 1.0.0，收到：%s' % arg)
-            sys.exit(1)
+        # 允许带前缀的写法（如 K3-1.0.48），不再强制纯 x.y.z
         new = arg
     else:
-        m = SEMVER.fullmatch(vn)
-        new = '%s.%s.%d' % (m.group(1), m.group(2), int(m.group(3)) + 1) if m else '1.0.0'
+        m = SEMVER.search(vn)
+        if m:
+            base = '%s.%s.%d' % (m.group(1), m.group(2), int(m.group(3)) + 1)
+            new = vn[:m.start()] + base + vn[m.end():]
+        else:
+            new = vn + '.1'
     set_prop('versionCode', vc)
     set_prop('version', new)
     return vc, new

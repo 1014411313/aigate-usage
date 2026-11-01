@@ -222,7 +222,51 @@
       "code": 96,
       "size": 5530757,
       "sha256": "be020261c3da6d52f2cc22564c99fa23c7b68fe86f5c6d09159771db51a72f6f",
+      "status": "已发布（测试版），CDN/raw 均 200"
+    },
+    {
+      "version": "1.0.48",
+      "code": 97,
+      "size": 5534774,
+      "sha256": "5f241928de61a2000fa80fb24b4735e4e182d551fa950fe356dba0df30dcca3a",
+      "status": "本地打包，未发布",
+      "note": "上游内核标注改为 author 行 + 设备信息「上游内核」，版本号回归 1.0.x"
+    },
+    {
+      "version": "1.0.49",
+      "code": 98,
+      "size": 5535040,
+      "sha256": "03c676826085411b402e1ed703916ee9d5149d253dc25396219f52062fab3793",
       "status": "本地打包，未发布"
+    },
+    {
+      "version": "1.0.50",
+      "code": 99,
+      "size": 5538586,
+      "sha256": "dd1529a8131b955c3a83cb9111f8b3c746e70262e1250369c5f199ce68705b09",
+      "status": "本地打包，未发布",
+      "note": "功率改为按键+滑块+大字；解容新增 custom 档"
+    },
+    {
+      "version": "1.0.51",
+      "code": 100,
+      "size": 5537118,
+      "sha256": "8a6d07073daca8cc2f79e53c2a9354e208d6aee8d749fec343f023f66709bdb4",
+      "status": "本地打包，未发布",
+      "note": "滑块移除，新增 5W 档（eco）"
     }
-  ]
+  ],
+  "published": [
+    {
+      "version": "1.0.47",
+      "code": 96,
+      "channel": "测试版",
+      "cdn": "https://cdn.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/%E5%8A%A8%E6%80%81%E6%B8%A9%E6%8E%A7%C2%B7%E8%A7%A3%E5%AE%B9%E5%B7%A5%E5%85%B7%E7%AE%B1_v1.0.47.zip",
+      "raw": "https://raw.githubusercontent.com/1014411313/aigate-usage/main/hyperos-thermal-module/dist/%E5%8A%A8%E6%80%81%E6%B8%A9%E6%8E%A7%C2%B7%E8%A7%A3%E5%AE%B9%E5%B7%A5%E5%85%B7%E7%AE%B1_v1.0.47.zip",
+      "sha256": "be020261c3da6d52f2cc22564c99fa23c7b68fe86f5c6d09159771db51a72f6f",
+      "size": 5530757,
+      "verified": "CDN 大陆/国际 + raw 均 HTTP 200，字节一致"
+    }
+  ],
+  "cancelled": []
 }

@@ -1934,6 +1934,7 @@ body.fx-lite .card,body.fx-lite .panel,body.fx-lite .mini{ box-shadow:0 4px 16px
     <div class="panel-body" id="deviceBody">
       <div class="info-list">
         <div class="info-row"><span class="info-lbl">模块版本</span><span class="info-val" id="devVer">—</span></div>
+        <div class="info-row"><span class="info-lbl">上游内核</span><span class="info-val" id="devKernel">—</span></div>
         <div class="info-row"><span class="info-lbl">构建日期</span><span class="info-val">2026-10-24</span></div>
         <div class="info-row"><span class="info-lbl">当前日期</span><span class="info-val" id="devDate">--</span></div>
         <div class="info-row"><span class="info-lbl">设备型号</span><span class="info-val" id="devModel">--</span></div>
@@ -2048,6 +2049,40 @@ body.fx-lite .card,body.fx-lite .panel,body.fx-lite .mini{ box-shadow:0 4px 16px
           <span class="track"></span><span class="thumb"></span>
         </label>
       </div>
+    </div>
+  </div>
+
+  <div class="small-title">自动任务</div>
+  <div class="card" data-diy-id="thermal-7">
+    <div class="pref" onclick="document.getElementById('plan_on').click()">
+      <div class="pref-body">
+        <div class="pref-title">定时充电计划</div>
+        <div class="pref-desc" id="planSub">已关闭</div>
+      </div>
+      <div class="pref-right">
+        <label class="hyper-switch" onclick="event.stopPropagation()">
+          <input type="checkbox" id="plan_on" onchange="togglePlan()">
+          <span class="track"></span><span class="thumb"></span>
+        </label>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;margin-top:8px">
+      <input id="plan_start" type="number" min="0" max="23" inputmode="numeric" placeholder="开始" onchange="onPlanTimeInput()"
+        style="flex:1;height:40px;padding:0 12px;box-sizing:border-box;border:1px solid var(--divider);border-radius:10px;background:var(--input-bg);color:var(--text);font-family:inherit;font-size:calc(14px * var(--fs))">
+      <span style="color:var(--text-secondary)">点 到</span>
+      <input id="plan_end" type="number" min="0" max="23" inputmode="numeric" placeholder="结束" onchange="onPlanTimeInput()"
+        style="flex:1;height:40px;padding:0 12px;box-sizing:border-box;border:1px solid var(--divider);border-radius:10px;background:var(--input-bg);color:var(--text);font-family:inherit;font-size:calc(14px * var(--fs))">
+      <span style="color:var(--text-secondary)">点</span>
+    </div>
+    <div class="bk-power" style="margin-top:10px">
+      <button class="bk-pbtn" data-plan="inf" onclick="bkSetPlanMode('inf')">全速</button>
+      <button class="bk-pbtn" data-plan="fast" onclick="bkSetPlanMode('fast')">40W</button>
+      <button class="bk-pbtn" data-plan="mid" onclick="bkSetPlanMode('mid')">25W</button>
+      <button class="bk-pbtn" data-plan="slow" onclick="bkSetPlanMode('slow')">10W</button>
+    </div>
+    <div class="pref-desc" style="margin-top:10px;line-height:1.7;text-align:left">
+      到点自动切到上面的功率，时段结束恢复你原来的档位；跨夜直接写（如 23 到 7）。
+      时段内手动改过功率档就不再接管。
     </div>
   </div>
 
@@ -3552,6 +3587,7 @@ body.fx-lite .card,body.fx-lite .panel,body.fx-lite .mini{ box-shadow:0 4px 16px
 
 【温控】
 · 温控档位：无限制或一~五档，数字越大温度越低（对应 26~50℃ 区间）
+· 自动任务：定时充电计划，可设某时间段自动用指定功率（如 23~7 点 10W 慢充）
 · 场景：亮屏充电 / 息屏 / 时间段分别设档位
 · 游戏加速：指定应用内切到游戏档位；HyperOS 三倍速可单独开
 · 高温保护：解除系统高温停充；另有一项「高温自动降充电功率」，到档位温度自动降功率
@@ -3683,6 +3719,10 @@ const USAGE_TEXT = `使用说明（按页面看）
 · 游戏加速
   为指定应用设置独立档位；可限制帧率；可让游戏时走旁路供电；
   「HyperOS 三倍速」单独开关，只对支持的机型生效，开启后立即生效并随模块开机自动执行。
+· 自动任务
+  「定时充电计划」：开开关、填开始/结束小时（0~23）、选功率档（全速/40W/25W/10W），
+  到点自动切过去，时段结束恢复你原来的档位。跨夜直接写（如 23 到 7 = 当天 23 点到次日 7 点）；
+  想白天限速就写 8 到 18。适合晚间睡觉时慢充降发热；时段内你手动改过功率档，本时段不再接管。
 · 高温保护
   「高温自动降充电功率」（默认开）：温控自己不写充电节点，只做判断——
   电池温度到当前档位阈值（一档 45℃ / 二档 40℃ / 三档 35℃ / 四档 31℃ / 五档 26℃）
@@ -4074,6 +4114,7 @@ async function bkRefresh(force){
     });
     const wmap = { inf: '全速', fast: (kv.fast_w || 40) + 'W', mid: (kv.mid_w || 25) + 'W', slow: (kv.slow_w || 10) + 'W' };
     bkTxt('bkPowerDesc', '当前：' + (wmap[pl] || pl) + ' 上限');
+    paintPlan();
 
     // 循环次数显示真实值（qmax_cyclecount，不受伪装影响）
     bkPair('Cycle', kv.cycle_real || kv.cycle);
@@ -4175,6 +4216,56 @@ async function bkSetPower(p){
   const tail = (out || '').trim().split(/\r?\n/).slice(-1)[0];
   if (tail) toast(tail.slice(0, 60));
   setTimeout(bkRefresh, 1200);
+}
+
+/* ---------- 定时充电计划 ---------- */
+function planModeLabel(m){
+  return ({ inf: '全速', fast: '40W', mid: '25W', slow: '10W' })[m] || m;
+}
+function paintPlan(){
+  const sub = document.getElementById('planSub');
+  const on = document.getElementById('plan_on');
+  if(!sub || !on) return;
+  const s = (settings.power_plan_start === undefined ? 23 : settings.power_plan_start);
+  const e = (settings.power_plan_end === undefined ? 7 : settings.power_plan_end);
+  const m = settings.power_plan_mode || 'slow';
+  if(on.checked){
+    sub.textContent = '已开启 · 每天 ' + s + ' 点到 ' + e + ' 点使用 ' + planModeLabel(m);
+  } else {
+    sub.textContent = '已关闭';
+  }
+  document.querySelectorAll('[data-plan]').forEach(function(b){
+    b.classList.toggle('on', b.getAttribute('data-plan') === m);
+  });
+  const si = document.getElementById('plan_start'), ei = document.getElementById('plan_end');
+  if(si && document.activeElement !== si) si.value = s;
+  if(ei && document.activeElement !== ei) ei.value = e;
+}
+async function togglePlan(){
+  const el = document.getElementById('plan_on');
+  if(!el) return;
+  await save();
+  paintPlan();
+  toast(el.checked ? '定时充电计划已开启' : '定时充电计划已关闭');
+}
+async function bkSetPlanMode(m){
+  settings.power_plan_mode = m;
+  await save();
+  paintPlan();
+  toast('计划时段功率设为 ' + planModeLabel(m));
+}
+function onPlanTimeInput(){
+  const s = parseInt(document.getElementById('plan_start').value, 10);
+  const e = parseInt(document.getElementById('plan_end').value, 10);
+  if (!(s >= 0 && s <= 23) || !(e >= 0 && e <= 23)) {
+    toast('时间需在 0~23 点之间');
+    paintPlan();
+    return;
+  }
+  settings.power_plan_start = s;
+  settings.power_plan_end = e;
+  save();
+  paintPlan();
 }
 
 // 统一复用页面已有的弹层组件（notice-mask / notice-card / btn），保持与欢迎弹窗一致
@@ -8148,11 +8239,12 @@ function updateSubs(){
   document.getElementById('bypassSub').textContent=parts.length?parts.join(' / '):'点击展开';
   paintHiTemp();
   paintChargeGov();
+  paintPlan();
   const h4s=document.getElementById('hyperos4Sub');
   if(h4s) h4s.textContent=document.getElementById('hyperos4').checked?'已开启 · 立即生效 + 每次开机自动执行':'开启后立即生效 · 每次开机自动执行（仅 HyperOS 可用）';
 }
 
-const DEF_SETTINGS={schema:2,enabled:true,default_mode:'default',charge_mode:true,charge_level:'unlimited',sleep_level:'level_1',time_start:0,time_end:0,time_level:'level_1',game_mode:true,game_level:'unlimited',game_apps:'',game_fps:0,game_bypass:false,bypass_temp_on:0,bypass_temp_off:0,bypass_level:0,bypass_current:500000,hyperos4:false,no_hitemp_stop:false,charge_gov:true};
+const DEF_SETTINGS={schema:2,enabled:true,default_mode:'default',charge_mode:true,charge_level:'unlimited',sleep_level:'level_1',time_start:0,time_end:0,time_level:'level_1',game_mode:true,game_level:'unlimited',game_apps:'',game_fps:0,game_bypass:false,bypass_temp_on:0,bypass_temp_off:0,bypass_level:0,bypass_current:500000,hyperos4:false,no_hitemp_stop:false,charge_gov:true,power_plan_on:false,power_plan_start:23,power_plan_end:7,power_plan_mode:'slow'};
 
 
 let _saveChain = Promise.resolve();
@@ -8164,6 +8256,7 @@ function save(){
 async function saveImpl(){
   const num=(id,d)=>{const e=document.getElementById(id);if(!e)return d;const n=parseInt(e.value,10);return isNaN(n)?d:n;};
   const chk=(id,d)=>{const e=document.getElementById(id);return e?!!e.checked:d;};
+  const clampInt=(id,d,lo,hi)=>{const v=num(id,d);return Math.min(hi,Math.max(lo,v));};
   const old=settings||{};
   const out={
     schema:2,
@@ -8186,7 +8279,11 @@ async function saveImpl(){
     bypass_current:old.bypass_current||500000,
     hyperos4:chk('hyperos4',false),
     no_hitemp_stop:chk('no_hitemp_stop',false),
-    charge_gov:chk('charge_gov',true)
+    charge_gov:chk('charge_gov',true),
+    power_plan_on:chk('plan_on',false),
+    power_plan_start:clampInt('plan_start',23,0,23),
+    power_plan_end:clampInt('plan_end',7,0,23),
+    power_plan_mode:(settings.power_plan_mode||'slow')
   };
   settings=out;
   const json=JSON.stringify(out,null,2)+'\n';
@@ -8257,6 +8354,8 @@ async function load(){
   if(_htel) _htel.checked=settings.no_hitemp_stop===true;
   const _cgel=document.getElementById('charge_gov');
   if(_cgel) _cgel.checked=settings.charge_gov!==false;
+  const _pel=document.getElementById('plan_on');
+  if(_pel) _pel.checked=settings.power_plan_on===true;
   document.getElementById('game_fps').value=settings.game_fps||0;
   document.getElementById('bypass_temp_on').value=settings.bypass_temp_on||0;
   document.getElementById('bypass_temp_off').value=settings.bypass_temp_off||0;
@@ -8372,6 +8471,12 @@ async function initVersion(){
     const out = (r && r.stdout) || '';
     const mv = out.match(/^\s*version\s*=\s*(.+)\s*$/m);
     if(mv) setTxt('devVer', mv[1].trim());
+    // 上游内核版本单独显示（当前基于动态温控 K3）
+    const cu = out.match(/^\s*author\s*=.*?动态温控\s*([Kk][0-9]+)/m);
+    if(cu){
+      const el = document.getElementById('devKernel');
+      if(el) el.textContent = '温控内核 ' + cu[1].toUpperCase();
+    }
     const mc = out.match(/^\s*versionCode\s*=\s*(.+)\s*$/m);
     if(mc) document.documentElement.setAttribute('data-module-version', mc[1].trim());
   } catch(e){}

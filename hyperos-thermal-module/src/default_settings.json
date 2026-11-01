@@ -19,5 +19,9 @@
   "bypass_current": 500000,
   "hyperos4": false,
   "no_hitemp_stop": false,
-  "charge_gov": true
+  "charge_gov": true,
+  "power_plan_on": false,
+  "power_plan_start": 23,
+  "power_plan_end": 7,
+  "power_plan_mode": "slow"
 }

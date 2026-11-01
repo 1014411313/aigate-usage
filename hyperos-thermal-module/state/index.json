@@ -2,14 +2,15 @@
   "meta": {
     "module_id": "HyperOS_XJ",
     "name": "HyperOS - 动态温控·解容",
-    "current_version": "1.0.47",
+    "current_version": "1.0.51",
     "updated": "2026-11-01",
     "maintainer": "小米热炸了（酷安 517965）",
     "upstream": {
       "dynamic_thermal": "Axiaojiux（动态温控 K2）",
       "battery_toolbox": "听夜风1337（电池解容工具箱 v3.12.6）"
     },
-    "how_to_resume": "先读 index.json；再按任务读对应分片；任务结束更新相关分片 + meta.current_version"
+    "how_to_resume": "先读 index.json；再按任务读对应分片；任务结束更新相关分片 + meta.current_version",
+    "version_scheme": "二改版保持自己的 1.0.x 序列；上游内核版本写在 module.prop 的 author 行与控制台「设备信息 → 上游内核」，不占用版本号"
   },
   "shards": {
     "thermal.json": "温控：档位温度阈值、四场景、旁路供电、配置文件加密格式",
@@ -21,7 +22,7 @@
     "device.json": "本机信息与当前运行状态"
   },
   "pending": [
-    "v1.0.47 已本地打包（未发布），等真机验证：安装时音量键选项 + 档位压缩后的充电表现",
+    "v1.0.51 已本地打包（未发布）：功率五档（含 5W），等真机验证 5W 档实际功率",
     ".git 499MB 瘦身（filter-repo，需用户确认后 force push）"
   ],
   "audit": {
@@ -53,5 +54,24 @@
       "安顿标记（inf_settled/inf_node_capped）与 APL 目标变更的状态机仍是增量修补，未重写"
     ],
     "validation": "40 Shell + 4 Python + WebUI 语法通过；温控配置解密往返一致且不限流；charge_gov 九种温度/档位/开关组合模拟全部符合预期（含用户手动改档不放宽、回落恢复原档）；浏览器实测壁纸显示、DIY 滑块与开关均有视觉变化。真机充电效果未验证。"
-  }
+  },
+  "upstream_watch": {
+    "k3_20261101": {
+      "source": "用户提供的 HyperOS动态温控 · K3.zip（上游 AxiaojiuY，K3 / code 12）",
+      "diff": "上游 K2 → K3 仅 4 处代码 + 新增 charge_power.sh + UI 大改；温控核心逻辑未变",
+      "report": "~/.aicode/tmp/k3_diff/K3差异报告.md",
+      "decision": "用户选择：先不动、只出报告；旧功能（默认壁纸/底栏扭曲/日志入口）保留；暂不引入 charge_power.sh",
+      "conflicts": [
+        "charge_power.sh 与解容 charge_guard 写同一批充电节点，会重新引入控制权冲突",
+        "K3 的 t_blank 与原厂档位会覆盖当前已放开/压缩的阈值",
+        "UI 结构完全不同（5 页 vs 6 页，29 vs 142 个独有 id），无法三方合并"
+      ],
+      "future_options": [
+        "A 只移植纯前端功能（圆角/连点温度/液态玻璃/拖动切页）",
+        "B 功率卡片做 UI 壳，执行走解容 power_limit",
+        "C 以 K3 为基底重做（不推荐）"
+      ]
+    }
+  },
+  "cancelled": []
 }

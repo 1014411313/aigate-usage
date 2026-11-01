@@ -1,13 +1,13 @@
 {
   "moduleId": "HyperOS_XJ",
   "name": "HyperOS - 动态温控·解容",
-  "versionName": "1.0.47",
-  "versionCode": 96,
-  "zip": "https://cdn.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/%E5%8A%A8%E6%80%81%E6%B8%A9%E6%8E%A7%C2%B7%E8%A7%A3%E5%AE%B9%E5%B7%A5%E5%85%B7%E7%AE%B1_v1.0.47.zip",
-  "zipCN": "https://testingcf.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/%E5%8A%A8%E6%80%81%E6%B8%A9%E6%8E%A7%C2%B7%E8%A7%A3%E5%AE%B9%E5%B7%A5%E5%85%B7%E7%AE%B1_v1.0.47.zip",
-  "zipRaw": "https://raw.githubusercontent.com/1014411313/aigate-usage/main/hyperos-thermal-module/dist/%E5%8A%A8%E6%80%81%E6%B8%A9%E6%8E%A7%C2%B7%E8%A7%A3%E5%AE%B9%E5%B7%A5%E5%85%B7%E7%AE%B1_v1.0.47.zip",
-  "sha256": "be020261c3da6d52f2cc22564c99fa23c7b68fe86f5c6d09159771db51a72f6f",
-  "size": 5530757,
+  "versionName": "1.0.49",
+  "versionCode": 98,
+  "zip": "https://cdn.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/%E5%8A%A8%E6%80%81%E6%B8%A9%E6%8E%A7%C2%B7%E8%A7%A3%E5%AE%B9%E5%B7%A5%E5%85%B7%E7%AE%B1_v1.0.49.zip",
+  "zipCN": "https://testingcf.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/%E5%8A%A8%E6%80%81%E6%B8%A9%E6%8E%A7%C2%B7%E8%A7%A3%E5%AE%B9%E5%B7%A5%E5%85%B7%E7%AE%B1_v1.0.49.zip",
+  "zipRaw": "https://raw.githubusercontent.com/1014411313/aigate-usage/main/hyperos-thermal-module/dist/%E5%8A%A8%E6%80%81%E6%B8%A9%E6%8E%A7%C2%B7%E8%A7%A3%E5%AE%B9%E5%B7%A5%E5%85%B7%E7%AE%B1_v1.0.49.zip",
+  "sha256": "ef6b3c8295d58266fb40b309f0926472fa0f445a3024d3344ed75385a75898e8",
+  "size": 5536517,
   "minOS": "HyperOS 4（DTBO 仅 OS4 自动刷入）",
   "devices": [
     "dada",
@@ -35,6 +35,24 @@
   "updated": "2026-11-01",
   "versions": [
     {
+      "versionCode": 98,
+      "versionName": "1.0.49",
+      "file": "dist/动态温控·解容工具箱_v1.0.49.zip",
+      "sha256": "ef6b3c8295d58266fb40b309f0926472fa0f445a3024d3344ed75385a75898e8",
+      "size": 5536517,
+      "date": "2026-11-01",
+      "note": ""
+    },
+    {
+      "versionName": "1.0.48",
+      "versionCode": 0,
+      "sha256": "",
+      "date": "",
+      "note": "",
+      "file": "dist/动态温控·解容工具箱_v1.0.48.zip",
+      "size": 5534774
+    },
+    {
       "versionCode": 96,
       "versionName": "1.0.47",
       "file": "dist/动态温控·解容工具箱_v1.0.47.zip",
@@ -42,24 +60,6 @@
       "size": 5530757,
       "date": "2026-11-01",
       "note": ""
-    },
-    {
-      "versionName": "1.0.46",
-      "versionCode": 0,
-      "sha256": "",
-      "date": "",
-      "note": "",
-      "file": "dist/动态温控·解容工具箱_v1.0.46.zip",
-      "size": 5528894
-    },
-    {
-      "versionName": "1.0.45",
-      "versionCode": 0,
-      "sha256": "",
-      "date": "",
-      "note": "",
-      "file": "dist/动态温控·解容工具箱_v1.0.45.zip",
-      "size": 5528690
     }
   ]
 }
