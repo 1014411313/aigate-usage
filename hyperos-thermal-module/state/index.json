@@ -2,8 +2,8 @@
   "meta": {
     "module_id": "HyperOS_XJ",
     "name": "HyperOS - 动态温控·解容",
-    "current_version": "2.0.1",
-    "updated": "2026-11-02",
+    "current_version": "2.0.0",
+    "updated": "2026-11-03",
     "maintainer": "小米热炸了（酷安 517965）",
     "upstream": {
       "dynamic_thermal": "Axiaojiux（动态温控 K2）",
@@ -23,6 +23,8 @@
     "device.json": "本机信息与当前运行状态"
   },
   "pending": [
+    "三线并行：原版正式版 v2.0.0（latest.json 已指向，提交 cf41fa2）、原版测试版 v2.0.1（手动发）、背屏测试版 2.1.0-beta（test/rearscreen 分支，12 提交 da44062），背屏版待做 WebView 投屏载体",
+    "背屏版投屏未实现：当前 rearscreen.sh 仍投原 ETA Canvas 卡片，模块内只是样式预览",
     ".git 499MB 瘦身（filter-repo，需用户确认后 force push）",
     "三项审计遗留：PPS 与旧模块共存、MiThermald 对 SIC-BAT max==min 的行为、inf 安顿/APL 状态机",
     "v1.0.59 已修复录屏中每约 2 秒一次的背景变色卡顿并本地打包，等待真机复测；未发布",
@@ -45,8 +47,7 @@
     "v2.0.0（124）正式版已发布（2026-11-02）：1.0.52 以来首次大版本，含实时面板/曲线/充电记录/八套主题与液态玻璃/取数去 fork/诊断包重构，并隐藏机型档案温度守护（后端仍 60℃ 兜底）。testingcf 与 cdn.jsdelivr.net 均 200/6240025 字节，raw 容器内超时未验。酷安图文已完成：首图（功能总览，1080×1440）+ 5 个页面操作 GIF（主页/温控/电池/外观/八大主题），素材在 .aicode/tmp/kuan_v2/，录制脚本 /tmp/rec_scenes.py（Playwright+Firefox）与合成脚本 /tmp/make_gifs.py。",
     "演示版 WebUI（可脱 root 展示）：.aicode/tmp/HyperOS_XJ_WebUI_demo.html（708KB 单文件，内联四款壁纸 base64 + 模拟命令通道，交互可见但不读写真实节点），生成脚本 /tmp/gen_demo.py；已复制到 /sdcard/Download/。酷安操作 GIF 用 Playwright+Firefox 逐帧录制（/tmp/rec_hq.py，dpr3 → 600x1258、256 色、每帧均有可见变化），素材在 .aicode/tmp/kuan_v2/。",
     "注意：用户测试机换机了——诊断包 popsicle（Xiaomi 17 Pro Max / SM8850 canoe / OS4.0.5 Android17 SDK37），此前按 haotian（小米 15 Pro）适配的节点路径需在新机上重验",
-    "v2.0.1（125）已本地打包并发送，待真机复测：修复涓流/满电功率显示 0.0W、双电芯机型电压格显示总压（改为显单串、功率仍用总压）、满电电压上限 4600→4700；已修条目见 state/bugs.json 的 fixed",
-    "第三方存档：ETA 背屏电池卡片 v1 已解包到 thirdparty/背屏电池卡片_v1/（含原始 zip）。机制：装 com.eta.rearscreen APK + 禁用 com.xiaomi.subscreencenter（原生背屏时钟）+ service.sh 每 2 秒把 battery 的电压/电流/温度/电量/状态写入 /storage/emulated/0/Android/data/com.eta.rearscreen/files/batt.txt，再把 APK 的 Activity 投到 Display #1（service call activity_task 50）。后期集成时可直接用我们 status_kv/status_fast 的取数，改成控制台开关"
+    "v2.0.1（125）已本地打包并发送，待真机复测：修复涓流/满电功率显示 0.0W、双电芯机型电压格显示总压（改为显单串、功率仍用总压）、满电电压上限 4600→4700；已修条目见 state/bugs.json 的 fixed"
   ],
   "audit": {
     "date": "2026-11-01",
