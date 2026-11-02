@@ -526,6 +526,14 @@
       "sha256": "9b908588d6d544a93bc86ed0b48e9b546720e6c6ede6d140e08ec5e64f0f1a0d",
       "date": "2026-11-01",
       "note": "关于页文案修正（AxiaojiuY 副标题去掉 K2、二改声明改为 K3）；latest.json credits 同步为 K3 / v3.12.6。CDN 大陆+国际与 raw 均 200，字节一致"
+    },
+    {
+      "version": "2.0.0",
+      "code": 124,
+      "size": 6240025,
+      "sha256": "f1e5d1323c3928bd547276429faf25eb7d85960187bb84ab862ce2e40b15280e",
+      "date": "2026-11-02",
+      "note": "首个 2.x 正式版：汇总 1.0.52 以来的实时面板/曲线/充电记录/主题与液态玻璃/取数优化/诊断包重构。发布后 testingcf 与 cdn.jsdelivr.net 均 HTTP 200、字节一致；raw 在容器内超时未验。酷安图文（封面 + 功能介绍 GIF + 更新要点）已生成在 .aicode/tmp/kuan_v2/"
     }
   ]
 }
