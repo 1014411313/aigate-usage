@@ -9,6 +9,7 @@
 - 提交信息用中文，沿用仓库现有风格（`feat:` / `fix:` / `chore(release):`）。
 - GitHub 在容器里经常连不上，推送要写重试；不要因为一次失败就放弃或改用其它通道。
 - 改完代码先自验（语法检查、静态校验、能跑就跑），再汇报；未验证的部分要如实说明。
+- 思考过程（推理）一律用中文写，不用英文。
 
 ## 会话状态（自动维护，不得遗漏）
 
@@ -52,6 +53,32 @@ dist/           发布包，命名「动态温控·解容工具箱_vN.zip」
 latest.json     版本清单
 ```
 
+### 使用说明（强制，不要等用户提醒）
+
+- **每次新增功能**（新页面、新开关、新脚本能力、新参数、新的交互方式）必须在同一次改动里做全四件事：
+  1. 更新完整使用说明：`src/hyperosui/index.html` 里的 `USAGE_TEXT` 常量（关于页 →「使用说明」弹层显示），按【主页/温控/电池/外观/关于】分组补上「这个功能是什么、怎么用、有什么前提」；
+  2. 更新欢迎页摘要：`.notice-title` 下方 `.notice-body` 加一行要点（欢迎页只放摘要 + 指向完整说明，不贴全文）；
+  3. 往 `src/更新日志.log` 末尾追加本版条目；
+  4. 有默认值/开关的，同步写进 `src/default_settings.json` 或 `src/battery/config/settings.conf`（带注释）。
+- 说明写「是什么 + 怎么用」，不要写成更新摘要；一个功能一行，太长就换行。
+
+### 三条发布线（强制，先判线再打包）
+
+| 线 | 分支 | 包名 | 线上清单 |
+|---|---|---|---|
+| 原版正式版 | `main` | `动态温控·解容工具箱_vX.Y.Z.zip`（无后缀） | 进 `latest.json` |
+| 原版测试版 | `test/main` | `动态温控·解容工具箱_原版测试版_vX.Y.Z.zip` | 不进正式清单，包推送到本分支 |
+| 背屏测试版 | `test/rearscreen` | `动态温控·解容工具箱_背屏版_vX.Y.Z-betaN.zip` | 不进正式清单，包推送到本分支 |
+
+- **三条线都在远端**：正式版在 `main`，原版测试版在 `test/main`，背屏测试版在 `test/rearscreen`；
+  各分支的 `dist/` 里放自己带线别的包，下载链接按分支区分（`@main` / `@test/main` / `@test/rearscreen`）。
+- **当前基线**：原版正式版 = **v2.0.0（versionCode 124）**；原版测试版 = v2.0.1（vc 125）；背屏测试版 = 2.1.0-beta（`test/rearscreen` 分支）。
+- 只有**原版正式版**允许 `tools/release.py publish`（改 `latest.json`、清理旧版、提交推送、校验 CDN）。
+- 测试线打包后**推送到自己的分支**（`git push origin test/main` / `test/rearscreen`），但**不动 `main` 的 `latest.json`**，也不触发 `release.py publish`。
+- 背屏版代码只留在 `test/rearscreen`，**不合入 `main`**（曾误合一次，已 reset 回 `d5cfb84`）。
+- 测试版改名发送时可直接复制 zip（内容不动），保持与线上包 sha256 可对比。
+- 发版本时文件名必须带线别，避免用户装错包。
+
 ### 发布流程
 
 1. 改完执行 `python3 tools/release.py build`，把 zip 发到聊天里给用户测试。
@@ -71,6 +98,7 @@ latest.json     版本清单
 
 ### 工具与路径
 
+- **构建日期自动写入**：设备信息里的「构建日期」由 `tools/pack.py` 在打包时自动替换为当天日期（源码 `index.html` 里的旧值不维护、不要手改）；本地打包和 `release.py build/publish` 都走这条路径，每次打包后包内日期即为打包当天。
 - 签名：`~/android-toolchain/hyperos-xj.keystore`，别名 `hyperosxj`，口令与工具链其它 keystore 一致（从 build18 起使用；升级必须同一签名）。
 - arm64 工具（x86_64 版跑不了）：`~/android-toolchain/debs/ext/usr/bin/{zipalign,aapt2}`，需
   `LD_LIBRARY_PATH=.../usr/lib/aarch64-linux-gnu/android:.../usr/lib:.../usr/lib/7zip`。
