@@ -1,13 +1,13 @@
 {
   "moduleId": "HyperOS_XJ",
   "name": "HyperOS - 动态温控·解容",
-  "versionName": "2.0.1",
-  "versionCode": 125,
-  "zip": "https://cdn.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/%E5%8A%A8%E6%80%81%E6%B8%A9%E6%8E%A7%C2%B7%E8%A7%A3%E5%AE%B9%E5%B7%A5%E5%85%B7%E7%AE%B1_v2.0.1.zip",
-  "zipCN": "https://testingcf.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/%E5%8A%A8%E6%80%81%E6%B8%A9%E6%8E%A7%C2%B7%E8%A7%A3%E5%AE%B9%E5%B7%A5%E5%85%B7%E7%AE%B1_v2.0.1.zip",
-  "zipRaw": "https://raw.githubusercontent.com/1014411313/aigate-usage/main/hyperos-thermal-module/dist/%E5%8A%A8%E6%80%81%E6%B8%A9%E6%8E%A7%C2%B7%E8%A7%A3%E5%AE%B9%E5%B7%A5%E5%85%B7%E7%AE%B1_v2.0.1.zip",
-  "sha256": "3ca503a3f35ef33a441156934b79c27af49fd724c070639dfc29fc6ad2f542aa",
-  "size": 6241739,
+  "versionName": "2.0.0",
+  "versionCode": 124,
+  "zip": "https://cdn.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/%E5%8A%A8%E6%80%81%E6%B8%A9%E6%8E%A7%C2%B7%E8%A7%A3%E5%AE%B9%E5%B7%A5%E5%85%B7%E7%AE%B1_v2.0.0.zip",
+  "zipCN": "https://testingcf.jsdelivr.net/gh/1014411313/aigate-usage@main/hyperos-thermal-module/dist/%E5%8A%A8%E6%80%81%E6%B8%A9%E6%8E%A7%C2%B7%E8%A7%A3%E5%AE%B9%E5%B7%A5%E5%85%B7%E7%AE%B1_v2.0.0.zip",
+  "zipRaw": "https://raw.githubusercontent.com/1014411313/aigate-usage/main/hyperos-thermal-module/dist/%E5%8A%A8%E6%80%81%E6%B8%A9%E6%8E%A7%C2%B7%E8%A7%A3%E5%AE%B9%E5%B7%A5%E5%85%B7%E7%AE%B1_v2.0.0.zip",
+  "sha256": "f1e5d1323c3928bd547276429faf25eb7d85960187bb84ab862ce2e40b15280e",
+  "size": 6240025,
   "minOS": "HyperOS 4（DTBO 仅 OS4 自动刷入）",
   "devices": [
     "dada",
@@ -32,7 +32,7 @@
     "battery_toolbox": "听夜风1337（电池解容工具箱 v3.12.6）",
     "note": "二改整合版，非原作者官方发布"
   },
-  "updated": "2026-11-02",
+  "updated": "2026-11-03",
   "versions": [
     {
       "versionCode": 125,
