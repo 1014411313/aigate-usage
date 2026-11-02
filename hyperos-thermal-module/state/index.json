@@ -2,7 +2,7 @@
   "meta": {
     "module_id": "HyperOS_XJ",
     "name": "HyperOS - 动态温控·解容",
-    "current_version": "2.0.0",
+    "current_version": "2.0.1",
     "updated": "2026-11-02",
     "maintainer": "小米热炸了（酷安 517965）",
     "upstream": {
@@ -18,6 +18,7 @@
     "ui.json": "WebUI：页面结构、样式规范、status_kv 字段陷阱",
     "apk.json": "控制台 APK：签名、dex/arsc 改写、图标去重、WebView 加载方式",
     "release.json": "发布流程、仓库结构、版本历史",
+    "bugs.json": "用户反馈问题收集区（攒够一起修）：条目 id/证据/根因/修复点/状态",
     "pitfalls.json": "踩过的坑与红线",
     "device.json": "本机信息与当前运行状态"
   },
@@ -41,8 +42,11 @@
     "v1.0.73：六主题背景默认统一为截图参数（3斑/170%/blur58/op1.30/drift38/speed9/bgBlur15/bgSat1.90/变色10s/噪点0.20，噪点与变色开、颜色跟随主题）；本次首次打开重置113项外观键与布局前缀，非ht_固定标记保证只执行一次，保留方案/记录/刷新/运行设置。Firefox六主题/12组尺寸字号/首次重置/重新调整刷新/模拟后续版本/旧备份方案/手动恢复回归通过；本地包1.0.73(120)已发送，ZIP/双HTML/权限/日期/后端与线上清单不变检查通过；待安装真机测试，未发布",
     "v1.0.74（121）液态玻璃测试包已构建并发送：按用户1-1.html采用高透平铺微凹（2px轻模糊、scale5 SVG微折射、1px切面、内暗、15秒反光与触点高光），新增冰川琉璃/月海流银、独立开关并精简七张旧外观卡。Firefox八主题/24组响应式/交互/DIY/暂停与方案通过，Android17材质探针确认SVG折射；ZIP 183项、双WebUI/日期/权限/差异范围全部核验通过。待用户安装真机测试，未发布；latest.json不变。",
     "v1.0.75（122）：四款黑底液态水滴壁纸已加入自定义背景，移除独立温控守护及后端看护，修复DTBO跳过安装刷写后只查local.img的误报，独立识别机型并统一镜像读取。Firefox壁纸切换/保存/方案与18组响应式、DTBO七种状态及十五机型/模拟刷写安全门/升级清理通过；本地测试包已构建并发送，ZIP190项/双WebUI/壁纸资源/日期/权限核验通过，待真机安装验证，未发布。latest.json与DTBO镜像内容未变，未操作真实分区。",
-    "v2.0.0（124）正式版已发布（2026-11-02）：1.0.52 以来首次大版本，含实时面板/曲线/充电记录/八套主题与液态玻璃/取数去 fork/诊断包重构，并隐藏机型档案温度守护（后端仍 60℃ 兜底）。testingcf 与 cdn.jsdelivr.net 均 200/6240025 字节，raw 容器内超时未验。酷安图文素材在 .aicode/tmp/kuan_v2/（封面 PNG、功能 GIF、更新要点 PNG）。",
-    "注意：用户测试机换机了——诊断包 popsicle（Xiaomi 17 Pro Max / SM8850 canoe / OS4.0.5 Android17 SDK37），此前按 haotian（小米 15 Pro）适配的节点路径需在新机上重验"
+    "v2.0.0（124）正式版已发布（2026-11-02）：1.0.52 以来首次大版本，含实时面板/曲线/充电记录/八套主题与液态玻璃/取数去 fork/诊断包重构，并隐藏机型档案温度守护（后端仍 60℃ 兜底）。testingcf 与 cdn.jsdelivr.net 均 200/6240025 字节，raw 容器内超时未验。酷安图文已完成：首图（功能总览，1080×1440）+ 5 个页面操作 GIF（主页/温控/电池/外观/八大主题），素材在 .aicode/tmp/kuan_v2/，录制脚本 /tmp/rec_scenes.py（Playwright+Firefox）与合成脚本 /tmp/make_gifs.py。",
+    "演示版 WebUI（可脱 root 展示）：.aicode/tmp/HyperOS_XJ_WebUI_demo.html（708KB 单文件，内联四款壁纸 base64 + 模拟命令通道，交互可见但不读写真实节点），生成脚本 /tmp/gen_demo.py；已复制到 /sdcard/Download/。酷安操作 GIF 用 Playwright+Firefox 逐帧录制（/tmp/rec_hq.py，dpr3 → 600x1258、256 色、每帧均有可见变化），素材在 .aicode/tmp/kuan_v2/。",
+    "注意：用户测试机换机了——诊断包 popsicle（Xiaomi 17 Pro Max / SM8850 canoe / OS4.0.5 Android17 SDK37），此前按 haotian（小米 15 Pro）适配的节点路径需在新机上重验",
+    "v2.0.1（125）已本地打包并发送，待真机复测：修复涓流/满电功率显示 0.0W、双电芯机型电压格显示总压（改为显单串、功率仍用总压）、满电电压上限 4600→4700；已修条目见 state/bugs.json 的 fixed",
+    "第三方存档：ETA 背屏电池卡片 v1 已解包到 thirdparty/背屏电池卡片_v1/（含原始 zip）。机制：装 com.eta.rearscreen APK + 禁用 com.xiaomi.subscreencenter（原生背屏时钟）+ service.sh 每 2 秒把 battery 的电压/电流/温度/电量/状态写入 /storage/emulated/0/Android/data/com.eta.rearscreen/files/batt.txt，再把 APK 的 Activity 投到 Display #1（service call activity_task 50）。后期集成时可直接用我们 status_kv/status_fast 的取数，改成控制台开关"
   ],
   "audit": {
     "date": "2026-11-01",

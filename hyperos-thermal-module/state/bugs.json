@@ -1,0 +1,85 @@
+{
+  "note": "用户反馈问题的收集区：先攒，攒够一次性修；修完把条目移到 fixed 并把改动写进 release.json 版本历史",
+  "collecting": [],
+  "fixed": [
+    {
+      "id": "bug-001",
+      "title": "涓流/满电充电时光环功率显示 0.0W（系统状态栏同时显示 +5.61W）",
+      "reported": "2026-11-02",
+      "evidence": "用户截图：电量 100、状态「充电中」、4.551V / 1.24A（|I|×V≈5.6W，状态栏 +5.61W）、充电协议 PPS，但光环 0.0W",
+      "root_cause": "src/hyperosui/index.html「满电维持」归零逻辑（bkRefresh 内，约 4112-4126 行）：shownCharging && soc>=99.5 && battery_current_ma<0 连续 4 拍即 dispP=0。本机（popsicle / SM8850）充电时 battery/current_now 本就为负，注释里那条「诊断包实证 soc=100 current=-1913mA status=Charging」讲的是正常充电而不是放电维持，所以涓流阶段功率被强行归零。同一拍 Cur 走绝对值显示 1.24A，于是出现「电流 1.24A + 功率 0.0W」并存。",
+      "fix_plan": "不再用电流符号当「负载由电池供电」的证据：最简做法是删掉这段归零，功率始终显示 |I|×V（与状态栏 +5.61W 一致）；若要保留满电维持归零，需换成真机能证的可用证据（usb 输入电流≈0 / charge_enabled / power_now 符号），需先取一次真机 sysfs 现场。",
+      "affected": [
+        "src/hyperosui/index.html:4112-4126（__fillCnt 归零）",
+        "src/battery/scripts/status_kv.sh:78-90（battery_power_w 取值，本身无错）"
+      ],
+      "repro": "~/workspace/.aicode/tmp/bug001_repro.js（node 跑）：输入 soc=100 / status=Charging / current=-1240mA / battery_power_w=5.6 → 第 4 拍起 dispP=0、EMA 衰减到 0.0，与截图一致；把电流改成正 1240mA 则不归零。",
+      "diag": "诊断包 ~/workspace/.aicode/tmp/diag_1102/xj_diag_20261102_191829（2026-11-02 19:18，haotian / 小米 15 Pro / SM8750 / OS4.0.0.19，模块 1.0.75 code122，已解包）已确证：\n- 00-总览：soc=100 status=Charging battery_current_ma=-960 battery_power_w=4.4；\n- 30-节点/电池.txt：battery/current_now=-936000µA，而 usb/online=1、usb/current_now=1184000µA（适配器输入 1.184A，确实在充电）；\n- 50-停充.txt 停充前 12 次采样：14:41:52~14:44:01 全程 st=Charging、cap=98%、batt cur=-631000~-696000µA；14:44:07 拔线后 usb online=0、电流转正 918000µA。\n⇒ 本机符号约定为「充电为负、放电为正」，与 UI 假设相反；负电流不能作为放电证据，原注释里那条「soc=100 current=-1913mA 是满电维持」的判断本身就是误判。且该归零逻辑在 soc≥99.5 的整个充电尾段都会触发，不限于涓流。",
+      "status": "已修（本地包 v2.0.1 已构建，待真机复测）；未发布",
+      "fixed_in": "2.0.1 (125)"
+    },
+    {
+      "id": "bug-002",
+      "title": "满电电压上限 4600mV 不够，需能调到 4700",
+      "reported": "2026-11-02",
+      "evidence": "用户要求「修改电压可调到4700」；电池页满电电压当前校验区间 4300~4600 mV，输入 4700 被拒",
+      "affected": [
+        "src/hyperosui/index.html:4824（voltApply 校验 4300~4600）",
+        "src/hyperosui/index.html:2478 / 2505 / 3832 / 4548（区间文案与「超过原厂上限」提示）",
+        "src/battery/scripts/volt_guard.sh:276（范围校验 4300~4600）与第 7 行注释",
+        "src/battery/config/settings.conf:110（fv_v 注释区间）"
+      ],
+      "fix_plan": "用户确认：按单串电芯电压填，上限 4600→4700mV（界面与 volt_guard.sh:276 同步）；写节点/BAA 载荷时再按节点实际口径换算成总压。注意：MIX 4 上 constant_charge_voltage 究竟是单串还是总压尚未取证，而现配置 fv_vterm=4570 / vterm_max=4570 看着是单串值，双串机实写前必须先探一次原值。",
+      "status": "已修（本地包 v2.0.1 已构建，待真机复测）；未发布",
+      "fixed_in": "2.0.1 (125)"
+    },
+    {
+      "id": "bug-003",
+      "title": "电压显示错误：MIX 4（odin）上电压格显示 8.560V / 光环 8.3W（用户口中的 bug-002 电压显示错误）",
+      "reported": "2026-11-02",
+      "evidence": "用户截图：91%、Charging、8.560V、0.97A、光环 8.3W。诊断包 ~/workspace/.aicode/tmp/diag_1628/xj_diag_20261102_162807（16:28，MIX 4 / odin / SM8350 / OS4.0.5 / 内核 5.10.302-qgki-odin-QiuChenly，模块 2.0.0 code124）印证：00-总览 voltage_uv=8574000、battery_power_w=8.4；30-节点/电池.txt battery/voltage_now=8610000µV，而 usb/voltage_now=8626000µV（两者几乎相等）。",
+      "root_cause": "该机 battery/voltage_now 报的是输入/端口电压（≈VBUS，8.6V），不是电芯电压；status_kv.sh:37 直接采用它当电芯电压，导致电压格显示 8.56V、并且 battery_power_w=|I|×V 被算成约两倍（8.3W 而实际 4.3V×0.97A≈4.2W）。诊断包 detail.cache 显示该机存在 /sys/class/qcom-battery/cell1_volt（P_CELL），但诊断包未记录其数值。",
+      "impact": "电压格、光环功率、以及用户据此把满电电压设成了 fv_v=8800 / term_v=6200（配置里已存在，但 UI 校验区间是 4300~4600，volt_guard.sh:276 对越界值直接忽略），这类错误读数会持续误导用户填值。",
+      "fix_plan": "用户确认：MIX 4 是原装双电芯，显示口径要求「模块自动判断单/双电芯」（即电压格要显示单串电压 3.0~4.5V 量级）。实现：电压候选加电芯级节点（qcom-battery/cell1_volt、battery/voltage_avg、bms/voltage_now、main/voltage_now），单位自适应（2000~5400 视为 mV、2e6~5.4e6 视为 µV），与 usb/voltage_now 相差 <5% 且 >5.3V 的候选判为端口电压跳过；拿不到单串证据时按 design/max_design 或原厂 vterm 推断串数再除。",
+      "key_note": "口径必须分开：电压格显示单串，但 battery_power_w 必须用总压（单串×串数）算。电流串联不变，用单串电压算会把双串机功率少算一半（MIX 4 现在显示的 8.3W 本身是对的，错的是把它当成了单串电压）。同理右侧曲线的功率轴沿用总压。",
+      "status": "已修（本地包 v2.0.1 已构建，待真机复测）；未发布",
+      "fixed_in": "2.0.1 (125)"
+    }
+  ],
+  "cancelled": [
+    {
+      "id": "bug-004",
+      "title": "需求：满电后电压回落自动续充（现在必须拔插才能继续充），以继续解容",
+      "reported": "2026-11-02",
+      "type": "feature",
+      "evidence": "诊断包 ~/workspace/.aicode/tmp/diag_2000/xj_diag_20261102_200045（20:00，haotian 小米 15 Pro，模块 1.0.75）：status=Full soc=100 voltage_now=4445000 current_now=0；usb online=1 current_now=1784000µA（输入 1.78A 全给系统负载，不进电池）；40-系统/dmesg.txt 每 10s 稳定输出 mca_strategy_buckchg: pmic_chg_status: 7, chg_status: 2, chg_en: [0][term_recharge], vbat: 4440~4446mV, vbus 4.77~5.08V, ibus 0.3~1.7A。",
+      "root_cause": "停充不是电压到了 vterm（4.445V < 原厂 vterm 4.58V），而是系统/FG 已判满（SOC=100%），内核转入 term_recharge（chg_en [0][term_recharge]）等原厂阈值。拔插会让充电流程重走一遍，于是又能继续 CV 充，这就是用户观察到的现象。",
+      "options": [
+        "A 模拟拔插：写专用于停充/输入的节点 0→2s→恢复（候选：charger_common/stop_handle_charge、usb/current_max、charger_thermal/wired_chg_curr、battery/input_current_limit、battery/constant_charge_current），写后回读确认",
+        "B 骗 SOC：strategy_fg/fake_soc 或 soc_decimal（风险大，全局影响 SOC 显示与系统策略，不优先）",
+        "C smart_charge 参数：smart_chg=96（含义待验证，疑为智能充电目标 SOC，若可写也许能提高重充阈值）"
+      ],
+      "plan": "新增 recharge_guard.sh：条件 = usb online=1 且 status ∈ {Full, Not charging} 且 voltage_now ≤ 触发阈值 且温度低于闸门；动作 = 按候选顺序试写并回读确认，成功后等待回落循环；冷却 ≥120s；与 charge_guard.sh 的 wired_chg_curr 写入必须协调（借鉴 bypass_active 让路机制，避免两边互写）。沿用新功能四件套：USAGE_TEXT、欢迎页摘要、更新日志、settings.conf 默认值（默认关）。",
+      "risks": "100% 后继续 CV 充会把静置 4.44V 推到 4.55~4.6V，温升与老化加速；反复重充会拉高循环等效损耗。需要开关 + 温度闸门 + 冷却间隔。",
+      "needs": "真机验证哪条触发路径真能重启充电（波形看 chg_en 是否从 [0][term_recharge] 变回 [1]）；容器无 root 写不了 sysfs，需要真机或用户配合跑一条写命令",
+      "status": "用户决定不做（2026-11-02）"
+    },
+    {
+      "id": "bug-005",
+      "title": "KernelSU 刷入失败：Error code 134（SIGABRT）",
+      "reported": "2026-11-02",
+      "evidence": "用户截图：KernelSU 模块安装界面「刷写失败」+ Error code: 134 + Please save and check the log.（截图时状态栏 39.6℃、11.96W，说明手机在充电中）",
+      "local_checks": "已在容器里核查本地包：src/customize.sh 经 sh -n 语法检查通过（退出码 0）；dist/动态温控·解容工具箱_v2.0.0.zip 与 v1.0.76.zip 均为 190 条目、testzip 无坏条目，且包内 customize.sh 与 src/customize.sh 逐字节一致；两包的 module.prop 均正常。所以包本身和脚本语法不是可疑点。",
+      "suspects": [
+        "customize.sh 里 pm enable com.miui.securitycenter / pm enable ...PowerSaveService / setprop ctl.restart batteryantiaging：这三条会拉起 app_process/ART，在 ksud 安装环境（受限 mount namespace / SELinux）里 ART abort 就是 SIGABRT(134)",
+        "getevent（toybox applet，安装时音量键询问用）：无输入设备或权限受限时可能 abort；本机有该命令所以不会走 _can_ask=0 分支",
+        "脚本末尾没有显式 exit 0，最后一条 set_perm 失败会被当成整体安装失败",
+        "磁盘空间不足 / KernelSU 版本与 magisk 兼容层差异（update-binary 走 /data/adb/magisk/util_functions.sh）"
+      ],
+      "needs": "KernelSU 安装日志（失败界面右上角保存按钮导出的日志，尤其 134 前最后几行），以及本次刷入的包名/来源（线上 2.0.0 还是其它下载的包）；上次 2.0.0 在同一台机上能装成功（16:28 诊断包显示 2.0.0 code124 在跑）",
+      "root_cause": "KernelSU bugreport 定性：崩的不是我们的脚本，而是 KernelSU 自己的 Rust 安装器 libksud.so——Cmdline 为 module install /data/user/0/me.weishu.kernelsu/cache/module.zip，Abort message = called Result::unwrap() on an Err value: InvalidArchive(Invalid local file header)，即它拿到的 zip 不是自洽完整的包，于是 panic → SIGABRT(134)。用户补充：在线（CDN）下的包装不上、QQ 群下的同版本包能装上 —— 即下载不完整。容器侧已反向验证：dist 与从 cdn.jsdelivr.net 现拉的同名包 sha256 均为 f1e5d1323c3928bd547276429faf25eb7d85960187bb84ab862ce2e40b15280e（6240025 字节、190 条目、逐条解压且 CRC/大小一致、central↔local 字段零差异），包与打包脚本无问题。设备为 dada（小米 15）OS4.0.0.19，KernelSU Manager v3.2.5（32525），LKM 模式，此前未装过本模块。",
+      "fix_plan": "可选（待用户定）：A 模块「检查更新」加「下载并校验」（设备端换源下载到 /sdcard/Download，用 latest.json 里已有的 size + sha256 校验，不通过自动换源重试并明确提示包不完整）；B 仅在界面显示包大小/sha256 与「134 = 包不完整」的排查提示；C 下载入口改走 QQ 群/网盘等更稳通道。",
+      "status": "用户决定不做（2026-11-02）"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+id=eta_rearscreen
+name=ETA 背屏电池卡片
+version=1.0
+versionCode=1
+author=Eta
+description=背屏显示电压/电流/功率/温度，开机自动投放

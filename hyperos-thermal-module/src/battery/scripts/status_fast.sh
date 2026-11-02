@@ -15,6 +15,7 @@ if [ -z "$_rt" ] && [ -f /sys/class/power_supply/usb/typec_mode ]; then
 fi
 _f=""
 for _x in "$BAT/capacity" "$BAT/status" "$BAT/temp" "$BAT/current_now" "$BAT/voltage_now" \
+          "$BAT/voltage_avg" /sys/class/qcom-battery/cell1_volt \
           "$BAT/charge_full" "$BAT/charge_full_design" "$BAT/health" \
           /sys/class/xm_power/fg_master/qmax_cyclecount /sys/class/xm_power/fg_master/cyclecount \
           "$BAT/cycle_count" "$_rt"; do
@@ -33,8 +34,26 @@ END {
     # 保留符号：放电为负。旧版在这里取绝对值，和 status_kv 的符号相反，
     # 快读/全读交替时界面电流会周期性跳正负。
     printf "battery_current_ma=\"%d\"\n", im;
-    printf "voltage_uv=\"%s\"\n", u;
-    printf "battery_power_w=\"%.1f\"\n", ima*u/1000000000;
+    # 电芯电压：优先单串节点，battery/voltage_now 可能是串联总压（MIX 4 实测 8.6V）
+    cell=0; pack=0;
+    for (k=1; k<=3; k++) {
+        x = (k==1 ? v["voltage_avg"] : (k==2 ? v["cell1_volt"] : v["voltage_now"]));
+        if (x !~ /^[0-9]+$/) continue;
+        y = x + 0;
+        if (y <= 1000) continue;
+        if (y < 100000) y = y * 1000;
+        if (y >= 2500000 && y <= 5400000) { if (cell == 0) cell = y }
+        else if (pack == 0) pack = y;
+    }
+    cells = 1;
+    if (cell > 0 && pack > 0) { r = int((pack + cell/2) / cell); if (r >= 2 && r <= 4) cells = r }
+    else if (cell == 0 && pack > 0) { cells = 2; cell = int(pack / 2) }
+    if (cell == 0) { cell = u + 0; pack = cell }
+    if (pack == 0) pack = cell * cells;
+    printf "voltage_uv=\"%d\"\n", cell;
+    printf "pack_voltage_uv=\"%d\"\n", pack;
+    printf "battery_cells=\"%d\"\n", cells;
+    printf "battery_power_w=\"%.1f\"\n", ima*pack/1000000000;
     # 容量/健康度/循环/协议：读空输出空串，前端沿用上次值，避免闪成 0 或 --
     cf=v["charge_full"]; cd=v["charge_full_design"];
     if(cf ~ /^[0-9]+$/) printf "charge_full_mah=\"%d\"\n", cf/1000; else print "charge_full_mah=\"\"";
@@ -57,6 +76,8 @@ echo "status=$status"
 echo "temp_c=$temp_c"
 echo "battery_current_ma=$battery_current_ma"
 echo "voltage_uv=$voltage_uv"
+echo "pack_voltage_uv=$pack_voltage_uv"
+echo "battery_cells=$battery_cells"
 echo "battery_power_w=$battery_power_w"
 echo "charge_full_mah=$charge_full_mah"
 echo "charge_design_mah=$charge_design_mah"

@@ -2475,7 +2475,7 @@ body.ui-hidden .tabbar::after,
     <div class="pref" style="cursor:default">
       <div class="pref-body">
         <div class="pref-title">满电电压</div>
-        <div class="pref-desc" id="voltFvDesc">4300~4600 mV，超过原厂上限需开强制覆盖</div>
+        <div class="pref-desc" id="voltFvDesc">4300~4700 mV，超过原厂上限需开强制覆盖</div>
       </div>
       <div class="pref-right" style="font-size:calc(13px * var(--fs));color:var(--text)" id="voltFvNow">未设置</div>
     </div>
@@ -2502,7 +2502,7 @@ body.ui-hidden .tabbar::after,
       <button class="btn secondary" style="flex:1;height:44px;border-radius:12px" onclick="voltDisable()">关闭</button>
     </div>
     <div class="pref-desc" style="margin-top:16px;line-height:1.75;white-space:normal;text-align:left">
-      · 使用范围：满电电压 4300~4600 mV，关机电压 2800~3500 mV；两项可只填一项，留空即关闭该项<br>
+      · 使用范围：满电电压 4300~4700 mV，关机电压 2800~3500 mV；两项可只填一项，留空即关闭该项<br>
       · 满电电压超过原厂上限时不会生效（上方会显示原厂上限值），硬件 OVP 是物理保护，超过也会被拦截<br>
       · 满电电压调得越高，充电越满、电池老化越快，日常建议不超过原厂上限<br>
       · 关机电压为软件检测：电量耗尽到该值以下由模块执行关机；充电中不会触发，避免误判<br>
@@ -3594,11 +3594,14 @@ body.ui-hidden .tabbar::after,
     <div class="notice-title">欢迎使用 动态温控·解容</div>
     <div class="notice-body">使用说明（按页面看）
 
+【本版】修复涓流/满电时功率显示 0.0W、双电芯电压格显示成总压、满电电压上限提到 4700mV
+
 【主页】
 · 顶部光环：中间是实时充电功率（W），液面高度 = 电量，充电时光晕亮起
 · 显示优化：滚动时装饰动画暂停，停下后恢复；光环移出屏幕或面板收起时暂停动画
 · 数据格：电量 / 状态 / 容量 / 健康度 / 电压 / 电流 / 温度 / 循环 / 充电协议 /
   剩余容量 / 电池寿命，全部随秒级刷新
+· 电压口径：电压格显示单串电芯电压（双电芯机型自动按串数折算），功率按整包电压算
 · 充电功率：全速（不限流）/ 40W / 25W / 10W。无线充电发热大，温度高时建议降一档
 · 实时运行面板：光环下按实时状态 / 容量与寿命 / 温区分组，点标题可整体收起
   字段显隐与列数在「外观 → DIY 美化」中调整
@@ -3829,7 +3832,8 @@ const USAGE_TEXT = `使用说明（按页面看）
 · 循环次数伪装
   输入目标次数后点「应用」，把电池循环次数显示为设定值，重启后仍生效；「清除」恢复真实值。
 · 电池电压
-  满电电压（4300~4600mV）、关机电压（2800~3500mV），可只填一项。
+  满电电压（4300~4700mV）、关机电压（2800~3500mV），可只填一项。
+  满电电压按每串电压填：双电芯机型同样填每串值，界面电压格与这里的口径一致。
   满电电压超过原厂上限时需打开「强制覆盖原厂上限」（改写 BAA 载荷 vterm 并重新加密挂载）。
   卡片副标题按证据分三种：节点实际读回「已写入节点 · 当前节点值 xxxx mV」、
   载荷改写「载荷 vterm 已改写为 xxxx mV」、或「已保存 · 尚未确认写入」。
@@ -4110,11 +4114,9 @@ function bkApplyFast(kv){
   const bp = parseFloat(kv.battery_power_w);
   const shownCharging = (window.__stShown === 'Charging' || window.__stShown === 'Full');
   let dispP = isFinite(bp) && bp >= 0 ? (shownCharging ? bp : -bp) : NaN;
-  // 满电维持：soc 顶格且电芯电流已转放电方向（诊断包实证：soc=100 current=-1913mA status=Charging），
-  // 只是维持负载从电池流过，不是充电。连续 4 拍满足才置 0，避免抖动误判。
-  const socN = parseFloat(kv.soc), maRaw = parseFloat(kv.battery_current_ma);
-  window.__fillCnt = (shownCharging && socN >= 99.5 && isFinite(maRaw) && maRaw < 0) ? (window.__fillCnt || 0) + 1 : 0;
-  if (window.__fillCnt >= 4) dispP = 0;
+  // 不能拿「充电时电流为负」当满电维持的证据：诊断包实测该机充电全程 current_now 都是负值
+  // （-0.63~-1.12A，拔线后才转正），负号只是这台机的符号约定，不代表电池在放电。
+  // 旧逻辑在 soc≥99.5 时据此连续 4 拍把功率归零，涓流阶段就成了「电流 1.24A、功率 0.0W」。
   // 秒级毛刺平滑（EMA）：跳变 > 40W（充电泵调脉冲）时直接跟随，否则衰减缝合
   if (isFinite(dispP)) {
     const prev = window.__pwrEma;
@@ -4545,7 +4547,7 @@ async function bkRefresh(force){
     const _fvNode = _fvRaw > 100000 ? Math.round(_fvRaw / 1000) : _fvRaw;
     const fvd = document.getElementById('voltFvDesc');
     if (fvd) {
-      if (!_fvSet) fvd.textContent = '4300~4600 mV，超过原厂上限需开强制覆盖';
+      if (!_fvSet) fvd.textContent = '4300~4700 mV，超过原厂上限需开强制覆盖';
       else if (_fvNode && Math.abs(_fvNode - _fvSet) <= 30) fvd.textContent = '已写入节点 · 当前节点值 ' + _fvNode + ' mV';
       else if (_fvAp && _fvAp === _fvSet) fvd.textContent = '载荷 vterm 已改写为 ' + _fvAp + ' mV（重启后保持）· 实际截止电压仍由 DT/硬件决定';
       else if (_fvVt && _fvSet > _fvVt) fvd.textContent = '未生效 · 设定 ' + _fvSet + ' mV 超过原厂上限 ' + _fvVt + ' mV，需开启「强制覆盖原厂上限」';
@@ -4821,7 +4823,7 @@ async function voltApply(){
   bkResetGuard();
   const fv = ((document.getElementById('voltFv') || {}).value || '').trim();
   const tv = ((document.getElementById('voltTerm') || {}).value || '').trim();
-  if (fv && !(parseInt(fv, 10) >= 4300 && parseInt(fv, 10) <= 4600)) { toast('满电电压需在 4300~4600 mV'); return; }
+  if (fv && !(parseInt(fv, 10) >= 4300 && parseInt(fv, 10) <= 4700)) { toast('满电电压需在 4300~4700 mV'); return; }
   if (tv && !(parseInt(tv, 10) >= 2800 && parseInt(tv, 10) <= 3500)) { toast('关机电压需在 2800~3500 mV'); return; }
   if (!fv && !tv) { toast('至少填一项'); return; }
   // 满电电压超过原厂 vterm 上限且未开强制覆盖 → 先确认，避免"设了不生效"

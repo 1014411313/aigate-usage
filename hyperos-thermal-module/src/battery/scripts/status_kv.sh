@@ -32,19 +32,11 @@ rdf() {
 
 _nodes=$(direct_current_nodes)
 _node=$(echo "$_nodes" | head -n 1)
-# 电压候选节点按顺序内建读取（原 read_voltage_uv 逻辑，最多省 3 次 cat）
-_v=""
-for _vp in "$BAT/voltage_now" \
-           /sys/class/power_supply/main/voltage_now \
-           /sys/class/power_supply/usb/voltage_now; do
-  rdf _vv "$_vp"
-  case "$_vv" in ''|*[!0-9]*) continue ;; esac
-  [ "$_vv" -gt 1000 ] 2>/dev/null || continue
-  if [ "$_vv" -lt 100000 ] 2>/dev/null; then _vv=$((_vv * 1000)); fi
-  _v="$_vv"
-  break
-done
-_target=$(target_current_ma "$_v")
+# 电压：单串值给界面/曲线，总压用来算功率（双电芯机型 battery/voltage_now 报的可能是串联总压）
+cell_voltage_ctx
+_v="${CV_CELL:-}"
+_pack_v="${CV_PACK:-$_v}"
+_target=$(target_current_ma "$_pack_v")
 # 一次 awk 读完这批节点（含 qmax 真实循环节点；原来是 9 次 cat，每次刷新都要 fork 9 次）
 _kv_files=""
 for _x in "$BAT/current_now" "$BAT/capacity" "$BAT/status" "$BAT/temp" \
@@ -84,7 +76,7 @@ esac
 case "$_soc" in ''|*[!0-9]*) _soc="" ;; esac
 if [ -n "$_ma" ] && [ -n "$_v" ]; then
   _ma_abs=${_ma#-}
-  _battery_power_w=$(awk -v i="$_ma_abs" -v v="$_v" 'BEGIN { printf "%.1f", i * v / 1000000000 }')
+  _battery_power_w=$(awk -v i="$_ma_abs" -v v="$_pack_v" 'BEGIN { printf "%.1f", i * v / 1000000000 }')
 else
   _ma_abs=""
   _battery_power_w=""
@@ -95,6 +87,8 @@ if [ -n "$_nodes" ]; then echo "direct_control=1"; else echo "direct_control=0";
 # 换行转逗号（原 tr|sed 两叉，改纯 shell）
 echo "direct_nodes=${_nodes//$'\n'/,}"
 echo "voltage_uv=${_v}"
+echo "pack_voltage_uv=${_pack_v}"
+echo "battery_cells=${CV_CELLS}"
 echo "target_ma=${_target}"
 echo "current_node=${_node}"
 if [ -n "$_node" ] && [ -w "$_node" ]; then echo "node_ok=1"; else echo "node_ok=0"; fi

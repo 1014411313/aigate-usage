@@ -1192,6 +1192,46 @@ read_voltage_uv() {
   echo ""
 }
 
+# 电芯电压口径：单串值/串数/总压写入 CV_CELL / CV_CELLS / CV_PACK（纯内建读，不 fork）。
+# 部分机型 battery/voltage_now 报的不是电芯电压：MIX 4（odin）实测 8610000µV，
+# 与 usb/voltage_now=8626000µV 几乎相等，那是串联总压。直接当单串用会显示 8.56V，
+# 并且功率被算成两倍。界面口径：电压格显单串；功率必须用总压（串联时电流不变）。
+cell_voltage_ctx() {
+  CV_CELL=""; CV_CELLS=1; CV_PACK=""
+  _cc_cell=""; _cc_pack=""
+  for _cc_p in \
+    /sys/class/power_supply/battery/voltage_avg \
+    /sys/class/qcom-battery/cell1_volt \
+    /sys/class/power_supply/battery/voltage_now \
+    /sys/class/power_supply/main/voltage_now \
+    /sys/class/power_supply/bms/voltage_now
+  do
+    _cc_v=""
+    [ -r "$_cc_p" ] && IFS= read -r _cc_v < "$_cc_p" 2>/dev/null
+    case "$_cc_v" in ''|*[!0-9]*) continue ;; esac
+    [ "$_cc_v" -gt 1000 ] 2>/dev/null || continue
+    [ "$_cc_v" -lt 100000 ] && _cc_v=$((_cc_v * 1000))
+    # 2.5~5.4V 视为单串电芯电压；更高的值只可能是串联总压/端口电压
+    if [ "$_cc_v" -ge 2500000 ] && [ "$_cc_v" -le 5400000 ]; then
+      [ -z "$_cc_cell" ] && _cc_cell=$_cc_v
+    else
+      [ -z "$_cc_pack" ] && _cc_pack=$_cc_v
+    fi
+  done
+  if [ -n "$_cc_cell" ] && [ -n "$_cc_pack" ]; then
+    _cc_r=$(( (_cc_pack + _cc_cell / 2) / _cc_cell ))
+    case "$_cc_r" in 2|3|4) CV_CELLS=$_cc_r ;; *) CV_CELLS=1 ;; esac
+  elif [ -n "$_cc_pack" ]; then
+    # 拿不到单串节点时按双串拆分（这类机型报的是 2S 总压）
+    CV_CELLS=2
+    _cc_cell=$((_cc_pack / 2))
+  fi
+  CV_CELL="$_cc_cell"
+  [ -n "$_cc_cell" ] || return 1
+  CV_PACK=$((_cc_cell * CV_CELLS))
+  return 0
+}
+
 target_current_ma() {
   if [ "$POWER_MECH" = "curr" ]; then
     tier_target_ma "$(power_now)"
