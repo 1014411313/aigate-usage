@@ -207,7 +207,9 @@ do_flash() {
         ''|*/*) _dp="$BK/$_df" ;;
         *) _dp="$BK/$_df" ;;
       esac
-      [ -s "$_dp" ] || _dup=""
+      if [ "$(stat -c %s "$_dp" 2>/dev/null)" != "$dsz" ] || [ "$(hash_of "$_dp")" != "$_bsha" ]; then
+        _dup=""
+      fi
     fi
   fi
   if [ -z "$_dup" ]; then
@@ -216,6 +218,10 @@ do_flash() {
     echo "-> 自动备份当前槽到: $_bf"
     if dd if="$dev" of="$_bf" bs=1M 2>/dev/null; then
       sync
+      if [ "$(stat -c %s "$_bf" 2>/dev/null)" != "$dsz" ] || [ "$(hash_of "$_bf")" != "$_bsha" ]; then
+        echo "   ! 备份大小或哈希校验失败，为安全中止刷写"
+        return 1
+      fi
       echo "$(date '+%F %T') auto_before_flash $s $_bsha $(basename "$_bf")" >> "$MANIFEST"
       echo "   备份sha256: $_bsha"
     else
@@ -269,8 +275,9 @@ do_flash() {
     _ssz=$(stat -c %s "$_src" 2>/dev/null)
     case "$_ssz" in ''|*[!0-9]*) _ssz=$(stat -c %s "$f" 2>/dev/null) ;; esac
     case "$_ssz" in ''|*[!0-9]*)
-      echo "   ! 无法读取镜像大小，跳过校验（写入已完成，请重启后看 diag 结论）"
-      _ssz=""
+      echo "   ! 无法读取镜像大小，无法确认刷写结果，请从备份恢复或重刷"
+      [ "$_used_pad" = "1" ] && rm -f "$_pad" 2>/dev/null
+      return 1
       ;;
     esac
     if [ -n "$_ssz" ]; then
@@ -325,8 +332,13 @@ case "$1" in
   info) show_info "$2" ;;
   backup) do_backup "$2" ;;
   flash) do_flash "$2" "$3" ;;
-  flashlocal) do_flash "$XBT/dtbo/local.img" "${2:-$(slot_letter)}" ;;
-  haslocal) if [ -f "$XBT/dtbo/local.img" ]; then echo "yes"; else echo "no"; fi ;;
+  flashlocal)
+    _local=$(dtbo_local_image)
+    [ -n "$_local" ] || { echo "错误: 未找到已适配的本机 DTBO 镜像，中止"; exit 1; }
+    dtbo_os_supported || { echo "错误: 内置 DTBO 仅支持 HyperOS 4，中止"; exit 1; }
+    do_flash "$_local" "${2:-$(slot_letter)}"
+    ;;
+  haslocal) if dtbo_local_image >/dev/null; then echo "yes"; else echo "no"; fi ;;
   autobackup) autobackup ;;
   dirs) show_dirs ;;
   dirslist) list_extra_dirs ;;

@@ -16,12 +16,12 @@ echo "model      : $(getprop ro.product.model) / $(getprop ro.product.device)"
 echo "dev_code   : $(cfg_get dev_code '')"
 echo "slot       : $(getprop ro.boot.slot_suffix)"
 echo "android    : $(getprop ro.build.version.release) (SDK $(getprop ro.build.version.sdk))"
-echo "rom        : $(getprop ro.mi.os.version.name) $(getprop ro.mi.os.version.incremental)"
+echo "rom        : $(getprop ro.mi.os.version.incremental)"
 echo "kernel     : $(uname -r)"
 echo "--- 模块版本 / 开关 ---"
 echo "module     : $(grep '^version=' $XBT/module.prop 2>/dev/null | cut -d= -f2)"
 echo "unlock=$(cfg_get unlock 1)  cloud_guard=$(cfg_get cloud_guard 1)  fv_guard=$(cfg_get fv_guard 1)"
-echo "freepps=$(cfg_get freepps 0)  thermal_guard=$(cfg_get thermal_guard 0)"
+echo "freepps=$(cfg_get freepps 0)"
 echo "power_limit=$(cfg_get power_limit inf)  cycle_fake=$(cfg_get cycle_fake '')  baa_fmt=$(cfg_get baa_fmt auto)  power_mech=${POWER_MECH:-?}  max_ma=${MAX_MA:-?}"
 # v3.0.4：补上「强制PPS」的实际节点状态。
 #   以前只打印 unlock/cloud_guard/fv_guard，作者排查「到底开没开强制PPS」时
@@ -62,10 +62,10 @@ done
 
 # ============ DTBO 现场信息 ============
 echo "--- DTBO 现场信息 ---"
-_dslot=$(getprop ro.boot.slot_suffix); [ -n "$_dslot" ] || _dslot=_a
-echo "当前槽     : $_dslot"
-_ddev="/dev/block/by-name/dtbo_${_dslot#_}"
-_dlimg="$XBT/dtbo/local.img"
+_dslot=$(slot_letter)
+echo "当前槽     : ${_dslot:-未知}"
+_ddev="/dev/block/by-name/dtbo_$_dslot"
+_dlimg=$(dtbo_local_image)
 _dsha=""; _dtsz=""
 if [ -e "$_ddev" ]; then
   _hdr64=$(dd if="$_ddev" bs=64 count=1 2>/dev/null | od -A n -t x1 | tr -d ' \n')
@@ -106,7 +106,7 @@ if [ -f "$_dlimg" ]; then
     _dt_ok=0
   fi
 else
-  echo "模块内置   : $_dlimg <不存在>"
+  echo "模块内置   : 本机 $DEV_CODE 镜像未找到"
 fi
 _dmf="$(cfg_get backup_dir '/sdcard/Download/dtbo_backup')/manifest.txt"
 [ -f "$_dmf" ] && { echo "最近刷入记录:"; tail -n 2 "$_dmf"; }
@@ -739,7 +739,7 @@ echo "内核 charger 事件:"
 dmesg 2>/dev/null | grep -aiE 'charger|chg_|usb.*(insert|remove|connect)|cc_orient|vbus' | tail -n 6 | sed 's/^/  /' \
   || echo "  （无）"
 echo "模块充电日志（最近 6 条）:"
-grep -aE 'charge_guard: (tier=|charger event)|thermal_guard: (ON|OFF|re-apply)|closed_loop' \
+grep -aE 'charge_guard: (tier=|charger event)|closed_loop' \
   "${LOG:-/data/local/tmp/xt_toolbox.log}" 2>/dev/null | tail -n 6 | sed 's/^/  /' \
   || echo "  （无）"
 
@@ -757,20 +757,11 @@ for f in /sys/class/typec/port0-partner/*; do
   esac
 done
 
-echo "--- 温控守护状态（判断是否为温控介入所致）---"
-echo "  thermal_guard=$(cfg_get thermal_guard 0) limit=$(cfg_get thermal_limit 45)C hyst=$(cfg_get thermal_hyst 4)C action=$(cfg_get thermal_action slow)"
-echo "  保护快照  : $([ -f $XBT/state/thermal_prev ] && echo "存在(保护中) [$(cat $XBT/state/thermal_prev 2>/dev/null | tr '\n' ' ')]" || echo "无(未触发)")"
-echo "  守护进程  : $(timeout 5 pgrep -cf 'HyperOS_XJ/battery/scripts/[t]hermal_guard\.sh' 2>/dev/null || echo 0) 个实例"
-echo "  最近温控日志:"
-grep -a 'thermal_guard' "${LOG:-/data/local/tmp/xt_toolbox.log}" 2>/dev/null | tail -n 4 | sed 's/^/    /' \
-  || echo "    （无）"
-
 echo "--- 各守护单实例核验（多实例会互相抢节点）---"
 # 注意：模式用字符类 [x] 包住首字母，避免 pgrep 匹配到自己
 for _pat in \
   'HyperOS_XJ/battery/scripts/[c]harge_guard\.sh' \
   'HyperOS_XJ/battery/scripts/[c]loud_guard\.sh' \
-  'HyperOS_XJ/battery/scripts/[t]hermal_guard\.sh' \
   'HyperOS_XJ/battery/scripts/[c]ycle_guard\.sh' \
   'HyperOS_XJ/battery/scripts/[f]v_guard\.sh' \
   'HyperOS_XJ/battery/scripts/[f]v_handler\.sh'; do

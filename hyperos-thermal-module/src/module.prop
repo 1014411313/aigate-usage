@@ -1,6 +1,6 @@
 id=HyperOS_XJ
 name=HyperOS - 动态温控·解容
-version=1.0.52
-versionCode=99
+version=2.0.0
+versionCode=124
 author=小米热炸了（二改）｜ 动态温控 K3（AxiaojiuY）｜ 解容工具箱 听夜风1337
 description=动态温控 K3 · 二改整合版（电池解容 + DTBO + 控制台）：初始化中，首次开机完成后自动就绪

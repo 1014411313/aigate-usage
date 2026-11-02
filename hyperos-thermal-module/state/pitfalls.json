@@ -1,5 +1,6 @@
 {
   "items": [
+    "v1.0.75：内置机型 DTBO 并不等于存在 local.img。旧 customize.sh 仅刷写成功后改名，用户跳过安装刷写时只剩 popsicle.img 等机型文件，而 status_kv/flashlocal/diag 全查 local.img 导致误报未找到。现在安装前独立识别并记录机型、准备 local.img，common.sh 的 dtbo_local_image 统一读取机型文件或 local.img；十五种镜像、未知机型拒绝、OS4门控、模拟刷写/备份/补零和升级清理已验证。不要重新把镜像识别绑到实际刷写成功。",
     "改 classes.dex 后必须重算 d[12:32]=sha1(d[32:]) 与 d[8:12]=adler32(d[12:])，否则 ART 拒绝加载",
     "不要改 dex 里的方法名（v26/v27 两次闪退，即使补了校验字段也不行）",
     "改 resources.arsc 优先等长替换；追加字符串要同步 stringCount/size/stringsStart 并整体平移后续 chunk",
@@ -35,9 +36,17 @@
     "WebUI 里的自定义拖拽（长按卡片再拖）在真机上不稳定：长按会被文本选择/系统手势接管，pointercancel 把拖动打断。折腾多版仍不行，已整块移除，排序改由「卡片显隐」开关 + 恢复默认布局代替；不要再往页面里加 pointer 拖拽",
     "把刷新拆成快/慢两条路后，慢字段（设计容量/满充/健康度）必须留在完整刷新里：快速脚本不输出这些键，若在快速路径里更新会把它们刷成空 → 界面闪成 --。改快速路径时先确认字段来源脚本确实提供该键",
     "模块更新保留设置的三件套缺一不可：① 写在模块目录外（/data/adb/HyperOS_XJ_data）② 写入即同步（cfg_set / UI 保存时 cp，别等定时任务）③ 卸载不要删这个目录（用户常“删了重装”）③.5 customize.sh 恢复 + thermal_core 启动兜底恢复",
-    "DTBO 刷入记录有两套前缀：安装期 install_flash_OK/install_flash_SKIP，界面刷入写 flash_OK/auto_before_flash（都在 Download/dtbo_backup/manifest.txt）；只认一种会误判「可刷入」。另：DTBO 刷完必须重启才生效，诊断里看 flash_OK 只能证明写进分区"
+    "DTBO 刷入结果有两套前缀：安装期 install_flash_OK/install_flash_SKIP，界面刷入 flash_OK/flash_VERIFY_FAIL；auto_before_flash 仅是备份，不应覆盖成功状态。v1.0.75 状态读取遵循 backup_dir。DTBO 刷完必须重启才生效，诊断里看 flash_OK 只能证明写进分区",
+    "温控联动的档位阈值按 current_mode 的档位名查（level_1~level_5）：曾把映射写成数字 1~5，阈值恒为空 →「高温自动降充电功率」完全空转（v1.0.47 引入、v1.0.53 修复，v1.0.47~1.0.52 的诊断包里从来没有一条「温控联动」日志）。改档位相关映射前先确认 current_mode 实际存的是什么",
+    "upstream/<组件>/base/ 存的是【上游原样】（当前基线版本），不是我们改后的版本：apply 时以它作三方合并的 ancestor，合并成功后写入新上游内容。所以本地改上游文件（src/battery/scripts 或 src 里的上游文件）只改源码即可，不要动 base/ 与 manifest（manifest 的 local_modified 由 apply 重算）。另：pgrep -f 的模式串会被 timeout 子进程命中，判活要用 [g]uard_watchdog 这类字符类写法",
+    "大面积模糊光斑不能靠低频改 hue-rotate 来省性能：即使每2秒只改一次，WebView也会同时重算三块60~70vw的blur纹理，表现为严格周期卡顿。录屏应分析画面区域变化而不是只看编码帧间隔；本项目自动变色改为保持blur/saturate固定，只动画已合成光斑的opacity。",
+    "WebUI 周期卡顿的第二层来源是命令桥接：KernelSU WebViewInterface.exec 每次都新建 root shell，回调通过 webView.loadUrl('javascript:…') 注入，会打断渲染管线；录屏合成帧连续但画面变化峰值对齐每秒轮询时，优先合并命令而不是继续改 CSS。status.json 快照已并入每秒轮询（分隔符 __XJ_STATUS__），每6拍的 status_kv.sh 完整刷新是剩余的重命令。",
+    "cfg_get 变量缓存不能一概而论：common.sh v2.9.4 曾加过、v2.9.9 因长驻守护读到旧配置回退（真机改档失效）；但 status_kv.sh 这类每次 exec 重新启动的短命脚本可以安全地把 settings.conf 读进变量（v1.0.61 已做），前提是键名过 [!A-Za-z0-9_] 过滤防 eval 注入。",
+    "ksu.exec 是同步调用：JS 线程等新建 root shell + 脚本执行完才继续，脚本越慢界面卡越久；采样脚本应学充电监视器 read.sh 的零 fork 手法（内建 read 读节点、路径探测结果缓存 ps.cache、kill -0+pid 文件判活）。",
+    "ksu.spawn 异步通道（v1.0.62）：native enqueue 后台执行，脚本时长不再阻塞 JS/渲染线程；但回调是每行 stdout 一次 loadUrl 注入，必须把输出压成单行（tr 换行→0x01，JS 还原）才能把打断次数降到 exit 一次；管道会吃掉退出码，用尾部 @@RC@@$? 回传；spawn 的 createRootShell 仍在 JavaBridge 线程同步（几十 ms），已属不可再降的部分。"
   ],
   "decisions": [
+    "2026-11-02：用户要求移除电池解容侧独立温控守护（thermal_guard/thermal_ctl），避免与充电档位冲突；保留四档充电和温控页高温自动降功率。升级需清理旧配置与残留，保护快照只有当前仍是动作档时恢复，不覆盖用户手动档位。",
     "状态栏/取消全屏：用户确认不是必须，放弃改 dex",
     "解容面板由 iframe 方案改为场景页原生 UI，battery.html 与 chart.min.js 已删除",
     "充电功率四档、电池数值均在主页；场景页只留解容开关、循环伪装、电压、DTBO",

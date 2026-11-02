@@ -29,6 +29,7 @@ if [ -f "$_conf" ]; then
 fi
 
 IMG="$DR/$CODE.img"
+[ -f "$IMG" ] || IMG="$DR/local.img"
 
 OS_INC=$(getprop ro.mi.os.version.incremental)
 OS_NAME=$(getprop ro.mi.os.version.name)
@@ -105,6 +106,11 @@ if ! dd if="$DEVC" of="$BF" bs=1M 2>/dev/null; then
     exit 15
 fi
 sync
+if [ "$(stat -c %s "$BF" 2>/dev/null)" != "$D_SZ" ] || \
+   [ "$(sha256sum "$BF" 2>/dev/null | awk '{print $1}')" != "$(sha256sum "$DEVC" 2>/dev/null | awk '{print $1}')" ]; then
+    say "备份大小或哈希校验失败，已中止（分区未改动）"
+    exit 15
+fi
 
 SRC="$IMG"
 if [ "$F_SZ" -lt "$D_SZ" ]; then

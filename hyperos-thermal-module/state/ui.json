@@ -8,11 +8,11 @@
   ],
   "tabs": "底部导航 5 页：主页/温控/电池/外观/关于；tab 与 SWIPE_PAGES 顺序必须一致，bkShouldRefresh 只认主页与电池页",
   "styles": {
-    "theme": "液态玻璃皮肤：六套预设 aurora/holographic/neon-dark/aurora-vivid/cyber/lava（v1.0.9 起数值照搬 design-ref）。预设变量：--glass-rgb/--glass-alpha/--glass-border/--glass-highlight/--glass-filter（backdrop-filter 整串）/--glass-reflect/--shadow-color/--nav-bg/--nav-filter/--nav-shadow/--nav-radius/--accent/--accent-bg/--ring-w/--ring-track/--ring-glow-skin/--icon-glow；body[data-skin] 里合成 --glass-bg 并映射给 --primary/--bar 等旧变量",
-    "ambient": "背景层 .ambient（.amb-grad 铺满视口的渐变 10s 位移 / .amb-blobs 三个光斑 60/50/70vw、blur(90px)、screen、12s / .amb-noise 噪点），body.blob-on 开启光斑；浅色三套用 1.html 的渐变，艳丽三套 --bg-gradient:none 只看光斑",
+    "theme": "八套预设 aurora/holographic/neon-dark/aurora-vivid/cyber/lava/glacier/moonsea；前六套保持毛玻璃，glacier（冰川琉璃）/moonsea（月海流银）默认液态玻璃，独立ht_liquid_glass开关可搭配任意主题。主题预设变量仍映射--glass/--nav/--accent/--ring等现有组件变量。",
+    "ambient": "v1.0.73：六主题固定纯色底，三个径向亮芯光斑基准60/54/68vw，默认大小170%（实际102/91.8/115.6vw）；光斑模糊58px+背景模糊15px合为静态blur73px，饱和1.90×，透明度1.30×；38%视口/9秒三轨闭合移动，默认开启10秒透明度变色与噪点0.20；动画只改transform/opacity，滚动/后台/减少动态效果暂停保留。",
     "design_ref": "设计源 hyperos-thermal-module/design-ref/1.html（三主题 light/dark/fluid）与 2.html（aurora/cyber/lava）。v1.0.9 已照搬：卡片 blur(24/30px)+saturate(180/200%)+contrast(110%)、28px 圆角、三层阴影（投影 + inset 1px 高光 + inset -1px 暗角）、上半部反光；底栏 nav-bg + blur(24/40px) + 36/37px 药丸；圆环描边 12/14 + 单/双 drop-shadow；艳丽皮肤数字 #fff→#ddd 渐变裁剪、图标发光",
     "energy_core": "能量光环（照搬 design-ref/3.html 光晕 + 3-1.html 波浪观感）：.gauge 230px；.gauge-glow 196px 径向光晕（五段色阶 + blur(4px)，3.2s 呼吸 0.92→1.08 缩放），仅 .gauge.charg 时淡入；.gauge-fluid 182px 圆形容器（clip-path:circle(50%) 抗方角 + translate3d 抗锯齿），.gauge-fluid-fill 高度 = calc(var(--p) * 1%) 即电量，内叠 .fluid-blob / .fluid-blob-2 旋转模糊光块（强调色 80% 6s / 白色 40% 10s，screen 混合 blur 15px）；液面为三层 .gauge-wave 正弦波条（内嵌 SVG 300% 宽、translateX -33.33% 平移循环：7s / 10s 反向 / 13s + 6s/8s/10s 上下浮动，底部渐变淡出），bottom = calc(var(--p) * 1% - 14px)；外环 --ring-w:6、轨道 rgba(accent,.1)、弧过渡 1.2s，末端亮点脉动 keyframes gaugeSparkSkin 5→8px；中心 .gauge-temp 72px 细体 clamp 上限 84px",
-    "blobs": "六套主题都开光斑（body.blob-on 常置）：blur(100px)、15s 缓动、b3 才 screen；颜色由预设 --b1/b2/b3-color 给，浅色两套 --blob-op:.9 且 --bg-gradient:none（只靠光斑出色彩）",
+    "blobs": "沿用v1.0.72六主题配色与径向渐变：aurora蓝紫青、holographic粉紫蓝、neon-dark电蓝紫青、aurora-vivid玫红紫青、cyber红蓝绿、lava红橙金+玫色；v1.0.73全部主题共用截图默认参数：3斑/170%/blur58/op1.30/drift38/speed9/bgBlur15/bgSat1.90/bgHue10/noise0.20，噪点与变色开启，颜色跟随主题。本次首次打开重置旧外观一次，后续用户调整保留；流畅模式单斑移动，减少动态效果静止。",
     "topbar": "顶栏仍是 h1 + subtitle（无 logo / 版本号 / 按钮）；玻璃版悬浮顶栏与底栏已回退",
     "about": "关于页：三张作者卡片（小米热炸了 517965 / AxiaojiuY 45432024 / 听夜风1337 37273905，点卡跳酷安）+ 二改声明 + 两个 QQ 群卡片（openQGroup），酷安名片与 openAuthorCard 已删",
     "must_reuse": [
@@ -29,7 +29,7 @@
     "one_call": "status_kv.sh 一次返回 soc/status/容量/健康度/电压/电流/功率/温度/循环/伪装/协议/功率档/DTBO 状态/fv_v 等",
     "power_w_trap": "status_kv 的 power_w 是档位名(inf/fast/mid/slow)，真实功率用 battery_power_w",
     "cycle_real": "qmax_cyclecount 为真实循环；cyclecount 会被伪装覆盖",
-    "refresh": "bkRefresh 每 6 秒（仅主页/场景页 active）；失败 3 次退避 30 秒",
+    "refresh": "bkPoll 按外观设置刷新（默认 1 秒），status_fast 高频采样、每 6 拍做完整 status_kv 刷新；只在主页/电池页前台自动取数；失败 3 次退避 30 秒；显示值未变化时不重复写文字或圆环进度",
     "kv_cache": "bkRefresh 把解析后的 kv 存到 window.__bkKv，voltApply 用它判断满电电压是否超原厂上限"
   },
   "voltage_card": {
@@ -46,7 +46,8 @@
     "hyperosui/assets/chart.min.js",
     "头像模糊面板",
     "作者头像图 XJ1",
-    "捐赠码与内嵌公告"
+    "捐赠码与内嵌公告",
+    "v1.0.53：关于页「采集充电快照（二改版/原版解容）」两项与 src/snapshot_charge.sh（双版本对比场景不复存在；diagnose 已含充电/电池/无线节点，并补了 BAA 载荷与 DT 有线快充参数）"
   ],
   "gauge": {
     "effect": "SVG 描边圆环 + 能量光环：.gauge-track（强调色 10% 轨道）+ .gauge-arc（accent 描边 6px，stroke-dashoffset=100-var(--p)，1.2s 缓动）+ .gauge-spark（进度末端亮点，充电时脉动）+ .gauge-fluid（液态充能，高度跟 --p = 电量，内含两个模糊光块 + 三层波浪）+ .gauge-glow（充电光晕，带呼吸）",
@@ -65,7 +66,7 @@
     "home_fields": "主页数据格由 diyRenderHome() 生成，HOME_FIELDS 11 项 + HOME_GROUPS [[2,3,3,3]]（auto 模式按原分组）；隐藏只加 .hide，ID 始终存在于 DOM，避免 bkRefresh/refreshStatus 拿到 null",
     "cards_order": "卡片显隐与排序：key = pageId|卡片首个 .pref-title（无则 #序号），存 ht_diy_hidden_cards / ht_diy_order_<pageId>；排序按 .small-title 分段保存与恢复，长按 0.45s 拖动，输入框/开关/色板/按钮上不触发",
     "schemes": "ht_schemes 存多套外观快照（除 ht_schemes/ht_backup_path 外的全部 ht_* 键），应用=清空后回写并刷新；支持 JSON 导入导出；自定义 CSS 存 ht_diy_css 并注入 #diyCssStyle",
-    "bg_filter": "光斑容器默认不加 filter（避免隔离 mix-blend-mode），只在背景模糊>0、饱和度≠1 或开着自动变色时才挂 body.bg-filter"
+    "bg_filter": "光斑容器不加 filter；背景模糊与光斑模糊在子元素上合并，饱和度与色相也只影响光斑。--bg-hue 写在 .amb-blobs，避免在根节点更新继承变量"
   },
   "audit_20261101": {
     "status": "待修",
@@ -74,12 +75,22 @@
       "status_fast电流绝对值化与完整读符号不一致，放电电流可跳号",
       "电压副标题只看标记或全局最大vterm就宣称已生效/节点写入，缺真实核验",
       "diyRenderSchemes方案名直接innerHTML、内联事件拼接；外部方案可注入高权限WebUI",
-      "snapshot_charge默认find不跟class入口软链接，DT值截断且UI可能超时",
+      "snapshot_charge默认find不跟class入口软链接，DT值截断且UI可能超时（v1.0.53 已整体删除该功能）",
       "慢字段快速刷清空问题已经修正，Node回归6100仍保持6100"
     ],
     "validation": "Node VM已复现无节点核验显示已写节点、自动完整读绕过暂停、无害HTML方案名未转义。"
   },
   "wallpaper_fix": "v1.0.43：body.wallpaper .ambient{background:none} + .amb-grad{opacity:0}，此前底图层不透明底色盖住壁纸",
+  "wallpaper_v1075": {
+    "presets": "自定义背景增加青柠凝露/冰蓝凝露/紫晶凝露/琥珀凝露四款1080×2400静态WebP，黑底透明胶囊状液滴与底部浅液池，高光折射边缘，无时钟/文字；四款合计253976字节。入口仍在appearance-9的wallpaper弹层，复用mini-grid/chip/btn；双列预览限高并保持完整图片，不引入新弹窗。",
+    "persistence": "ht_wp_preset白名单id与ht_wp_on保存，保留本地ht_wp_url流程，本地图片覆盖并清预设。默认值wallpaper_preset=default同步default_settings和DEF_SETTINGS。预设纳入恢复默认与外部方案首导白名单，固定xj_appearance_revision保持1.0.73，不另做外观重置。",
+    "render": "body.wallpaper[data-wp-preset]临时隐藏amb-blobs/amb-noise，不修改DIY存值；预设底图外扩仅为模糊度×2，0模糊时不裁顶部高光。默认/本地图片或关闭开关恢复原光斑；clearWallpaper清选择并关闭背景。原毛玻璃与液态玻璃材质、光环和实时采样保留。",
+    "resources": "src/hyperosui/assets/wallpapers/liquid-{lime,ice,violet,amber}.webp；URL走相对路径，pack.py同步到webroot/assets，并复制默认壁纸到webroot/.file，兼顾两种WebUI入口，不依赖网络。",
+    "battery_ui": "删除bkTgState/bkTgDesc及描述与刷新段；DTBO按dtbo_local/dtbo_image/dtbo_os4显示可刷入/已刷入/失败/未适配/资源缺失/系统不支持。手动刷写仍自绘确认，非OS4/无镜像不执行命令；后端统一镜像读取。",
+    "validation": "Firefox四款离线加载/实际点选与键盘/刷新/开关/默认/本地上传/清除、方案保存首导应用与恢复默认；浅深色18组320/360/430×字体0.8/1/1.5无溢出、文字裁切，近实色弹层与层叠正确；DTBO七种状态/非OS4拒绝/确认取消与模拟完成通过，无JS错误或初始化警告。手机观感与实际DTBO刷入待安装测试。",
+    "package_validation": "v1.0.75(122) ZIP190项完整性、双WebUI与打包日期源码一致、四款与默认壁纸两入口资源一致、全部权限及对v1.0.74差异核验通过；十五种DTBO内容/温控核心/实时采样/latest.json未变。包6239168字节，sha256=b7f416009975d809f02f6545c401e7d2513f355e265eb2976d2a618e8407d7ca；已发送，未发布。",
+    "evidence": "~/workspace/.aicode/tmp/ui_1075/（ui_result.json、backend_result.json、package_result.json、壁纸预览与页面截图）"
+  },
   "appearance_audit": "v1.0.43 浏览器实测：滑块/开关/卡片显隐/字段显隐/方案/皮肤切换/IP/字体均有效；光环类需对应元素存在，属预期",
   "power_plan_card": {
     "page": "page-thermal",
@@ -87,5 +98,92 @@
     "section": "自动任务",
     "position": "场景/游戏加速之后、高温保护之前",
     "verified": "浏览器实测：卡片在 page-thermal 内、主页无残留、plan_on 唯一"
+  },
+  "render_performance": {
+    "version": "1.0.60",
+    "changes": [
+      "bkTxt/setTxt 与圆环进度差分写入；实时数字使用 tabular-nums",
+      "ui-scrolling 冻结装饰动画，停止滚动约160ms后继续；IntersectionObserver 管理光环离屏暂停，panelBody 的 open 状态直接控制折叠暂停",
+      "切页/横滑只模糊标题，内容淡入淡出；保留过渡曲线与模糊度设置",
+      "图标优化关闭时不启动rAF，开启时先统一测量再差分写样式",
+      "恢复背景模糊参数；v1.0.59 将自动变色从每2秒改写 hue-rotate 改为三光斑合成层平滑交替透明度，删除色相定时器与动态滤镜重算",
+      "v1.0.60：二次录屏证实合成帧连续、背景跳变消失，但画面峰值与每秒轮询对齐；status.json 快照合并进每秒轮询命令，轮询关闭时保留原3秒独立快照",
+      "前后台检查覆盖请求返回及初始化；字段显隐不重建，换列数保留现有显示值"
+    ],
+    "verification": "v1.0.60 二次录屏（10.952秒/980帧，89.5fps）：无>25ms帧空洞，波浪动画全程连续（无≥3帧冻结段），背景最大突变0.61（v1.0.58录屏为8.49）；whole-diff峰值出现在1.03/2.03/3.04/4.04s等，严格1秒间隔。KernelSU WebViewInterface.exec 每次新建 root shell 且用 loadUrl('javascript:…') 注入回调（源码已核实），每次exec对应一次渲染打断。Firefox完整回归通过（含新combined断言：单命令同时更新电量/模式/新鲜度），Android 17 WebView 冒烟无JS错误，包内三份HTML一致且JS语法通过。",
+    "evidence_dir": "~/workspace/.aicode/tmp/ui_perf_1059/",
+    "limits": "录屏帧时间戳连续只能排除编码丢帧，不能代替页面动画分析；本次以背景像素突变和代码定时器同步定位。Android WebView预览验证实现与视觉，最终手感仍需安装v1.0.59真机复测。",
+    "pending": "安装v1.0.60，观察滑动/切页时是否仍定期顿挫；若仍明显，下一候选是每6拍完整刷新（status_kv.sh 较重）的错峰或降频（需用户同意改刷新节奏），以及SVG亮点 stroke-width 脉冲的 transform 化对照实验"
+  },
+  "home_v1063": {
+    "cards": "主页新增四卡（均在 console-3 后，data-diy-id=console-4~7，自动纳入卡片显隐）：实时曲线（canvas 折线）、电池详情（mini-grid+info-list）、充电协议（panel 可折叠，toggleProto，状态存 ht_proto_collapsed）、温区温度（mini-grid 动态）",
+    "curve": "CURVE_SERIES 功率#4A9EFF/温度#FF9F0A/电量#30D158，CURVE_MAX=120 点，on 默认 w+t；数据在 bkApplyFast 尾 curvePush（功率带符号/温度℃/soc）；多选各自归一化叠加，末端标当前值+图例+curveStat 峰谷范围；canvas 离屏（fx-paused）与切后台暂停；曲线属可截图验证元素（fx-paused 由 initRenderPerformance 的 IO 观测）",
+    "detail_sampling": "detail_kv.sh（battery/scripts）：零 fork 读附加节点，路径探测缓存 state/detail.cache（缺失或 P_RM/P_QCT 失效才重扫，find/glob 仅在重扫时 fork）；输出 k=v（rm_uah/cell_uv 等原值，单位换算在前端）；拼进 bkRefreshFast 同一条命令（首次第2拍、此后 _bkPollN%30===8，都是快速拍），前端以 kv.tzlist!==undefined 识别并 detailApply",
+    "e2e": "沉浸全屏：head 引 https://mui.kernelsu.org/internal/insets.css（管理器拦截注入 --window-inset-*）；enableWebUIEdgeToEdge 读到有效 inset 才调 ksu.enableEdgeToEdge(true)（旧名 enableInsets）并 html.e2e；CSS 安全区一律走 --ws-top/--ws-bottom（html.e2e 时=max(env,var)，否则 0），涉及 topbar/body padding/tabbar/snackbar/floating/DIY 底栏/弹层；状态栏图标深浅由系统/管理器决定，页面管不了；老管理器拿不到 inset 时保持原状",
+    "pitfall": "容器内置浏览器对该页截图会大片空白/丢内容（backdrop-filter 合成问题）：截图验证先 body 加 fx-lite 并全量 inline 禁 animation/backdropFilter；页面几何与 canvas 内容用 evaluate 读 getBoundingClientRect/getImageData 验证更可靠"
+  },
+  "home_v1068": "主页字段精简（v1.0.68）：「电池详情」卡（console-5）只留 dRm/dSoh 两格，mini-grid 改 repeat(2,1fr)，info-list 整块（dTtf/dModel/dVendor/dDate/dcRow1/dcRow2）删除；「充电协议」面板（console-6）只留 dPApdo 一行，dPXm 附加行删除；detailApply 不再取 qmax_uah/cell_uv/thermal_level/ccc_max_ua/ttf_sec/batt_*/dc*/proto_*/pd_*/typec_*/pd_rev/pps_ptf/power_max_uw/usb_*（detail_kv.sh 仍输出，未改）",
+  "home_v1069": "首页排版重排（v1.0.69）：page-console 只剩 console-1~4——1=实时运行面板（gauge/mode-pill/homeFields/三格 mini-grid：dRm+dSoh+dPApdo/温区 pref-desc+dTzGrid）、2=充电功率、3=设备信息、4=实时曲线；console-5/6/7 与 protoBody/arrow-proto/toggleProto/ht_proto_collapsed 已删；initPanelState 不再管 proto；全局间距压缩：.small-title 14px 28px 6px、.card 10px、.panel 10px/14px、.mini 11px、.mini-grid 8px/12px、#homeFields 12px 8px、#dTzGrid 12px、.mode-pill 12px；光环 .gauge 198→188px、body[data-skin] .gauge 230→216px、glow 196→184px、fluid 182→170px；实测主页内容高 1864→1499px",
+  "home_v1070": "v1.0.70：HOME_FIELDS 13 项（尾部加 dRm/dSoh，HOME_GROUPS [[0,1],[2,3,4],[5,6,7],[8,9,10],[11,12]]，diyRenderHome 兕底 ids 同步）；APDO/dPApdo 已删；detailApply 只剩 dRm/dSoh/renderTz；renderTz 过滤「充电接口 2」、slice(0,8)；bkRefreshFast 每拍拼 detail_kv.sh（无 wantDetail 条件）；bkApplyFast 新增 Des/Full/Health/Cycle/Proto（数据源 status_fast.sh 新字段 charge_full_mah/charge_design_mah/health/cycle/cycle_real/charge_proto），bkRefresh 对应段已删（Fake/bkCycleNow 仍在完整刷新）；光环 190px/glow 162/fluid 150/gauge-fs 兜底与 DIY def 64px；面板内紧凑 CSS：#homeFields gap 8px 6px、.mini padding 7px、val 15px、lbl 9.5px+ellipsis，#dTzGrid 四列 gap 6px；面板实测 578px；脚本：status_fast.sh 一次 awk 读 12 节点含 real_type 回退链，detail_kv.sh CVN=62 温区 batt 优先（≤2）+ TZ 缓存全失效强制重扫",
+  "home_v1071": {
+    "layout": "默认自动排版为连续玻璃分区：实时状态[[sCapacity,sStatus,pcProto],[pcVolt,pcCur,pcTemp]]；容量与寿命[[dRm,pcFull,pcDes],[pcHealth,dSoh],[pcCycle,pcFake]]；温区普通屏每行4格、≤360px每行3格，剩余一行自动平分宽度。复用mini/mini-grid/pref-desc，新增home-group/home-heading补充样式；标签换行，13字段与刷新脚本不变，2/3列仍可选，隐藏整组不留空标题。",
+    "background": "极光浅色/暗黑霓虹蓝紫配色增强；光斑78/70/86vw且内移，取消b3 screen混合；默认blur36、drift30%视口、单程12s，三个独立transform路径，无动态滤镜；bg-hue透明度最低系数0.7/0.85，fx-lite保留一个移动光斑。使用--blob-travel-x/y数值计算vw/vh，不沿用旧百分比变量契约；已有DIY存值/开关/颜色保留，默认值在default_settings.json与DEF_SETTINGS.webui_defaults同步。",
+    "validation": "Firefox：六主题截图核验；320/360/384/430px×字体0.8/1.0/1.5共12组无横向溢出/标签裁切；默认384px字体0.8、8个温区时非光环数据区约488px（放大字体自然增长，不声称最大字号仍一屏）；13字段唯一、列数切换保值、整组隐藏、折叠通过。两秒光斑位移17~74px且滤镜不变；bg-hue、fx-lite移动、0幅度、滚动/后台暂停、fx-lite+减少动态效果组合通过。与v1.0.70对比：bkApplyFast/bkRefreshFast/bkPoll/bkRefresh/detailApply/renderTz及两采样脚本未改变。",
+    "evidence": "~/workspace/.aicode/tmp/ui_1071/",
+    "pending": "用户反馈背景在手机上移动和光斑仍不明显，v1.0.72已再次重做；面板布局保留，尚未发布。"
+  },
+  "appearance_v1072": {
+    "background": "六主题全部重新配色，缩小光斑并用径向亮芯/渐隐边缘，默认blur20px、38%屏幕宽高、8秒闭合绕行，三轨迹错相-1/-3/-5秒；不改主题卡片、能量光环和取数逻辑。滤镜静态，bgHue只透明度交替，流畅模式单斑移动，滚动/后台/减少动态效果暂停规则保留。",
+    "reset": "主题预设#appearanceResetBtn与关于页共用async restoreDefaults→showModal→113项外观白名单+ht_diy_order_/rows_布局前缀→reload；白名单从四个注册表SCALE_DEFS/DIY_SLIDERS/DIY_SWITCHES/DIY_COLORS取key，另显式列旧外观键。恢复aurora/light、外观/布局默认策略/自定义CSS；保留ht_schemes、备份路径、ht_charge_records、ht_bk_interval/migrated、游戏备注、欢迎确认和面板实际折叠状态，不调用温控/电池写命令。页面刷新后曲线/当前充电采样会话重新开始，不声称保留内存态。",
+    "sheet": "toggleExpand把.expand-inner移到#xjSheetBody，恢复按钮宽度规则用#appearanceResetBtn，不依赖原父容器。initSkin补画themeChips/themeSub/accentSwatches，恢复后浅色标签与实际值一致，未改initSkin的模式选择策略。",
+    "validation": "Firefox：六主题每2秒光斑位移106~255px，滤镜固定；12组320/360/384/430px×0.8/1/1.5字体无横向溢出/标签裁切；13字段/换列保值；bgHue/bgBlur/bgSat、流畅模式、零幅度、真实滚动事件/后台/减少动态效果通过。113项外观覆盖静态核对，取消存储不变，确认刷新恢复默认且12类保留数据与模拟运行参数一致；六主题窄/宽屏确认弹层无溢出，无JS错误。Android17 WebView Chrome156核验六主题颜色、radial-gradient与blur20px和按钮宽度308px；后台预览自然动画暂停，手动时间轴采样不当真机帧率，截图合成有缓存，实际手感待用户安装。",
+    "evidence": "~/workspace/.aicode/tmp/ui_1072/（check.py/result.json，六主题四帧拼图，android_preview.html与截图）",
+    "pending": "v1.0.72本地包已构建并发送；后续测试使用v1.0.73的截图默认参数与首次外观重置。未发布。"
+  },
+  "appearance_v1073": {
+    "defaults": {
+      "blob_count": 3,
+      "noise": true,
+      "bg_hue": true,
+      "blob_size": 170,
+      "blob_blur": 58,
+      "blob_op": 1.3,
+      "blob_drift": 38,
+      "blob_speed": 9,
+      "bg_blur": 15,
+      "bg_sat": 1.9,
+      "bg_hue_dur": 10,
+      "noise_op": 0.2
+    },
+    "source": "用户2026-11-02两张背景设置截图；六主题共用完整webui_defaults，default_settings.json与DEF_SETTINGS同步，注册表、颜色跟随、背景滤镜、开关与摘要一致；不改v1.0.72配色、轨迹或光环与取数逻辑。",
+    "migration": "migrateAppearance在首个initAppearance之前同步运行，复用resetAppearanceSettings的113项白名单和布局前缀；固定完成标记xj_appearance_revision=1.0.73，写在清理成功之后。非ht_键，不纳入getAllBackupKeys、diySnapshot、普通/完整UI备份，也不被旧方案应用清除；版本号后续递增不改此标记。首次回到aurora/light及整套外观默认，之后重新调整/刷新/导入旧备份/应用旧方案不重复重置。",
+    "preserved": "ht_schemes、备份路径、充电记录、刷新间隔/迁移标记、游戏备注、欢迎确认、面板实际折叠状态和非外观键；不执行温控/电池写命令，不改customize/service/config_backup等运行设置备份恢复路径。",
+    "validation": "JavaScript与JSON语法、六主题全部数值/标签/开关/3斑/主题颜色一致，实际静态滤镜blur73px+saturate1.9、双动画9s/10s；Firefox 12组宽度/字号无溢出或标签裁切，13字段与换列保值；首次升级113键清理、12类持久数据和模拟运行配置保留、重新调整刷新、重复迁移、模拟v1.0.74/code121后续更新、旧备份/旧方案及手动恢复取消/确认通过，未发现JS错误。",
+    "evidence": "~/workspace/.aicode/tmp/ui_1073/（baseline_hashes.json、check.py、result.json、六主题与背景弹层截图）",
+    "package_validation": "ZIP完整性/脚本权限/默认配置/模块版本/当日构建日期与两份HTML一致检查通过；相对v1.0.72仅module.prop、default_settings.json、更新日志.log与两HTML变化。源文件基线核验安装脚本、温控、电池和latest.json均未变；结果见ui_1073/package_result.json。",
+    "pending": "v1.0.73本地测试包已构建并发送，待用户安装验证真实管理器的升级重置及手机观感；本轮Firefox验证不代替Android真机性能，未发布。"
+  },
+  "liquid_glass_preview": {
+    "base_version": "1.0.73",
+    "built_version": "1.0.74 (121)",
+    "status": "已按用户1-1.html重做并构建v1.0.74测试包，完成Firefox/Android17样式与ZIP核验，包已发送；等待真机测试，未发布",
+    "material": "按用户提供1-1.html重做为平铺微凹液态玻璃：默认blur2px+saturate120%+brightness1.05；@supports时叠url(#liquid-warp)，SVG fractalNoise baseFrequency .015 / numOctaves2 + displacement scale5；1px线性渐变切面、上下锐高光、四周内暗、8/24克制外投影。::after为触点径向高光+15秒反光带；pointermove经单rAF更新--liquid-mx/my，滚动/后台暂停，减少动态/流畅模式关闭动画。数据分组/mini/开关同步微凹阴影，DIY --glass-filter-user可覆盖；WebView不支持SVG滤镜时回退2px轻模糊。",
+    "presets": "glacier=冰蓝浅色/强调色#166f91；moonsea=深海蓝灰/银青#b9e8ea，月海能量底色单独加深以提高浅银数字对比。点击预设应用材质默认值，initSkin只恢复保存值，不重写手动关闭值；原六套背景与光环结构/动画、13字段和采样脚本不改。",
+    "persistence": "ht_liquid_glass纳入resetAppearanceSettings和ht_*方案快照；diyImportSchemes稳定接受ht_skin/ht_theme/ht_liquid_glass，不依赖新键已存在。default_settings.json与DEF_SETTINGS.webui_defaults均liquid_glass=false；xj_appearance_revision保持1.0.73，不触发新一轮整套重置。",
+    "appearance_cleanup": "用户选择精简旧特效：删除appearance-2/3/7/12/13/16/17及对应私有JS/CSS；保留字体/缩放/背景/悬浮底栏/DIY/方案。保留themeId/isDarkNow/hexToRgb；温度快照固定原40/45℃默认提示；底栏指示器固定83%几何并保留图标优化。",
+    "settings_sheet": "sheetEls复用notice-mask/notice-card/notice-title/notice-body，zIndex100001；--sheet-bg浅rgba(255,255,255,.97)、深rgba(28,28,30,.96)，正文var(--text)，不跟随卡片透明度；保持innerEl转移与关闭回放逻辑。",
+    "docs": "USAGE_TEXT、欢迎摘要、default_settings.json与v1.0.74更新日志已同步",
+    "evidence": "~/workspace/.aicode/tmp/liquid_glass_preview/（reference_result.json、package_1074_result.json、参考效果_两套液态玻璃主题预览.png、reference_appearance_glacier.png、reference_presets_moonsea.png、android_reference_material.png）",
+    "validation": "Firefox：八主题默认材质；2px高透滤镜/scale5 SVG微折射/1px切面/内凹/反光带；两新主题320/360/384/430px×字号0.8/1/1.5共24组无溢出裁切；触控/键盘开关、ARIA与刷新保存；8预设真实点选和近实色弹层；DIY覆盖、触点单rAF、滚动/后台/流畅/减少动态暂停、方案快照/导入白名单均通过，无JS错误或初始化警告。Android17 WebView Chrome156样式探针CSS.supports=true，实际filter=blur(2px) url(#liquid-warp) saturate(1.2) brightness(1.05)，border0、切面mask exclude、内凹阴影、liquidGlassFlow 15s运行；指针变量更新与滚动暂停通过。完整页面本地预览加载超时，故Android仅核验从正式源码自动抽取的同材质探针，不声称真机性能。参考重做相对其前置基线只改WebUI/日志/4状态分片，默认配置未再变。v1.0.74 ZIP共183项且testzip通过；相对v1.0.73仅module.prop/default_settings/更新日志/双WebUI变化；包内/源码版本1.0.74(121)，双HTML与打包日期源码一致，无预览注入，全部权限符合pack.py；latest/温控/电池脚本/打包工具不变。包已发送，未发布，真机性能未验证。"
+  },
+  "diag_pack": {
+    "v1_0_54": "「诊断与日志打包」重构为整个模块诊断：包内分区 00-总览 / 10-温控 / 20-解容 / 30-节点 / 40-系统 + 50-停充.txt + README.txt。总览含「温控链路自检」（调 thermal_core.sh linkstatus）。入口仍是关于页，产物仍是 /sdcard/Download/HyperOS_XJ_diag_<TS>.tar.gz",
+    "how_to_verify": "改 diagnose.sh 后用 mock 环境跑：把 /sys/class、/proc/device-tree、/data/adb、/sdcard/Download 重定位到临时目录，PATH 前置 stub（getprop/dmesg/logcat/ps/pgrep/top/mount），检查产出的目录结构与各文件内容",
+    "step_count": "9 步；解容侧 diag.sh 内含 3s×6 采样 + 2s 稳定性探测，总体约 30~60 秒",
+    "linkstatus": "thermal_core.sh <MODDIR> linkstatus 是只读命令，输出联动判定（阈值/温度/期望档/实际档/判定），不写任何节点",
+    "verified_1_0_55": "真机包（1.0.54，18:58:28）核验：结构完整。修了 5 处——总览系统版本重复、加密温控配置乱码（改为只列大小+sha）、logcat 只 1 行（-t 600→3000）、dmesg 混入 binder/wifi 噪音、BAA_ENC 显示空摘要。真机同时验证 charge_gov 已生效",
+    "filename_1_0_56": "诊断包文件名：诊断包_<月-日-时-分>.tar.gz（内部临时目录仍是 /data/local/tmp/xj_diag_<YYYYmmdd_HHMMSS>，uninstall.sh 清理的就是它）",
+    "perf_1_0_57": "主页渲染减负（浏览器实测基线：常驻动画 12、backdrop-filter 元素 152）——① 背景滤镜链从 .amb-blobs 容器下移到 .amb-blobs i（原来容器挂 blur+saturate+hue-rotate，3 个光斑动画每帧都重走滤镜链）；② 背景自动变色从 CSS keyframes hueSpin 改为 JS 每 2 秒更新 --bg-hue；③ 波浪默认层数 def 3→2；④ 去掉开关轨道与 .mini 的 backdrop-filter；⑤ .gauge-wave-inner 加 will-change。改后实测：动画 12→8、backdrop-filter 元素 152→64。切后台（visibilitychange）暂停 _diyBkTimer / _diyStTimer / _bgHueTimer",
+    "perf_1_0_59": "用户录屏证明 v1.0.57 的低频色相方案仍会每2秒触发一次大面积滤镜重算；改为保持光斑 blur/saturate 不变，只用第二组 CSS 动画平滑交替三个合成光斑的 opacity。删除 _bgHueTimer、_bgHueDeg、--bg-hue 写入和 hue-rotate；自动变色周期滑块仍控制 --bg-hue-dur。"
   }
 }

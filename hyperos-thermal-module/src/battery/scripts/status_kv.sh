@@ -1,19 +1,56 @@
 #!/system/bin/sh
 # status_kv.sh - 供 WebUI 读取的轻量状态输出
+# 本脚本由 WebUI 每 6 拍通过 ksu.exec 调用一次；ksu.exec 是同步调用，脚本跑多久
+# WebView 的 JS 线程就阻塞多久（每次还要新建 root shell）。因此这里的一切读取
+# 都按「每秒采样」的零 fork 方式写：节点用内建 read，配置一次读入变量。
+# 注意：common.sh 曾回退过 cfg_get 的变量缓存（长驻守护 source 后读到旧值的 bug）；
+# 那条教训只适用于常驻进程——本脚本每次都是新进程、读完即退，缓存安全。
 XBT=/data/adb/modules/HyperOS_XJ/battery
 . $XBT/scripts/common.sh
 
 BAT=/sys/class/power_supply/battery
+
+# ---- settings.conf 一次读入（0 fork；键名限定字母数字下划线，防止 eval 注入）----
+while IFS= read -r _line; do
+  case "$_line" in ''|\#*) continue ;; esac
+  case "$_line" in *=*) ;; *) continue ;; esac
+  _ck=${_line%%=*}
+  case "$_ck" in *[!A-Za-z0-9_]*|'') continue ;; esac
+  eval "_cfg_$_ck=\${_line#*=}"
+done < "$CONF" 2>/dev/null
+# 覆盖 common.sh 的 cfg_get：空值/缺失仍回落默认值，与原实现语义一致
+cfg_get() {
+  eval _cg=\"\${_cfg_$1-}\"
+  if [ -n "$_cg" ]; then echo "$_cg"; else echo "${2:-}"; fi
+}
+# 内建读文件到变量（不可读/空文件置空，等价原来的 cat 2>/dev/null）
+rdf() {
+  eval "$1="
+  [ -r "$2" ] && IFS= read -r "$1" < "$2" 2>/dev/null
+  return 0
+}
+
 _nodes=$(direct_current_nodes)
 _node=$(echo "$_nodes" | head -n 1)
-_v=$(read_voltage_uv)
+# 电压候选节点按顺序内建读取（原 read_voltage_uv 逻辑，最多省 3 次 cat）
+_v=""
+for _vp in "$BAT/voltage_now" \
+           /sys/class/power_supply/main/voltage_now \
+           /sys/class/power_supply/usb/voltage_now; do
+  rdf _vv "$_vp"
+  case "$_vv" in ''|*[!0-9]*) continue ;; esac
+  [ "$_vv" -gt 1000 ] 2>/dev/null || continue
+  if [ "$_vv" -lt 100000 ] 2>/dev/null; then _vv=$((_vv * 1000)); fi
+  _v="$_vv"
+  break
+done
 _target=$(target_current_ma "$_v")
-# 一次 awk 读完这批节点（原来是 9 次 cat，每次刷新都要 fork 9 次；
-# 1 秒一刷时这部分开销直接体现为界面发滞）
+# 一次 awk 读完这批节点（含 qmax 真实循环节点；原来是 9 次 cat，每次刷新都要 fork 9 次）
 _kv_files=""
 for _x in "$BAT/current_now" "$BAT/capacity" "$BAT/status" "$BAT/temp" \
           "$BAT/charge_full" "$BAT/charge_full_design" "$BAT/health" \
-          /sys/class/xm_power/fg_master/cyclecount "$BAT/cycle_count"; do
+          /sys/class/xm_power/fg_master/cyclecount "$BAT/cycle_count" \
+          /sys/class/xm_power/fg_master/qmax_cyclecount; do
     [ -f "$_x" ] && _kv_files="$_kv_files $_x"
 done
 if [ -n "$_kv_files" ]; then
@@ -28,17 +65,21 @@ _cdes="$kv_charge_full_design"
 _health="$kv_health"
 _cycle="$kv_cyclecount"
 [ -z "$_cycle" ] && _cycle="$kv_cycle_count"
+_cycle_real="$kv_qmax_cyclecount"
+# 与 common.sh 的 cycle_real_read 回退链一致：qmax → fg_master/cyclecount（已在 awk 批读内）
+case "$_cycle_real" in ''|*[!0-9]*) _cycle_real="$kv_cyclecount" ;; esac
+case "$_cycle_real" in ''|*[!0-9]*) _cycle_real="" ;; esac
 # 慢变节点偶发读到空行（驱动瞬时报错）时重试一次，降低 UI 闪成 -- 的机率
-if [ -z "$_cfull" ] && [ -f "$BAT/charge_full" ]; then _cfull=$(cat "$BAT/charge_full" 2>/dev/null); fi
-if [ -z "$_cdes" ] && [ -f "$BAT/charge_full_design" ]; then _cdes=$(cat "$BAT/charge_full_design" 2>/dev/null); fi
-# µAh -> mAh
-case "$_cfull" in ''|*[!0-9]*) _cfull_mah="" ;; *) _cfull_mah=$(awk -v x="$_cfull" 'BEGIN{printf "%d", x/1000}') ;; esac
-case "$_cdes"  in ''|*[!0-9]*) _cdes_mah=""  ;; *) _cdes_mah=$(awk -v x="$_cdes" 'BEGIN{printf "%d", x/1000}') ;; esac
+if [ -z "$_cfull" ]; then rdf _cfull "$BAT/charge_full"; fi
+if [ -z "$_cdes" ]; then rdf _cdes "$BAT/charge_full_design"; fi
+# µAh -> mAh（整除截断，与原 awk printf %d 一致）
+case "$_cfull" in ''|*[!0-9]*) _cfull_mah="" ;; *) _cfull_mah=$((_cfull / 1000)) ;; esac
+case "$_cdes"  in ''|*[!0-9]*) _cdes_mah="" ;; *) _cdes_mah=$((_cdes / 1000)) ;; esac
 case "$_cycle" in ''|*[!0-9]*) _cycle="" ;; esac
 
 case "$_ma_raw" in
   ''|*[!0-9-]*) _ma="" ;;
-  *) _ma=$(awk -v r="$_ma_raw" 'BEGIN { printf "%d", r / 1000 }') ;;
+  *) _ma=$((_ma_raw / 1000)) ;;
 esac
 case "$_soc" in ''|*[!0-9]*) _soc="" ;; esac
 if [ -n "$_ma" ] && [ -n "$_v" ]; then
@@ -51,7 +92,8 @@ fi
 
 echo "power_w=$(power_now)"
 if [ -n "$_nodes" ]; then echo "direct_control=1"; else echo "direct_control=0"; fi
-echo "direct_nodes=$(echo "$_nodes" | tr '\n' ',' | sed 's/,$//')"
+# 换行转逗号（原 tr|sed 两叉，改纯 shell）
+echo "direct_nodes=${_nodes//$'\n'/,}"
 echo "voltage_uv=${_v}"
 echo "target_ma=${_target}"
 echo "current_node=${_node}"
@@ -69,63 +111,37 @@ echo "cycle=${_cycle}"
 echo "unlock=$(cfg_get unlock 1)"
 echo "cloud_guard=$(cfg_get cloud_guard 1)"
 echo "baa_state=$(baa_state)"
-echo "thermal_remove=$(cat /sys/class/xm_power/charger/charger_thermal/wired_thermal_remove 2>/dev/null)"
-echo "ctrl_limit=$(cat /sys/class/xm_power/charger/charger_thermal/wired_ctrl_limit 2>/dev/null)"
-# 温控守护（自定义上限）
-echo "thermal_guard=$(cfg_get thermal_guard 0)"
-echo "thermal_limit=$(cfg_get thermal_limit 45)"
-echo "thermal_action=$(cfg_get thermal_action slow)"
-# ===== v3.9.8【修 bug】上报 thermal_guard 的【真实存活状态】 =====
-# 【群友反馈】开关显示「开」但温控守护实际没跑。
-# 【根因】旧版这里只 echo(cfg_get thermal_guard) —— 它是【配置值】不是【运行状态】。
-#   thermal_guard.sh 有 3 个 exit 0 路径（单实例让位 / 开机时开关=0 / 循环里开关=0），
-#   一旦退出，配置仍是 1 → 前端永远显示"开"，用户完全无感。
-# 【修法】额外输出 thermal_guard_alive（进程是否存活）与 thermal_guard_ok（两者是否一致）。
-#   前端可用 thermal_guard_ok 判红：=0 表示「开关是开但进程没跑」。
-_tgpid=$(cat /data/local/tmp/xt_thermal_guard.pid 2>/dev/null)
-case "$_tgpid" in ''|*[!0-9]*) _tgalive=0 ;; *)
-  if kill -0 "$_tgpid" 2>/dev/null; then _tgalive=1; else _tgalive=0; fi ;;
-esac
-echo "thermal_guard_alive=$_tgalive"
-echo "thermal_guard_pid=$_tgpid"
-if [ "$(cfg_get thermal_guard 0)" = "1" ] && [ "$_tgalive" = "1" ]; then
-  echo "thermal_guard_ok=1"
-elif [ "$(cfg_get thermal_guard 0)" = "0" ] && [ "$_tgalive" = "0" ]; then
-  echo "thermal_guard_ok=1"
-else
-  echo "thermal_guard_ok=0"      # ← 开关与进程不一致，前端应提示/自动修复
-fi
+rdf _trm /sys/class/xm_power/charger/charger_thermal/wired_thermal_remove
+echo "thermal_remove=$_trm"
+rdf _clm /sys/class/xm_power/charger/charger_thermal/wired_ctrl_limit
+echo "ctrl_limit=$_clm"
 # charge_guard 同理（v3.9.5 起它也有 PID 文件）
-_cgpid=$(cat $XBT/state/cg.pid 2>/dev/null)
+rdf _cgpid $XBT/state/cg.pid
 case "$_cgpid" in ''|*[!0-9]*) _cgalive=0 ;; *)
   if kill -0 "$_cgpid" 2>/dev/null; then _cgalive=1; else _cgalive=0; fi ;;
 esac
 echo "charge_guard_alive=$_cgalive"
 echo "charge_guard_ok=$_cgalive"
-echo "watchdog_alive=$(timeout 5 pgrep -f 'battery_tune/scripts/guard_watchdog\.sh' 2>/dev/null | head -n1)"
+echo "watchdog_alive=$(timeout 5 pgrep -f 'HyperOS_XJ/battery/scripts/[g]uard_watchdog\.sh' 2>/dev/null | head -n1)"
 # ===== v3.11.0 自适应功率爬坡器状态 =====
-_apl_pid=$(cat $XBT/state/apl.pid 2>/dev/null)
+rdf _apl_pid $XBT/state/apl.pid
 case "$_apl_pid" in ''|*[!0-9]*) _apl_live=0 ;; *)
   if kill -0 "$_apl_pid" 2>/dev/null; then _apl_live=1; else _apl_live=0; fi ;;
 esac
 echo "apl_alive=$_apl_live"
 echo "apl_pid=$_apl_pid"
-echo "apl_target_ma=$(cat $XBT/state/apl_target_ma 2>/dev/null)"
+rdf _apl_target $XBT/state/apl_target_ma
+echo "apl_target_ma=$_apl_target"
 echo "apl_cap_ma=$(dt_curr_cap_ma 2>/dev/null)"
 echo "apl_locked=$( [ -f $XBT/state/apl_lock_until ] && echo 1 || echo 0 )"
-echo "apl_profile=$( [ -f $XBT/state/apl_profile.$(cfg_get dev_code unknown).kv ] && echo 1 || echo 0 )"
-echo "apl_best_ma=$(_pb=$XBT/state/apl_profile.$(cfg_get dev_code unknown).kv; [ -f "$_pb" ] && grep -a '^b[0-9]=' "$_pb" 2>/dev/null | cut -d= -f2 | awk '{if($1+0>m)m=$1+0}END{if(m>0)print m}')"
-echo "apl_reset_reason=$(grep -a '^_reset_' $XBT/state/apl_profile.$(cfg_get dev_code unknown).kv 2>/dev/null | tail -n1 | cut -d= -f2-)"
+_apl_prof=$XBT/state/apl_profile.$(cfg_get dev_code unknown).kv
+echo "apl_profile=$( [ -f "$_apl_prof" ] && echo 1 || echo 0 )"
+echo "apl_best_ma=$(awk -F= '/^b[0-9]=/ { if ($2+0 > m) m=$2+0 } END { if (m>0) print m }' "$_apl_prof" 2>/dev/null)"
+echo "apl_reset_reason=$(awk -F= '/^_reset_/ { v=$0; sub(/^_reset_[^=]*=/, "", v) } END { print v }' "$_apl_prof" 2>/dev/null)"
 
-# v2.7：下发滞回值（前端要显示"降回 x℃ 自动还原"，此前前端只能硬编码 fallback 4）
-echo "thermal_hyst=$(cfg_get thermal_hyst 4)"
-_tgc=$(cat $BAT/temp 2>/dev/null); case "$_tgc" in ''|*[!0-9]*) _tgc=0 ;; esac
-_tgb=$(cat /sys/class/xm_power/charger/smart_charge/board_temp 2>/dev/null); case "$_tgb" in ''|*[!0-9]*) _tgb=0 ;; esac
-echo "thermal_temp=$_tgc"
-echo "thermal_temp_board=$_tgb"
-if [ -f $XBT/state/thermal_prev ]; then echo "thermal_active=1"; else echo "thermal_active=0"; fi
 echo "freepps=$(cfg_get freepps 0)"
-echo "freepps_runtime=$(cat /data/adb/modules/freepps/free 2>/dev/null)"
+rdf _fpr /data/adb/modules/freepps/free
+echo "freepps_runtime=$_fpr"
 echo "fast_w=$FAST_W"
 echo "mid_w=$MID_W"
 echo "slow_w=$SLOW_W"
@@ -133,34 +149,46 @@ echo "dev_code=$DEV_CODE"
 echo "dev_name=$DEV_NAME"
 # v2.6.23：下发机型最大功率，消除前端硬编码机型表（新增机型时两处必漂移）
 echo "dev_maxw=$DEV_MAXW"
-echo "version=$(grep '^version=' "$XBT/module.prop" 2>/dev/null | head -n1 | cut -d= -f2)"
+echo "version=$(awk -F= '/^version=/ { print $2; exit }' "$XBT/module.prop" 2>/dev/null)"
 
 # ---- 附加项：供主页/场景页一次取齐，减少前端 su 请求次数 ----
 echo "power_limit=$(cfg_get power_limit inf)"
 echo "apl_enable=$(cfg_get apl_enable 0)"
 echo "cycle_fake=$(cfg_get cycle_fake '')"
-echo "cycle_real=$(cycle_real_read)"
-if [ -f "$XBT/dtbo/local.img" ]; then echo "dtbo_local=1"; else echo "dtbo_local=0"; fi
+echo "cycle_real=$_cycle_real"
+_di=$(dtbo_local_image)
+if [ -n "$_di" ]; then echo "dtbo_local=1"; else echo "dtbo_local=0"; fi
+echo "dtbo_image=${_di##*/}"
+if dtbo_os_supported; then echo "dtbo_os4=1"; else echo "dtbo_os4=0"; fi
 # DTBO 刷入结果：安装脚本写 install_flash_*，界面刷入写 flash_OK / auto_before_flash，两种都要认
-_dm=/sdcard/Download/dtbo_backup/manifest.txt
-_dl=$(grep -aE 'install_flash_OK|install_flash_SKIP|install_flash_.*FAIL|flash_OK|auto_before_flash' "$_dm" 2>/dev/null | tail -n 1)
+_dm="$(cfg_get backup_dir /sdcard/Download/dtbo_backup)/manifest.txt"
+_dl=$(awk '/install_flash_OK|install_flash_SKIP|install_flash_.*FAIL|install_flash_ABORT|flash_OK|flash_VERIFY_FAIL/ { l=$0 } END { print l }' "$_dm" 2>/dev/null)
 case "$_dl" in
     *flash_OK*) echo "dtbo_flash=OK" ;;
     *SKIP*)     echo "dtbo_flash=SKIP" ;;
     *_FAIL*|*ABORT*) echo "dtbo_flash=FAIL" ;;
     *)          echo "dtbo_flash=" ;;
 esac
-echo "dtbo_flash_time=$(echo "$_dl" | cut -d' ' -f1-2)"
+case "$_dl" in
+    *' '*) _dl2=${_dl#*' '}; echo "dtbo_flash_time=${_dl%%' '*} ${_dl2%%' '*}" ;;
+    '')    echo "dtbo_flash_time=" ;;
+    *)     echo "dtbo_flash_time=$_dl" ;;
+esac
 # 满电电压生效状态：载荷改写标记 + 当前加载的 vterm 上限
 echo "fv_force=$(cfg_get fv_force 0)"
 echo "fv_set=$(cfg_get fv_v '')"
-echo "fv_applied=$(cat "$XBT/state/fv_force_applied" 2>/dev/null)"
-echo "fv_vterm=$(get_vterm_max 2>/dev/null)"
-echo "fv_vterm_orig=$(cat "$XBT/state/fv_vterm_orig" 2>/dev/null)"
+rdf _fv_ap $XBT/state/fv_force_applied
+echo "fv_applied=$_fv_ap"
+_vtm=$(get_vterm_max 2>/dev/null)
+echo "fv_vterm=$_vtm"
+rdf _fv_orig $XBT/state/fv_vterm_orig
+echo "fv_vterm_orig=$_fv_orig"
 # 电压节点实际当前值：界面判断「是否真写进去」只能靠它，不能只看设定值与上限比较
-_vfn=$(cut -d'|' -f1 "$XBT/state/volt_fv_node" 2>/dev/null)
+rdf _vfn $XBT/state/volt_fv_node
+_vfn=${_vfn%%|*}
 if [ -n "$_vfn" ] && [ -r "$_vfn" ]; then
-  _vnv=$(cat "$_vfn" 2>/dev/null | tr -cd '0-9')
+  rdf _vnv "$_vfn"
+  _vnv=$(printf '%s' "$_vnv" | tr -cd '0-9')
   case "$_vnv" in ''|0) ;; *)
     echo "fv_node_now=$_vnv"
     echo "fv_node_path=$_vfn" ;;
@@ -172,15 +200,12 @@ for _p in /sys/class/power_supply/usb/real_type \
           /sys/class/xm_power/charger/charger_common/real_type \
           /sys/class/qcom-battery/real_type \
           /sys/class/power_supply/usb/typec_mode; do
-  if [ -f "$_p" ]; then
-    _proto=$(cat "$_p" 2>/dev/null)
-    [ -n "$_proto" ] && break
-  fi
+  rdf _pv "$_p"
+  [ -n "$_pv" ] && { _proto=$_pv; break; }
 done
 echo "charge_proto=$_proto"
-_pmax=$(cat /sys/class/xm_power/charger/charger_common/power_max 2>/dev/null)
+rdf _pmax /sys/class/xm_power/charger/charger_common/power_max
 case "$_pmax" in ''|*[!0-9]*) ;; *) echo "power_max_w=$((_pmax / 1000000))" ;; esac
 echo "fv_v=$(cfg_get fv_v '')"
 echo "term_v=$(cfg_get term_v '')"
-echo "fv_force=$(cfg_get fv_force 0)"
-echo "vterm_max=$(get_vterm_max)"
+echo "vterm_max=$_vtm"

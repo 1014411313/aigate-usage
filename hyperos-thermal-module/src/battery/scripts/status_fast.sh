@@ -1,11 +1,24 @@
 #!/system/bin/sh
 # status_fast.sh —— 极轻量实时状态（主页高频刷新专用）
-# 只读最常变的 5 个节点，一次 awk 读完并直接算好：不 source common.sh、
-# 不调用任何函数，单次约十几毫秒。慢变字段（容量/健康度/循环/协议等）交给 status_kv.sh 定期刷新。
+# 一次 awk 读完这批节点：不 source common.sh、不调用任何函数，单次约二三十毫秒。
+# 面板要求全字段秒级刷新，容量/健康度/循环/充电协议这些低频项也并入快速路径；
+# 伪装次数来自模块配置（cfg_get），仍由 status_kv.sh 定期刷新。
 BAT=/sys/class/power_supply/battery
+_rt=""
+for _p in /sys/class/power_supply/usb/real_type \
+          /sys/class/xm_power/charger/charger_common/real_type \
+          /sys/class/qcom-battery/real_type; do
+    [ -f "$_p" ] && { _rt="$_p"; break; }
+done
+if [ -z "$_rt" ] && [ -f /sys/class/power_supply/usb/typec_mode ]; then
+    _rt=/sys/class/power_supply/usb/typec_mode
+fi
 _f=""
-for _x in "$BAT/capacity" "$BAT/status" "$BAT/temp" "$BAT/current_now" "$BAT/voltage_now"; do
-    [ -f "$_x" ] && _f="$_f $_x"
+for _x in "$BAT/capacity" "$BAT/status" "$BAT/temp" "$BAT/current_now" "$BAT/voltage_now" \
+          "$BAT/charge_full" "$BAT/charge_full_design" "$BAT/health" \
+          /sys/class/xm_power/fg_master/qmax_cyclecount /sys/class/xm_power/fg_master/cyclecount \
+          "$BAT/cycle_count" "$_rt"; do
+    [ -n "$_x" ] && [ -f "$_x" ] && _f="$_f $_x"
 done
 [ -n "$_f" ] || exit 0
 
@@ -22,6 +35,20 @@ END {
     printf "battery_current_ma=\"%d\"\n", im;
     printf "voltage_uv=\"%s\"\n", u;
     printf "battery_power_w=\"%.1f\"\n", ima*u/1000000000;
+    # 容量/健康度/循环/协议：读空输出空串，前端沿用上次值，避免闪成 0 或 --
+    cf=v["charge_full"]; cd=v["charge_full_design"];
+    if(cf ~ /^[0-9]+$/) printf "charge_full_mah=\"%d\"\n", cf/1000; else print "charge_full_mah=\"\"";
+    if(cd ~ /^[0-9]+$/) printf "charge_design_mah=\"%d\"\n", cd/1000; else print "charge_design_mah=\"\"";
+    print "health=\"" v["health"] "\"";
+    cyf=""; if(v["cyclecount"] ~ /^[0-9]+$/) cyf=v["cyclecount"];
+    cyc=cyf; if(cyc=="") cyc=v["cycle_count"];
+    if(cyc !~ /^[0-9]+$/) cyc="";
+    cr=""; if(v["qmax_cyclecount"] ~ /^[0-9]+$/) cr=v["qmax_cyclecount"];
+    if(cr=="") cr=cyf;
+    printf "cycle=\"%s\"\n", cyc;
+    printf "cycle_real=\"%s\"\n", cr;
+    rt=v["real_type"]; if(rt=="") rt=v["typec_mode"];
+    print "charge_proto=\"" rt "\"";
 }' $_f 2>/dev/null)"
 
 [ -n "$soc" ] || exit 0
@@ -31,3 +58,9 @@ echo "temp_c=$temp_c"
 echo "battery_current_ma=$battery_current_ma"
 echo "voltage_uv=$voltage_uv"
 echo "battery_power_w=$battery_power_w"
+echo "charge_full_mah=$charge_full_mah"
+echo "charge_design_mah=$charge_design_mah"
+echo "health=$health"
+echo "cycle=$cycle"
+echo "cycle_real=$cycle_real"
+echo "charge_proto=$charge_proto"

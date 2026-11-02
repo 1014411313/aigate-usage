@@ -54,7 +54,8 @@
       "无限制档不介入",
       "关闭开关/禁用模块时恢复原档"
     ],
-    "state_file": "config/charge_gov.state（原档 当前档）"
+    "state_file": "config/charge_gov.state（原档 当前档）",
+    "fix_1_0_53": "charge_gov_limit 早先只认数字档位 1~5，但 current_mode 存的是 level_N → 阈值恒为空，温控联动从不介入（症状：充电场景选了三档、电池 40℃+ 也不降功率）。1.0.53 改为认 level_N。已用 stub 模拟 8 组温度/档位 + 滞回 + 手动改档，结果符合预期"
   },
   "level_temp_20261101": {
     "change": "档位区间压缩：一档 45~50℃，其余等比例（起点回原厂、宽度 10℃→5℃）",

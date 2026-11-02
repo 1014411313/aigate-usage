@@ -4,17 +4,22 @@
   "root": "KernelSU（另有 susfs/maphide/LSPosed 等）",
   "slot": "_b",
   "current_state": {
-    "installed_version": "1.0.6 (55)，2026-10-31 18:16 安装",
+    "installed_version": "v1.0.59 真机反馈仍卡；v1.0.60 合并快照命令；v1.0.61 status_kv.sh 零 fork；v1.0.62 命令通道切 ksu.spawn 异步（脚本执行不再冻结界面）；v1.0.63 主页扩展（实时曲线/电池详情/充电协议/温区）+ 沉浸全屏，等待安装复测：真机看四卡数据与系统栏取色",
+    "webui_test_pending": "v1.0.75(122)本地测试包已构建并发送：四款液态水滴壁纸可选、移除独立温控守护、修复DTBO跳过安装刷写后的识别误报；Firefox壁纸与七种DTBO状态/18组响应式、十五机型和模拟刷写安全门/升级清理通过。待用户安装验证壁纸观感与本机DTBO识别，未发布，未操作真实分区。",
+    "dtbo_test_pending": "源码与v1.0.74包确实内置popsicle等十五种镜像；旧安装跳过后未生成local.img且机型未独立写入，页面只查local.img误报资源缺失。v1.0.75独立识别与准备本机镜像，手动/状态/诊断共用读取；升级后电池→DTBO应显示对应镜像可刷入，刷写须用户确认并重启才生效。",
+    "thermal_guard_removal": "用户要求删除与充电档冲突的解容侧独立守护；v1.0.75删除控制/守护脚本与看护，安装清理旧配置与残留并尊重手动功率档，旧stop遗留2W恢复。当前安装状态未核实，四档充电与温控页charge_gov保留。",
+    "background_feedback": "2026-11-02：v1.0.72已按手机反馈重做六主题彩色光斑与增加全局恢复默认；本轮用户指定全部主题使用两张截图参数（170%大小、58px模糊、1.30×透明度、38%/9秒漂移、15px背景模糊、1.90×饱和、10秒变色、0.20噪点，3斑/噪点/变色开启），并要求仅本次升级不继承旧外观。v1.0.73首次打开恢复整套外观一次，之后修改保留，温控/电池与方案/记录/刷新不变。",
+    "appearance_test_pending": "v1.0.74已按1-1.html实现2px轻模糊、scale5微折射、1px切面、内暗池、15秒反光与触点高光，保留毛玻璃并新增冰川琉璃/月海流银，精简旧特效；包已发送。完整页面Android本地预览曾加载超时，但同材质Android17探针确认SVG折射和动画生效；等待真机观察实际观感与流畅度。",
     "unlock": 1,
     "freepps": 1,
     "power_limit": "inf",
-    "cloud_guard": 1,
     "thermal_guard": 0,
-    "pss_low_soc": 25,
-    "cyclecount": "500（伪装测试值，真实 733）",
-    "smart_fv": "0（原厂 40）",
-    "baa_state": "active",
-    "volt": "fv_v=4600mV / term_v=3000mV / fv_force=1（4600 超原厂 vterm 4580，battery_toolbox.log 已警告）",
-    "capacity": "charge_full 5001mAh / design 6100mAh，约 82%；日志 real cycle=733"
+    "fv_v": "4580mV / fv_force=1 / term_v 空",
+    "cycle_fake": 1,
+    "apl_enable": 1,
+    "charge_gov": "1.0.52 及以前恒不生效（charge_gov_limit 只认数字档位），1.0.53 修复；1.0.54 真机日志已见「温控联动：电池 40℃ ≥ 35℃，充电功率 inf → slow」",
+    "capacity": "charge_full 4982000 / design 6100000，约 81.7%；诊断时 temp=47.5℃",
+    "charge_scene": "充电场景亮屏/息屏均三档（level_3）",
+    "ui_perf_feedback": "2026-11-01两次录屏：第一次（11.011秒/267帧）定位背景变色2秒跳变（v1.0.59已修）；第二次（10.952秒/980帧/89.5fps）显示动画连续、无帧空洞，但画面峰值严格对齐每秒轮询；KernelSU exec 每次新建root shell+loadUrl回调构成周期性打断，v1.0.60 合并快照读取，待真机确认"
   }
 }

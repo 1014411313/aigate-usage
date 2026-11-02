@@ -8,7 +8,7 @@ BK=/sdcard/Download/xt_uninstall_backup_$(date +%Y%m%d_%H%M%S)
 # v2.7.5 【🔴 修复】：这一行原先写在文件末尾（第 62 行），而 xbt_kill 从第 45 行就开始用了。
 #   管理器是 `sh uninstall.sh` 独立执行，不会预加载 common.sh
 #   → 45~54 行全部 `xbt_kill: not found`（脚本无 set -e，继续跑完并打印 done）
-#   → charge_guard / thermal_guard / cloud_guard / freepps（忽略 SIGTERM，最需要 -9）
+#   → charge_guard / cloud_guard / freepps（忽略 SIGTERM，最需要 -9）
 #     / diag_log / fv_handler 全部继续运行到重启，
 #     与用户可见声明"模块各守护进程（已全部停止，含 FreePPS 进程）"直接矛盾。
 #   现在上移到使用点之前；并保留结尾的兜底 source（幂等，重复 source 无害）。
@@ -68,10 +68,9 @@ fi
 # 3a) FreePPS（Rust 进程，忽略 SIGTERM，必须 -9；且最先杀，防 cloud_guard 保活复拉）
 xbt_kill 'HyperOS_XJ/battery/bin/freepps' 'HyperOS_XJ/battery/bin/freepps'
 xbt_kill '^freepps$' 'freepps'
-# 3b) 其余守护（含 cloud_guard watch / charge / thermal / cycle / diag）
+# 3b) 其余守护（含 cloud_guard watch / charge / cycle / diag）
 # 注：tr 周期清理已挂进 charge_guard 主循环（非独立进程），杀 charge_guard 即随之结束
 xbt_kill 'HyperOS_XJ/battery/scripts/charge_guard\.sh'   'HyperOS_XJ/battery/scripts/charge_guard.sh'
-xbt_kill 'HyperOS_XJ/battery/scripts/thermal_guard\.sh'  'HyperOS_XJ/battery/scripts/thermal_guard.sh'
 xbt_kill 'HyperOS_XJ/battery/scripts/cycle_guard\.sh'    'HyperOS_XJ/battery/scripts/cycle_guard.sh'
 xbt_kill 'HyperOS_XJ/battery/scripts/cloud_guard\.sh'    'HyperOS_XJ/battery/scripts/cloud_guard.sh'
 xbt_kill 'HyperOS_XJ/battery/scripts/diag_log\.sh'       'HyperOS_XJ/battery/scripts/diag_log.sh'
@@ -88,8 +87,7 @@ if [ -f "$XBT/scripts/cloud_guard.sh" ]; then
   _qret=$(sh "$XBT/scripts/cloud_guard.sh" restore 2>/dev/null | tail -n 1)
   [ -n "$_qret" ] && echo "- $_qret"
 fi
-rm -f /data/local/tmp/xt_fv_guard.pid /data/local/tmp/xt_cycle_guard.pid /data/local/tmp/xt_thermal_guard.pid 2>/dev/null
-rm -f $XBT/state/thermal_restore_active 2>/dev/null
+rm -f /data/local/tmp/xt_fv_guard.pid /data/local/tmp/xt_cycle_guard.pid 2>/dev/null
 # v2.7.8：清理"全局限流写入间隔"状态（这是 v2.7.8 新增的持久节流时间戳；
 #   它在运行期【刻意不被任何清旗路径删除】，只在卸载时清，避免残留影响重装后的首写）
 rm -f $XBT/state/cg_last_write_ts $XBT/state/cg_gap_log_ts 2>/dev/null

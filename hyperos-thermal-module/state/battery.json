@@ -48,14 +48,21 @@
     "cloud_guard.sh",
     "charge_guard.sh",
     "power_limit.sh",
-    "thermal_guard.sh",
     "volt_guard.sh",
     "cfg_cli.sh",
     "status_kv.sh",
     "install_dtbo.sh",
     "dtbo.sh"
   ],
-  "upstream": "电池解容工具箱 v3.12.6（基线 v3.9.6 → v3.12.6，见 upstream/manifest.json）：APL 自适应爬坡脚本 apl.sh/apl_ctl.sh 已引入但默认关闭（apl_enable=0），温控守护竞态与 BAA 空配置修复已随上游合并，nezha DTBO 已更新",
+  "upstream": "电池解容工具箱 v3.12.6（基线 v3.9.6 → v3.12.6，见 upstream/manifest.json）：APL 自适应爬坡脚本 apl.sh/apl_ctl.sh 已引入但默认关闭（apl_enable=0），BAA 空配置修复已合并，nezha DTBO 已更新；独立温控守护按用户要求在二改 v1.0.75 移除。",
+  "dtbo_v1075": {
+    "reason": "安装选择跳过时未生成 local.img、dev_code 未独立写入；包内仍有 popsicle.img 等十五种镜像，而状态/手动刷写/诊断只认 local.img，故误报未找到。",
+    "resolution": "customize.sh 在刷写选择之前识别本机、写 dev_code 并复制对应镜像到 local.img；common.sh 的 dtbo_local_image 统一优先机型文件、再 local.img。安装脚本支持保留的 local.img，状态显示文件名/系统前提，未知机型不借用镜像。",
+    "safety": "内置镜像仅支持OS4；槽位后缀为空时读ro.boot.slot，仍无有效a/b则中止。magic/块设备/大小/整分区补零与读回保留；两条刷写路径新增备份大小/哈希核验。status_kv按backup_dir读记录，备份记录不覆盖刷写结果。镜像内容未改。",
+    "thermal_cleanup": "thermal_guard.sh/thermal_ctl.sh、service启动、watchdog看护、配置/状态与前端说明移除；安装清理旧配置及状态，有效快照且当前仍为保护档时恢复原档，手动改档保留，旧stop遗留2W按备份恢复并同步模块外配置。保留四档功率与charge_gov。",
+    "validation": "十五种命名镜像、local.img、未知机型拒绝和OS4门控通过；正式脚本普通文件被块设备安全门阻止；仅在临时目录用模拟分区验证安装/运行期刷写、补零、整分区读回与备份、备份失败/损坏/补零失败中止、未知槽位拒绝及5组升级清理。未刷真实分区。",
+    "evidence": "~/workspace/.aicode/tmp/ui_1075/backend_result.json"
+  },
   "apl": "apl_enable=0 默认关；开启条件 power_limit=inf；scripts/apl_toggle.sh 1|0 停/起进程；status_kv 暴露 apl_alive/apl_target_ma/apl_cap_ma/apl_profile/apl_enable；UI 在电池页「自适应功率爬坡（APL）」",
   "ownership": "充电归电池解容：温控非旁路不回写 chg_curr；旁路期间 direct_set_current_ma 见 config/bypass_active=1 直接让路，旁路结束温控调 charge_guard.sh once 交还",
   "dtbo_voltage_limits": {
@@ -77,13 +84,12 @@
     "evidence": "临时模拟已复现APL残留8000、inf低电流判断通过、电压原值记成新值、失败恢复早退、旧备份覆盖新配置。"
   },
   "install_prompts": {
-    "version": "1.0.47",
+    "version": "1.0.75",
     "mechanism": "customize.sh 用 getevent -qlc 1 读音量键；每项 10 秒超时；不按键保持默认",
     "items": [
       "unlock=1",
       "freepps=0",
       "cloud_guard=1",
-      "thermal_guard=0",
       "apl_enable=0",
       "dtbo（刷/不刷）"
     ],

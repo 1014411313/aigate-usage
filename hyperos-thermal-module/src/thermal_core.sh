@@ -892,8 +892,10 @@ release_charge_to_battery() {
 # 档位温度上限与 thermal/N/thermal-scene.conf 的 [SIC-BAT] trig 起点一致：
 #   一档 45℃ / 二档 40℃ / 三档 35℃ / 四档 31℃ / 五档 26℃；无限制档不介入。
 charge_gov_limit() {
+    # 入参是 current_mode 里的档位名（level_N），不是数字（见 apply_conf_mode 的写入）
     case "$1" in
-        1) echo 45 ;; 2) echo 40 ;; 3) echo 35 ;; 4) echo 31 ;; 5) echo 26 ;;
+        level_1) echo 45 ;; level_2) echo 40 ;; level_3) echo 35 ;;
+        level_4) echo 31 ;; level_5) echo 26 ;;
         *) echo "" ;;
     esac
 }
@@ -1048,6 +1050,45 @@ charge_gov() {
         printf '%s %s' "$orig" "$want" > "$stf" 2>/dev/null
         sh "$pl" set "$want" >/dev/null 2>&1
         log "温控联动：电池 ${t}℃，充电功率 $applied → $want"
+    fi
+}
+
+# 只读输出：温控联动（高温自动降充电功率）当前判定，供诊断包使用。
+link_status() {
+    local mode=$(cat "$CONFDIR/current_mode" 2>/dev/null)
+    local lim=$(charge_gov_limit "$mode")
+    local t=$(cat /sys/class/power_supply/battery/temp 2>/dev/null)
+    case "$t" in ''|*[!0-9]*) t=0 ;; esac
+    local tc=$((t / 10))
+    local cur=$(battery_power_tier)
+    echo "温控联动（高温自动降充电功率）"
+    echo "  开关       : $(conf charge_gov true)"
+    echo "  当前档位   : ${mode:-未知}"
+    echo "  电池温度   : ${tc}℃  充电状态: $(cat /sys/class/power_supply/battery/status 2>/dev/null)"
+    echo "  当前功率档 : $cur"
+    local stf="$CONFDIR/charge_gov.state"
+    if [ -f "$stf" ]; then
+        echo "  联动状态   : 接管中（$(cut -d' ' -f1 "$stf" 2>/dev/null) → $(cut -d' ' -f2 "$stf" 2>/dev/null)）"
+    else
+        echo "  联动状态   : 未接管"
+    fi
+    if [ -z "$lim" ]; then
+        echo "  档位阈值   : 无（当前档不参与降功率）"
+        echo "  判定       : 当前档位不受温控联动管"
+        return 0
+    fi
+    echo "  档位阈值   : ${lim}℃ 起降档，$((lim + 4))℃ 起 10W，回落满 2℃ 恢复原档"
+    if [ "$tc" -lt "$lim" ]; then
+        echo "  判定       : 温度未达阈值，不应降档"
+        return 0
+    fi
+    local want=mid
+    [ "$tc" -ge $((lim + 4)) ] && want=slow
+    echo "  期望功率档 : $want"
+    if [ "$cur" = "$want" ]; then
+        echo "  判定       : 已按阈值降档"
+    else
+        echo "  判定       : 期望 $want、实际 $cur（降档未生效，查 log/core.log 的「温控联动」）"
     fi
 }
 
@@ -1335,6 +1376,11 @@ case "$CMD" in
         printf 'default' > "$CONFDIR/current_mode"
         update_status default
         log "手动还原原厂配置完成"
+        exit 0
+        ;;
+    linkstatus)
+        bootstrap >/dev/null 2>&1
+        link_status
         exit 0
         ;;
 esac

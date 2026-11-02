@@ -429,15 +429,15 @@ BATDIR="$MODPATH/battery"
 if [ -d "$BATDIR" ]; then
     frame_mid
     print " - 电池解容 / PPS：初始化"
+    _dev=$(getprop ro.product.device 2>/dev/null)
+    _vd=$(getprop ro.product.vendor.device 2>/dev/null)
+    _nm=$(getprop ro.product.name 2>/dev/null)
+    _code=""
+    for _c in xuanyuan dada haotian nezha myron annibale bixi onyx popsicle miro songyuan warsaw pudding pandora byron; do
+        if [ "$_dev" = "$_c" ] || [ "$_vd" = "$_c" ] || [ "$_nm" = "$_c" ]; then _code=$_c; break; fi
+    done
     # 按机型部署 BAA 载荷（与解容脚本的 dev_code 对应），未识别的机型沿用包内默认
     if [ -d "$BATDIR/baa/pool" ]; then
-        _dev=$(getprop ro.product.device 2>/dev/null)
-        _vd=$(getprop ro.product.vendor.device 2>/dev/null)
-        _nm=$(getprop ro.product.name 2>/dev/null)
-        _code=""
-        for _c in xuanyuan dada haotian nezha myron annibale bixi onyx popsicle miro songyuan warsaw pudding pandora byron; do
-            if [ "$_dev" = "$_c" ] || [ "$_vd" = "$_c" ] || [ "$_nm" = "$_c" ]; then _code=$_c; break; fi
-        done
         if [ -n "$_code" ] && [ -d "$BATDIR/baa/pool/$_code" ]; then
             mkdir -p "$BATDIR/baa/modes" 2>/dev/null
             for _f in normal.json normal_nocloud.json normal_plain.json normal_nocloud_plain.json; do
@@ -482,6 +482,40 @@ if [ -d "$BATDIR" ]; then
         fi
     }
 
+    conf_set_install dev_code "${_code:-unsupported}"
+    if [ -n "$_code" ] && [ -f "$BATDIR/dtbo/$_code.img" ]; then
+        if cp -f "$BATDIR/dtbo/$_code.img" "$BATDIR/dtbo/local.img" 2>/dev/null; then
+            print " - DTBO：已识别并准备本机镜像 $_code.img"
+        else
+            print " - DTBO：本机镜像 $_code.img 已内置，可在控制台手动刷入"
+        fi
+    elif [ -z "$_code" ]; then
+        print " - DTBO：上游未提供本机镜像，不使用其它机型镜像"
+    else
+        print " - DTBO：本机镜像 $_code.img 资源缺失"
+    fi
+
+    _bc="$BATDIR/config/settings.conf"
+    # 快照中的档位是旧守护触发前的选择；当前已被手动改档时不覆盖。
+    _tg_action=$(grep -a '^thermal_action=' "$_bc" 2>/dev/null | tail -n1 | cut -d= -f2-)
+    _tg_tier=$(grep -a '^tier=' "$BATDIR/state/thermal_prev" 2>/dev/null | head -n1 | cut -d= -f2-)
+    _tg_current=$(grep -a '^power_limit=' "$_bc" 2>/dev/null | tail -n1 | cut -d= -f2-)
+    case "$_tg_action" in slow|stop) _tg_expected=slow ;; mid|fast) _tg_expected=$_tg_action ;; *) _tg_expected="" ;; esac
+    if [ -n "$_tg_expected" ] && [ "$_tg_current" = "$_tg_expected" ]; then
+        case "$_tg_tier" in inf|fast|mid|slow) conf_set_install power_limit "$_tg_tier" ;; esac
+    fi
+    if [ "$_tg_action" = "stop" ]; then
+        _tg_sw=$(grep -a '^slow_w=' "$BATDIR/state/thermal_prev" 2>/dev/null | head -n1 | cut -d= -f2-)
+        [ -n "$_tg_sw" ] || _tg_sw=$(cat "$BATDIR/state/thermal_slow_w_prev" 2>/dev/null)
+        case "$_tg_sw" in ''|*[!0-9]*|0) _tg_sw=10 ;; esac
+        if [ "$(grep -a '^slow_w=' "$_bc" 2>/dev/null | tail -n1 | cut -d= -f2-)" = "2" ]; then
+            conf_set_install slow_w "$_tg_sw"
+        fi
+    fi
+    sed -i '/^thermal_guard=/d; /^thermal_limit=/d; /^thermal_hyst=/d; /^thermal_action=/d' "$_bc" 2>/dev/null
+    rm -f "$BATDIR/state/thermal_prev" "$BATDIR/state/thermal_slow_w_prev" \
+          "$BATDIR/state/thermal_restore_active" "$BATDIR/state/thermal_reapply" \
+          "$BATDIR/state/wd_tg_last_restart" /data/local/tmp/xt_thermal_guard.pid 2>/dev/null
     ask_install_switch() {
         _label="$1"; _key="$2"; _def="$3"
         if [ "$_def" = "1" ]; then _cs=开; else _cs=关; fi
@@ -508,7 +542,6 @@ if [ -d "$BATDIR" ]; then
         ask_install_switch "电池解容（防低电量锁容）"        unlock        1
         ask_install_switch "公版 PPS 解锁（第三方充电头提速）"  freepps       0
         ask_install_switch "云控屏蔽（防止云端改回参数）"        cloud_guard   1
-        ask_install_switch "温控守护（高温自动降充电功率）"      thermal_guard 0
         ask_install_switch "自适应功率爬坡（APL）"              apl_enable    0
         print " - 功能开关设置完成"
     fi
@@ -569,6 +602,8 @@ if [ -d "$BATDIR" ]; then
     elif [ "$_dtbo_want" != "1" ] && [ -f "$_dbg" ]; then
         :   # 已在上方提示过跳过原因
     fi
+    mkdir -p "$XJ_DATA/battery/config" 2>/dev/null
+    cp -f "$BATDIR/config/settings.conf" "$XJ_DATA/battery/config/settings.conf" 2>/dev/null
 fi
 
 rm -rf "$MODPATH/config/log" 2>/dev/null

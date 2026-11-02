@@ -1,7 +1,15 @@
 #!/usr/bin/env python3
 # 从 src/ 打包可分发的模块 zip；输出到 dist/，文件名带 versionCode，便于多版本并存。
 # 用法: python3 tools/pack.py [输出路径]
-import os, sys, zipfile, time, hashlib
+import os, sys, zipfile, time, hashlib, re
+
+# 构建日期：打包时自动写入当天日期（发布/本地打包都走本脚本，源文件里的值不维护）
+BUILD_DATE_RE = re.compile(r'(构建日期</span><span class="info-val">)\d{4}-\d{2}-\d{2}')
+BUILD_DATE = time.strftime('%Y-%m-%d')
+
+
+def stamp_build_date(data):
+    return BUILD_DATE_RE.sub(lambda m: m.group(1) + BUILD_DATE, data.decode('utf-8')).encode('utf-8')
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -9,7 +17,7 @@ SRC = os.path.join(ROOT, 'src')
 DIST = os.path.join(ROOT, 'dist')
 
 EXEC = {'thermal_core.sh', 'service.sh', 'action.sh', 'uninstall.sh', 'customize.sh',
-        'post-fs-data.sh', 'diagnose.sh', 'config_backup.sh', 'snapshot_charge.sh',
+        'post-fs-data.sh', 'diagnose.sh', 'config_backup.sh',
         'battery/post-fs-data.sh', 'battery/service.sh', 'battery/uninstall.sh',
         'battery/bin/freepps'}
 EXEC_DIR_PREFIX = ('battery/scripts/',)
@@ -58,12 +66,23 @@ def main():
     web = os.path.join(SRC, 'hyperosui', 'index.html')
     if os.path.exists(web):
         # KernelSU 内置 WebUI：同一份界面复制到 webroot/，更新模块即更新界面，不用装 APK
-        extra['webroot/index.html'] = open(web, 'rb').read()
+        extra['webroot/index.html'] = stamp_build_date(open(web, 'rb').read())
+        assets = os.path.join(SRC, 'hyperosui', 'assets')
+        for root, dirs, fs in os.walk(assets):
+            dirs.sort(); fs.sort()
+            for f in fs:
+                p = os.path.join(root, f)
+                rel = os.path.relpath(p, os.path.dirname(web))
+                extra['webroot/' + rel] = open(p, 'rb').read()
+        default_wallpaper = os.path.join(SRC, 'hyperosui', '.file', '默认壁纸.jpg')
+        extra['webroot/.file/默认壁纸.jpg'] = open(default_wallpaper, 'rb').read()
 
     with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as z:
         for rel in order:
             p = os.path.join(SRC, rel)
             data = open(p, 'rb').read()
+            if rel == 'hyperosui/index.html':
+                data = stamp_build_date(data)
             zi = zipfile.ZipInfo(rel, date_time=time.localtime(os.path.getmtime(p))[:6])
             zi.external_attr = perms(rel) << 16
             zi.compress_type = zipfile.ZIP_DEFLATED

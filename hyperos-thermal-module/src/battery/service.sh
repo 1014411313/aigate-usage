@@ -221,34 +221,6 @@ else
   log "service: apl skipped (power_limit=$(cfg_get power_limit inf) apl_enable=$(cfg_get apl_enable 0))"
 fi
 
-# 9. 温控守护（thermal_guard：到达自定义上限自动降档/还原/停止，回落自动恢复）
-if [ "$(cfg_get thermal_guard 0)" = "1" ]; then
-  xbt_kill 'HyperOS_XJ/battery/scripts/thermal_guard\.sh' 'HyperOS_XJ/battery/scripts/thermal_guard.sh'
-  ( setsid sh $XBT/scripts/thermal_guard.sh >/dev/null 2>&1 < /dev/null & )
-  log "service: thermal_guard started (limit=$(cfg_get thermal_limit 45)C action=$(cfg_get thermal_action slow))"
-else
-  xbt_kill 'HyperOS_XJ/battery/scripts/thermal_guard\.sh' 'HyperOS_XJ/battery/scripts/thermal_guard.sh'
-  # v2.7.4：温控守护=0 时做一次残留快照清理。
-  #   原先此分支只 kill，不做自检 —— 若用户在"保护中"用改配置的方式把 guard 置 0
-  #   （service.sh 只 kill 不启动、thermal_ctl.sh 的 ensure 也不启动），档位会永久停在
-  #   保护档且无人恢复（v1.5 修过同类症状，但只覆盖了"走 WebUI 关闭"这条路径）。
-  if [ -f "$XBT/state/thermal_prev" ]; then
-    _tp_tier=$(grep -a '^tier=' "$XBT/state/thermal_prev" 2>/dev/null | head -n1 | cut -d= -f2)
-    case "$_tp_tier" in
-      inf|fast|mid|slow)
-        sh $XBT/scripts/power_limit.sh set "$_tp_tier" >>"$LOG" 2>&1
-        log "service: thermal_guard=0，已从残留快照恢复档位 -> $_tp_tier"
-        ;;
-      *)
-        # 快照里没有可识别的档位（或为空）→ 退回全速，避免卡在保护档
-        sh $XBT/scripts/power_limit.sh set inf >>"$LOG" 2>&1
-        log "service: thermal_guard=0，快照档位不可识别，已退回 inf"
-        ;;
-    esac
-    rm -f "$XBT/state/thermal_prev" "$XBT/state/thermal_restore_active" 2>/dev/null
-  fi
-  log "service: thermal_guard disabled"
-fi
 # 10. 公版 PPS 解锁（FreePPS 整合；freepps=1 时启用）
 sh $XBT/scripts/freepps.sh boot >>"$LOG" 2>&1
 

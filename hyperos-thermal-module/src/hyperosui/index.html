@@ -3,12 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<!-- 管理器拦截此请求返回内置 insets.css（--window-inset-* 变量）；拿不到时回退 0，无副作用 -->
+
+<link rel="stylesheet" href="https://mui.kernelsu.org/internal/insets.css">
 <title>HyperOS - 动态温控·解容</title>
 <style>
 :root {
   
   --bg: #F2F2F7;
   --card: #FFFFFF;
+  --sheet-bg: rgba(255,255,255,.97);
   --text: #000000;
   --text-secondary: #8E8E93;
   --text-tertiary: #C7C7CC;
@@ -41,15 +45,6 @@
   --bar-solid-rgb: 255,255,255;
   --bar-blur: 3;
 
-  --switch-blur: 6;
-  --switch-on-alpha: 0.70;
-  --switch-off-alpha: 0.35;
-
-  --card-glow: 0;
-  --card-glow-rgb: 0,122,255;
-  --btn-glow: 0;
-  --btn-glow-rgb: 0,122,255;
-
   --wp-blur: 2;
   --card-alpha: 0.20;
 
@@ -73,6 +68,7 @@
   :root:not([data-theme="light"]) {
     --bg: #000000;
     --card: #1C1C1E;
+    --sheet-bg: rgba(28,28,30,.96);
     --text: #FFFFFF;
     --text-secondary: #98989F;
     --text-tertiary: #48484A;
@@ -88,8 +84,6 @@
     --gauge-fill: #1C1C1E;
     --bar-rgb: 28,28,30;
     --bar-solid-rgb: 28,28,30;
-    --card-glow-rgb: 10,132,255;
-    --btn-glow-rgb: 10,132,255;
     --press: rgba(255,255,255,.06);
     --hairline: rgba(84,84,88,.5);
     --hairline-strong: rgba(84,84,88,.65);
@@ -100,6 +94,7 @@
 :root[data-theme="dark"] {
   --bg: #000000;
   --card: #1C1C1E;
+  --sheet-bg: rgba(28,28,30,.96);
   --text: #FFFFFF;
   --text-secondary: #98989F;
   --text-tertiary: #48484A;
@@ -115,8 +110,6 @@
   --gauge-fill: #1C1C1E;
   --bar-rgb: 28,28,30;
   --bar-solid-rgb: 28,28,30;
-  --card-glow-rgb: 10,132,255;
-  --btn-glow-rgb: 10,132,255;
   --press: rgba(255,255,255,.06);
   --hairline: rgba(84,84,88,.5);
   --hairline-strong: rgba(84,84,88,.65);
@@ -130,6 +123,14 @@ html {
   overflow-x: hidden;
   width: 100%;
   scrollbar-gutter: stable;
+  /* 沉浸全屏：edge-to-edge 开启后（html.e2e）用管理器注入的 --window-inset-* 补安全区；
+     未开启时保持 0，与管理器自带的 WebView 顶部 padding 不叠加 */
+  --ws-top: 0px;
+  --ws-bottom: 0px;
+}
+html.e2e {
+  --ws-top: max(env(safe-area-inset-top, 0px), var(--window-inset-top, 0px));
+  --ws-bottom: max(env(safe-area-inset-bottom, 0px), var(--window-inset-bottom, 0px));
 }
 body {
   font-family: var(--app-font, -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "MiSans", "Helvetica Neue", system-ui, sans-serif);
@@ -142,7 +143,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   letter-spacing: -0.01em;
-  padding-bottom: calc(var(--nav-h) + 28px + env(safe-area-inset-bottom));
+  padding-bottom: calc(var(--nav-h) + 28px + var(--ws-bottom));
 }
 
 body.wallpaper { background: none !important; }
@@ -150,6 +151,8 @@ body.wallpaper { background: none !important; }
    光斑/噪点子层保留（用户可以单独开关）。 */
 body.wallpaper .ambient { background: none; }
 body.wallpaper .amb-grad { opacity: 0; }
+body.wallpaper[data-wp-preset] .amb-blobs,
+body.wallpaper[data-wp-preset] .amb-noise { display: none; }
 body.wallpaper::before {
   content: '';
   position: fixed;
@@ -162,7 +165,15 @@ body.wallpaper::before {
   z-index: -1;
   pointer-events: none;
 }
+body.wallpaper[data-wp-preset]::before {
+  inset: calc(var(--wp-blur, 2) * -2px);
+}
 
+.wp-presets { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.wp-preset { padding: 8px; gap: 8px; min-width: 0; }
+.wp-preset img { display: block; width: 100%; aspect-ratio: 9 / 20; max-height: clamp(160px, 24vh, 220px); object-fit: contain; border-radius: var(--radius-xs); }
+.wp-preset:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.wp-actions { display: grid; gap: 10px; margin: 14px 0; }
 
 body.glass:not(.wallpaper) {
   --card: rgba(255,255,255, var(--card-alpha, 0.55));
@@ -217,31 +228,7 @@ body.frost .tabbar {
   backdrop-filter: blur(30px) saturate(190%);
   -webkit-backdrop-filter: blur(30px) saturate(190%);
 }
-body.frost .mini {
-  backdrop-filter: blur(22px) saturate(180%);
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
-}
 
-
-body.switch-glass .hyper-switch input:not(:checked) + .track {
-  background: rgba(255,255,255, var(--switch-off-alpha, 0.55));
-  backdrop-filter: blur(calc(var(--switch-blur, 12) * 1px)) saturate(170%);
-  -webkit-backdrop-filter: blur(calc(var(--switch-blur, 12) * 1px)) saturate(170%);
-  border: 1px solid rgba(var(--divider-line-rgb), var(--divider-line-alpha));
-}
-@media (prefers-color-scheme: dark) {
-  html:not([data-theme="light"]) body.switch-glass .hyper-switch input:not(:checked) + .track {
-    background: rgba(28,28,30, var(--switch-off-alpha, 0.55));
-  }
-}
-html[data-theme="dark"] body.switch-glass .hyper-switch input:not(:checked) + .track {
-  background: rgba(28,28,30, var(--switch-off-alpha, 0.55));
-}
-body.switch-glass .hyper-switch input:checked + .track {
-  background: rgba(var(--switch-on-rgb, var(--primary-rgb)), var(--switch-on-alpha, 0.85));
-  backdrop-filter: blur(calc(var(--switch-blur, 12) * 1px)) saturate(180%);
-  -webkit-backdrop-filter: blur(calc(var(--switch-blur, 12) * 1px)) saturate(180%);
-}
 
 
 body.bar-blur .tabbar {
@@ -283,29 +270,6 @@ body.bar-distort .tabbar::after {
   66%      { transform: rotate(240deg) scale(1.08); }
 }
 
-body.card-glow .card,
-body.card-glow .panel {
-  box-shadow:
-    0 0 calc(var(--card-glow) * 1px) rgba(var(--card-glow-rgb), calc(var(--card-glow) / 60)),
-    inset 0 0 calc(var(--card-glow) * 0.4px) rgba(var(--card-glow-rgb), calc(var(--card-glow) / 120));
-}
-body.btn-glow .btn,
-body.btn-glow .chip.active,
-body.btn-glow .hyper-switch input:checked + .track,
-body.btn-glow .tab.active .tab-ico {
-  box-shadow: 0 0 calc(var(--btn-glow) * 1px) rgba(var(--btn-glow-rgb), calc(var(--btn-glow) / 55));
-}
-body.btn-glow .tabbar {
-  box-shadow: 0 -2px calc(var(--btn-glow) * 1.2px) rgba(var(--btn-glow-rgb), calc(var(--btn-glow) / 70));
-}
-body.btn-glow.floating .tabbar {
-  box-shadow: 0 10px 30px rgba(0,0,0,.16),
-              0 0 calc(var(--btn-glow) * 1.4px) rgba(var(--btn-glow-rgb), calc(var(--btn-glow) / 60));
-}
-body.ind-glow .tab-indicator {
-  box-shadow: 0 0 calc(var(--btn-glow) * 1.4px) rgba(var(--btn-glow-rgb), calc(var(--btn-glow) / 45));
-}
-
 body.hide-category .small-title { display: none !important; }
 body.hide-desc .pref-desc { display: none !important; }
 body.hide-desc .field-label { display: none !important; }
@@ -315,17 +279,23 @@ body.hide-top-note .topbar .subtitle { display: none !important; }
 
 .page { display: none; }
 .page.active { display: block; }
-@keyframes pageBlurIn { from { opacity:0; filter: blur(var(--page-blur, 10px)); } to { opacity:1; filter: blur(0px); } }
-@keyframes pageBlurOut { from { opacity:1; filter: blur(0px); } to { opacity:0; filter: blur(var(--page-blur, 10px)); } }
-.page.active.initial-enter { animation: pageBlurIn .34s cubic-bezier(.22,1,.36,1) both; }
-.page.active.page-anim-in { animation: pageBlurIn .3s cubic-bezier(.22,1,.36,1) both; }
-.page.page-anim-out { animation: pageBlurOut .16s ease both; pointer-events:none; }
+@keyframes pageFadeIn { from { opacity:0; } to { opacity:1; } }
+@keyframes pageFadeOut { from { opacity:1; } to { opacity:0; } }
+@keyframes titleBlurIn { from { filter:blur(var(--page-blur,10px)); } to { filter:blur(0px); } }
+@keyframes titleBlurOut { from { filter:blur(0px); } to { filter:blur(var(--page-blur,10px)); } }
+.page.active.initial-enter { animation:pageFadeIn .34s cubic-bezier(.22,1,.36,1) both; }
+.page.active.page-anim-in { animation:pageFadeIn .3s cubic-bezier(.22,1,.36,1) both; }
+.page.page-anim-out { animation:pageFadeOut .16s ease both; pointer-events:none; }
+/* 只模糊标题，避免把长页面的玻璃、文字与光环一起放入动态滤镜。 */
+.page.active.initial-enter > .topbar,
+.page.active.page-anim-in > .topbar { animation:titleBlurIn .3s cubic-bezier(.22,1,.36,1) both; animation-duration:inherit; }
+.page.page-anim-out > .topbar { animation:titleBlurOut .16s ease both; animation-duration:inherit; }
 
 body.modal-open { overflow: hidden; }
 html.modal-open { overflow: hidden; }
 
 .topbar {
-  padding: 58px 24px 14px;
+  padding: calc(58px + var(--ws-top)) 24px 14px;
   background: var(--bg);
   position: sticky;
   top: 0;
@@ -346,13 +316,13 @@ body.wallpaper .topbar { background: transparent; }
   font-weight: 600;
   color: var(--font-cat);
   letter-spacing: .02em;
-  padding: 22px 32px 8px;
+  padding: 14px 28px 6px;
 }
 
 .card {
   background: var(--card);
   border-radius: var(--radius);
-  margin: 0 16px 12px;
+  margin: 0 16px 10px;
   overflow: hidden;
   transition: box-shadow .25s, border-radius .2s, background .25s;
 }
@@ -369,8 +339,8 @@ body.wallpaper .topbar { background: transparent; }
 .panel {
   background: var(--card);
   border-radius: calc(22px * var(--cs));
-  margin: 0 16px 14px;
-  padding: calc(16px * var(--cs));
+  margin: 0 16px 10px;
+  padding: calc(14px * var(--cs));
   transition: box-shadow .25s, background .25s;
 }
 .panel-head {
@@ -414,8 +384,8 @@ body.wallpaper .topbar { background: transparent; }
   --ring-glow: rgba(56, 220, 255, .55);
   position: relative;
   isolation: isolate;
-  width: 198px; height: 198px;
-  margin: 18px auto 0;
+  width: 166px; height: 166px;
+  margin: 10px auto 0;
   display: grid; place-items: center;
 }
 @supports (color: color-mix(in srgb, red 50%, blue)) {
@@ -484,6 +454,7 @@ body.wallpaper .topbar { background: transparent; }
   transform: none;
 }
 .gauge-temp {
+  font-variant-numeric: tabular-nums;
   font-size: calc(48px * var(--fs));
   font-weight: 700;
   letter-spacing: -2px;
@@ -500,7 +471,7 @@ body.wallpaper .topbar { background: transparent; }
 }
 
 .mode-pill {
-  margin: 16px auto 0;
+  margin: 10px auto 0;
   width: fit-content;
   padding: 6px 16px;
   border-radius: 100px;
@@ -514,18 +485,19 @@ body.wallpaper .topbar { background: transparent; }
 .mini-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  margin-top: 18px;
+  gap: 8px;
+  margin-top: 12px;
 }
 .mini {
   background: var(--input-bg);
   border-radius: calc(var(--radius-sm) * var(--cs));
-  padding: calc(13px * var(--cs)) 6px;
+  padding: calc(11px * var(--cs)) 6px;
   text-align: center;
   min-width: 0;
   transition: background .25s;
 }
 .mini-val {
+  font-variant-numeric: tabular-nums;
   font-size: calc(17px * var(--fs));
   font-weight: 700;
   line-height: 1.25;
@@ -632,6 +604,10 @@ body.wallpaper .topbar { background: transparent; }
   max-height: 0;
 }
 .expand-inner { padding: 0 calc(20px * var(--cs)) calc(16px * var(--cs)); }
+#appearanceResetBtn { width: 100%; margin-top: calc(14px * var(--cs)); }
+#xjSheetBox { max-width:440px; max-height:78vh; }
+#xjSheetBody { white-space:normal; }
+#xjSheetTitle, #xjSheetBody, #xjSheetBody .field-label, #xjSheetBody .pref-desc { color:var(--text); }
 .expand-arrow {
   width: 15px;
   height: 15px;
@@ -944,7 +920,7 @@ html[data-theme="dark"] body.glass .backup-stat {
 
 .snackbar {
   position: fixed;
-  bottom: calc(var(--nav-h) + 32px + env(safe-area-inset-bottom));
+  bottom: calc(var(--nav-h) + 32px + var(--ws-bottom));
   left: 50%;
   transform: translateX(-50%) translateY(12px);
   background: var(--card);
@@ -1088,8 +1064,7 @@ html[data-theme="dark"] body.glass .backup-stat {
 
 
 /* 电池解容（场景页）*/
-.bk-power { display: flex; gap: 8px; }
-.bk-pbtn {
+.bk-power { display: flex; gap: 8px; }.bk-pbtn {
   flex: 1;
   padding: 11px 0;
   border: 0;
@@ -1100,6 +1075,36 @@ html[data-theme="dark"] body.glass .backup-stat {
   font-family: inherit;
 }
 .bk-pbtn.on { background: var(--primary); color: #fff; }
+
+/* ===== 主页扩展：实时曲线 / 电池详情 / 充电协议 / 温区 ===== */
+#curveWrap { position: relative; margin-top: 12px; }
+#curveCv { display: block; width: 100%; height: 132px; }
+#curveChips { display: flex; gap: 6px; }
+#curveChips .chip { padding: 5px 10px; }
+#page-console [data-diy-id="console-1"] .panel-head { font-size: calc(16px * var(--fs)); color: var(--text); }
+#panelBody .home-heading { margin: 12px 2px 6px; font-size: max(11px, calc(12px * var(--fs))); font-weight: 600; color: var(--font-desc); }
+#panelBody .home-group { border: 1px solid var(--hairline); border-radius: var(--radius-sm); overflow: hidden; background: var(--input-bg); }
+#panelBody .home-group .mini-grid { margin: 0; gap: 0; }
+#panelBody .home-group .mini-grid + .mini-grid { border-top: 1px solid var(--hairline); }
+#panelBody .home-group .mini { background: none; border: 0; border-radius: 0; box-shadow: none; }
+#panelBody .home-group .mini + .mini { border-left: 1px solid var(--hairline); }
+#homeFields .mini { padding: calc(9px * var(--cs)) 6px; border-radius: var(--radius-sm); }
+#homeFields .mini-val { font-size: max(17px, calc(var(--mini-fs,18px) * var(--fs))); font-weight: 600; letter-spacing: -.02em; }
+#homeFields .mini-lbl { font-size: max(10px, calc(11px * var(--fs))); line-height: 1.4; margin-top: 3px; overflow-wrap: anywhere; }
+#homeFields .mini-status .mini-val { font-size: max(14px, calc(16px * var(--fs))); }
+#homeFields .mini-soc .mini-val { color: var(--primary); font-size: max(24px, calc(27px * var(--fs))); line-height: 1; }
+#dTzGrid { display: flex; flex-wrap: wrap; margin-top: 0; gap: 0; }
+#dTzGrid .mini { flex: 1 0 25%; box-sizing: border-box; padding: calc(9px * var(--cs)) 4px; }
+#dTzGrid .mini-val { font-size: max(14px, calc(16px * var(--fs))); font-weight: 600; }
+#dTzGrid .mini-lbl { font-size: max(10px, calc(11px * var(--fs))); line-height: 1.4; margin-top: 3px; overflow-wrap: anywhere; }
+#dTzGrid .mini:nth-child(n+5) { border-top: 1px solid var(--hairline); }
+#dTzGrid .mini:nth-child(4n+1) { border-left: 0; }
+@media (max-width: 360px) {
+  #dTzGrid .mini { flex-basis: 33.3333%; }
+  #dTzGrid .mini:nth-child(n) { border-left: 1px solid var(--hairline); border-top: 0; }
+  #dTzGrid .mini:nth-child(3n+1) { border-left: 0; }
+  #dTzGrid .mini:nth-child(n+4) { border-top: 1px solid var(--hairline); }
+}
 
 
 #page-aboutmodule { display: none !important; }
@@ -1113,7 +1118,7 @@ html[data-theme="dark"] body.glass .backup-stat {
   z-index: 9990;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: calc(16px + env(safe-area-inset-top, 0px)) 12px calc(16px + env(safe-area-inset-bottom, 0px));
+  padding: calc(16px + var(--ws-top)) 12px calc(16px + var(--ws-bottom));
   box-sizing: border-box;
   background: rgba(0,0,0,.45);
   -webkit-backdrop-filter: blur(8px);
@@ -1222,7 +1227,7 @@ html[data-theme="dark"] body.glass .backup-stat {
     linear-gradient(rgba(var(--bar-rgb), var(--bar-alpha, 1)), rgba(var(--bar-rgb), var(--bar-alpha, 1))),
     linear-gradient(rgba(var(--bar-solid-rgb, var(--bar-rgb)), var(--bar-solid, 0)), rgba(var(--bar-solid-rgb, var(--bar-rgb)), var(--bar-solid, 0)));
   border-top: .5px solid rgba(var(--divider-line-rgb), var(--divider-line-alpha));
-  padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
+  padding: 6px 6px calc(6px + var(--ws-bottom));
   z-index: 200;
   transition:
     width .32s cubic-bezier(.32,.72,0,1),
@@ -1241,7 +1246,7 @@ body.bar-follow-card .tabbar {
 .tab-indicator {
   position: absolute;
   top: 6px;
-  bottom: calc(6px + env(safe-area-inset-bottom));
+  bottom: calc(6px + var(--ws-bottom));
   left: 6px;
   width: 0;
   border-radius: 14px;
@@ -1287,12 +1292,12 @@ body.bar-follow-card .tabbar {
 .tab-txt { font-size: calc(10px * var(--fs)); font-weight: 500; letter-spacing: .01em; }
 
 body.floating {
-  padding-bottom: calc(var(--bar-h, 60) * 1px + 60px + env(safe-area-inset-bottom));
+  padding-bottom: calc(var(--bar-h, 60) * 1px + 60px + var(--ws-bottom));
 }
 body.floating .tabbar {
   width: calc(var(--bar-w, 92) * 1vw);
   height: calc(var(--bar-h, 60) * 1px);
-  bottom: calc(14px + env(safe-area-inset-bottom));
+  bottom: calc(14px + var(--ws-bottom));
   padding: 4px;
   border-top: none;
   border-radius: calc(var(--bar-h, 60) * 0.42px);
@@ -1400,21 +1405,22 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
 @keyframes ambFlow{0%{background-position:0% 50%}100%{background-position:100% 50%}}
 .amb-blobs{position:absolute;inset:0;opacity:0;transition:opacity .45s}
 body.blob-on .amb-blobs{opacity:1}
-.amb-blobs i{position:absolute;border-radius:50%;opacity:var(--blob-op,.8);filter:blur(100px);animation:blobFloat 15s infinite alternate cubic-bezier(.4,0,.2,1);transform:translateZ(0)}
-.amb-blobs .b1{width:60vw;height:60vw;background:var(--b1-color,#ff00cc);top:-10%;left:-10%}
-.amb-blobs .b2{width:50vw;height:50vw;background:var(--b2-color,#3333ff);bottom:-10%;right:-10%;animation-delay:-4s}
-.amb-blobs .b3{width:70vw;height:70vw;background:var(--b3-color,#00ffff);top:30%;left:20%;animation-delay:-8s;mix-blend-mode:screen}
-@keyframes blobFloat{0%{transform:translate(0,0) scale(1)}100%{transform:translate(10%,15%) scale(1.2)}}
+.amb-blobs i{position:absolute;border-radius:50%;transform:translateZ(0);
+  background:radial-gradient(ellipse at 38% 32%,rgba(255,255,255,var(--blob-shine,.3)),transparent 42%),
+    radial-gradient(ellipse at center,currentColor 0%,currentColor 34%,transparent 72%)}
+.amb-blobs .b1{color:var(--b1-color,#ff2ab6);top:8%;left:-4%}
+.amb-blobs .b2{color:var(--b2-color,#6d41ff);bottom:12%;right:-8%}
+.amb-blobs .b3{color:var(--b3-color,#23eddd);top:42%;left:26%}
 .amb-noise{position:absolute;inset:0;opacity:0;pointer-events:none;mix-blend-mode:overlay;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E")}
-body.noise-on .amb-noise{opacity:.3}
+body.noise-on .amb-noise{opacity:.2}
 
-/* ========= 六套主题预设（数值照搬 design-ref 1.html / 2.html）========= */
+/* ========= 主题配色 ========= */
 /* 1) 极光浅色 —— 1.html theme-light */
 body[data-skin="aurora"]{
-  --ambient-base:#f0f9ff; color-scheme:light;
-  --bg-gradient:none; --blob-op:.9;
-  --b1-color:#e0f2fe; --b2-color:#fdf4ff; --b3-color:#e0e7ff;
+  --ambient-base:#eef5ff; color-scheme:light;
+  --bg-gradient:none; --blob-op:.98; --blob-shine:.14;
+  --b1-color:#139cf2; --b2-color:#9754ef; --b3-color:#40cabb;
   --glass-rgb:255,255,255; --glass-alpha:.35;
   --glass-border:rgba(255,255,255,.6); --glass-highlight:rgba(255,255,255,.9);
   --glass-filter:blur(24px) saturate(180%); --glass-reflect:none;
@@ -1429,9 +1435,9 @@ body[data-skin="aurora"]{
 }
 /* 2) 全息流体 —— 1.html theme-fluid */
 body[data-skin="holographic"]{
-  --ambient-base:#fdf4ff; color-scheme:light;
-  --bg-gradient:none; --blob-op:.9;
-  --b1-color:#ff9a9e; --b2-color:#fecfef; --b3-color:#a1c4fd;
+  --ambient-base:#fff1f7; color-scheme:light;
+  --bg-gradient:none; --blob-op:.98; --blob-shine:.16;
+  --b1-color:#ff5198; --b2-color:#a76bff; --b3-color:#42bafb;
   --glass-rgb:255,255,255; --glass-alpha:.25;
   --glass-border:rgba(255,255,255,.4); --glass-highlight:rgba(255,255,255,.8);
   --glass-filter:blur(24px) saturate(180%); --glass-reflect:none;
@@ -1446,9 +1452,9 @@ body[data-skin="holographic"]{
 }
 /* 3) 暗黑霓虹 —— 1.html theme-dark */
 body[data-skin="neon-dark"]{
-  --ambient-base:#000; color-scheme:dark;
-  --bg-gradient:none;
-  --b1-color:#0f172a; --b2-color:#1e1b4b; --b3-color:#38bdf8;
+  --ambient-base:#030713; color-scheme:dark;
+  --bg-gradient:none; --blob-op:.96; --blob-shine:.36;
+  --b1-color:#3269ff; --b2-color:#a249ff; --b3-color:#00cfff;
   --glass-rgb:30,41,59; --glass-alpha:.4;
   --glass-border:rgba(255,255,255,.1); --glass-highlight:rgba(255,255,255,.2);
   --glass-filter:blur(24px) saturate(180%); --glass-reflect:none;
@@ -1463,8 +1469,8 @@ body[data-skin="neon-dark"]{
 }
 /* 4) 幻彩极光 —— 2.html theme-aurora */
 body[data-skin="aurora-vivid"]{
-  --ambient-base:#000; color-scheme:dark;
-  --bg-gradient:none;
+  --ambient-base:#080619; color-scheme:dark;
+  --bg-gradient:none; --blob-op:.96; --blob-shine:.34;
   --glass-rgb:255,255,255; --glass-alpha:.1;
   --glass-border:rgba(255,255,255,.3); --glass-highlight:rgba(255,255,255,.6);
   --glass-filter:blur(30px) saturate(200%) contrast(110%);
@@ -1477,13 +1483,13 @@ body[data-skin="aurora-vivid"]{
   --icon-glow:drop-shadow(0 0 8px var(--accent));
   --text:#ffffff; --text-secondary:rgba(255,255,255,.62); --text-tertiary:rgba(255,255,255,.4);
   --divider-line-rgb:255,255,255; --divider-line-alpha:.16; --input-bg:rgba(255,255,255,.1); --tag-bg:rgba(255,255,255,.12);
-  --b1-color:#ff00cc; --b2-color:#3333ff; --b3-color:#00ffff;
+  --b1-color:#ff2ab6; --b2-color:#6d41ff; --b3-color:#23eddd;
   --glass-text:#fff;
 }
 /* 5) 赛博霓虹 —— 2.html theme-cyber */
 body[data-skin="cyber"]{
-  --ambient-base:#000; color-scheme:dark;
-  --bg-gradient:none;
+  --ambient-base:#020a09; color-scheme:dark;
+  --bg-gradient:none; --blob-op:.94; --blob-shine:.3;
   --glass-rgb:10,10,15; --glass-alpha:.5;
   --glass-border:rgba(0,255,136,.25); --glass-highlight:rgba(0,255,136,.4);
   --glass-filter:blur(30px) saturate(200%) contrast(110%);
@@ -1496,13 +1502,13 @@ body[data-skin="cyber"]{
   --icon-glow:drop-shadow(0 0 8px var(--accent));
   --text:#ffffff; --text-secondary:rgba(0,255,136,.62); --text-tertiary:rgba(0,255,136,.38);
   --divider-line-rgb:0,255,136; --divider-line-alpha:.18; --input-bg:rgba(10,10,15,.55); --tag-bg:rgba(10,10,15,.6);
-  --b1-color:#ff0055; --b2-color:#0055ff; --b3-color:#00ff88;
+  --b1-color:#ff3475; --b2-color:#287aff; --b3-color:#16f6a6;
   --glass-text:#fff;
 }
 /* 6) 熔岩鎏金 —— 2.html theme-lava */
 body[data-skin="lava"]{
-  --ambient-base:#000; color-scheme:dark;
-  --bg-gradient:none;
+  --ambient-base:#130703; color-scheme:dark;
+  --bg-gradient:none; --blob-op:.96; --blob-shine:.3;
   --glass-rgb:30,20,20; --glass-alpha:.25;
   --glass-border:rgba(255,200,100,.3); --glass-highlight:rgba(255,200,100,.6);
   --glass-filter:blur(30px) saturate(200%) contrast(110%);
@@ -1515,9 +1521,54 @@ body[data-skin="lava"]{
   --icon-glow:drop-shadow(0 0 8px var(--accent));
   --text:#fff5e6; --text-secondary:rgba(255,200,100,.7); --text-tertiary:rgba(255,200,100,.45);
   --divider-line-rgb:255,200,100; --divider-line-alpha:.2; --input-bg:rgba(30,20,20,.4); --tag-bg:rgba(30,20,20,.5);
-  --b1-color:#ff3300; --b2-color:#ffaa00; --b3-color:#6600ff;
+  --b1-color:#ff4d23; --b2-color:#ffb52e; --b3-color:#bd3b7d;
   --glass-text:#fff;
 }
+
+body[data-skin="glacier"]{
+  --ambient-base:#e5f2f7; color-scheme:light;
+  --bg-gradient:none; --blob-op:.78; --blob-shine:.24;
+  --b1-color:#63c5d8; --b2-color:#8da9d3; --b3-color:#d3ebf5;
+  --glass-rgb:245,253,255; --glass-alpha:.24;
+  --glass-border:rgba(255,255,255,.7); --glass-highlight:rgba(255,255,255,.95);
+  --glass-filter:blur(24px) saturate(160%); --glass-reflect:none;
+  --shadow-color:rgba(28,75,103,.12);
+  --nav-bg:rgba(245,253,255,.48); --nav-filter:blur(24px) saturate(160%);
+  --nav-shadow:0 12px 32px rgba(28,75,103,.16); --nav-radius:36px;
+  --accent:#166f91; --accent-rgb:22,111,145; --accent-bg:rgba(22,111,145,.1);
+  --ring-glow-skin:drop-shadow(0 0 8px rgba(22,111,145,.48)); --icon-glow:none;
+  --text:#172e43; --text-secondary:#446078; --text-tertiary:#688397;
+  --divider-line-rgb:53,99,123; --divider-line-alpha:.16;
+  --input-bg:rgba(245,253,255,.3); --tag-bg:rgba(245,253,255,.4); --glass-text:#fff;
+  --liquid-shadow:rgba(28,75,103,.16); --liquid-shade:rgba(29,75,99,.14);
+  --liquid-rim:rgba(255,255,255,.96); --liquid-tint:rgba(123,202,221,.64);
+}
+body[data-skin="moonsea"]{
+  --ambient-base:#09131c; color-scheme:dark;
+  --bg-gradient:none; --blob-op:.82; --blob-shine:.28;
+  --b1-color:#26757b; --b2-color:#577b9f; --b3-color:#776976;
+  --glass-rgb:24,43,57; --glass-alpha:.3;
+  --glass-border:rgba(220,245,250,.26); --glass-highlight:rgba(238,252,255,.65);
+  --glass-filter:blur(24px) saturate(160%); --glass-reflect:none;
+  --shadow-color:rgba(0,0,0,.38);
+  --nav-bg:rgba(24,43,57,.52); --nav-filter:blur(24px) saturate(160%);
+  --nav-shadow:0 12px 32px rgba(0,0,0,.4); --nav-radius:36px;
+  --accent:#b9e8ea; --accent-rgb:185,232,234; --accent-bg:rgba(185,232,234,.12);
+  --ring-glow-skin:drop-shadow(0 0 9px rgba(185,232,234,.5)); --icon-glow:none;
+  --text:#eaf6fa; --text-secondary:#b3cbd7; --text-tertiary:#8aa5b5;
+  --divider-line-rgb:202,230,239; --divider-line-alpha:.18;
+  --input-bg:rgba(24,43,57,.34); --tag-bg:rgba(24,43,57,.48); --glass-text:#142c38;
+  --liquid-shadow:rgba(0,0,0,.38); --liquid-shade:rgba(0,12,25,.35);
+  --liquid-rim:rgba(239,253,255,.82); --liquid-tint:rgba(157,216,224,.55);
+  --energy-rgb:35,103,123;
+}
+body[data-skin="moonsea"] .gauge-fluid-fill{
+  background:linear-gradient(to top,rgba(var(--energy-rgb),.68),rgba(var(--energy-rgb),.12));
+}
+body[data-skin="moonsea"] .fluid-blob:not(.fluid-blob-2){
+  background:radial-gradient(circle,rgba(var(--energy-rgb),.82),transparent 60%);
+}
+body[data-skin="moonsea"] .gauge-unit{ color:var(--accent); }
 
 /* ========= 皮肤映射与组件（照搬 1.html / 2.html）========= */
 body[data-skin],
@@ -1531,7 +1582,6 @@ html:not([data-theme="light"]) body.glass[data-skin]{
   --switch-on:var(--accent); --switch-off:rgba(var(--glass-rgb),.18);
   --bar-rgb:var(--glass-rgb); --bar-alpha:var(--glass-alpha);
   --ind-rgb:var(--accent-rgb); --ind-alpha:.18;
-  --card-glow-rgb:var(--accent-rgb); --btn-glow-rgb:var(--accent-rgb);
   --font-cat:var(--text-secondary); --font-card:var(--text); --font-desc:var(--text-secondary);
   --hairline:var(--glass-border);
   --ring-w:6; --ring-track:rgba(var(--accent-rgb),.1);
@@ -1556,8 +1606,6 @@ body[data-skin] .mini{
   border:1px solid var(--glass-border);
   border-radius:calc(22px * var(--cs));
   box-shadow:inset 0 1px 1px var(--glass-highlight);
-  -webkit-backdrop-filter:var(--glass-filter);
-  backdrop-filter:var(--glass-filter);
 }
 body[data-skin] .chip{
   background-color:rgba(var(--glass-rgb), calc(var(--glass-alpha) * .9));
@@ -1602,10 +1650,10 @@ body.skin-vivid .mini-val{ text-shadow:0 2px 4px rgba(0,0,0,.2); }
 body.skin-vivid .topbar h1{ text-shadow:0 2px 10px rgba(0,0,0,.3); }
 
 /* ===== 能量光环：细线外环 + 液态充能 + 充电光晕（照搬 3.html）===== */
-body[data-skin] .gauge{ width:230px; height:230px; transform:translateZ(0); }
+body[data-skin] .gauge{ width:190px; height:190px; transform:translateZ(0); }
 body[data-skin] .gauge-svg{ shape-rendering:geometricPrecision; }
 body[data-skin] .gauge-glow{
-  position:absolute; width:196px; height:196px; border-radius:50%; z-index:0;
+  position:absolute; width:162px; height:162px; border-radius:50%; z-index:0;
   background:radial-gradient(circle, rgba(var(--accent-rgb),.6) 0%, rgba(var(--accent-rgb),.42) 28%, rgba(var(--accent-rgb),.2) 48%, rgba(var(--accent-rgb),.06) 62%, rgba(var(--accent-rgb),0) 74%);
   opacity:0; transition:opacity 1.5s ease, background .5s ease; pointer-events:none;
   filter:blur(4px); will-change:transform;
@@ -1619,7 +1667,7 @@ body[data-skin] .gauge.charg .gauge-glow{ opacity:1; }
 /* 液体容器用 clip-path 修 WebView 里 overflow+圆角被 filter 弄成方角的问题；
    不能用 -webkit-mask-image：带 transform 动画的波浪子元素会被整层裁掉 */
 body[data-skin] .gauge-fluid{
-  position:absolute; width:182px; height:182px; border-radius:50%; overflow:hidden; z-index:1;
+  position:absolute; width:150px; height:150px; border-radius:50%; overflow:hidden; z-index:1;
   pointer-events:none; transform:translate3d(0,0,0);
   -webkit-clip-path:circle(50%); clip-path:circle(50%);
   box-shadow:inset 0 0 10px rgba(var(--accent-rgb),.1);
@@ -1678,7 +1726,7 @@ body[data-skin] .mode-pill{
 body[data-skin] .topbar{ background:transparent; }
 body[data-skin] .small-title{ color:var(--text-secondary); }
 body[data-skin] .notice-card{
-  background:var(--ambient-base);
+  background:var(--sheet-bg);
   color:var(--text);
   border:1px solid var(--glass-border);
 }
@@ -1692,26 +1740,64 @@ body[data-skin] .notice-card{
 
 /* ===== DIY 外观扩展：背景层 ===== */
 /* 光斑尺寸、模糊、透明度、飘动幅度与速度 */
-.amb-blobs i{filter:blur(var(--blob-blur,72px));opacity:calc(var(--blob-op,.8) * var(--blob-user-op,1));
-  animation:blobFloat var(--blob-speed,15s) infinite alternate cubic-bezier(.4,0,.2,1)}
-.amb-blobs .b1{width:calc(60vw * var(--blob-k,1));height:calc(60vw * var(--blob-k,1))}
-.amb-blobs .b2{width:calc(50vw * var(--blob-k,1));height:calc(50vw * var(--blob-k,1))}
-.amb-blobs .b3{width:calc(70vw * var(--blob-k,1));height:calc(70vw * var(--blob-k,1))}
+.amb-blobs i{filter:blur(var(--blob-blur,58px));opacity:calc(var(--blob-op,.96) * var(--blob-user-op,1.3));
+  animation:blobFloat var(--blob-speed,9s) linear infinite;will-change:transform;animation-delay:-1s}
+.amb-blobs .b1{width:calc(60vw * var(--blob-k,1.7));height:calc(60vw * var(--blob-k,1.7))}
+.amb-blobs .b2{width:calc(54vw * var(--blob-k,1.7));height:calc(54vw * var(--blob-k,1.7));animation-name:blobFloatBack;animation-delay:-3s}
+.amb-blobs .b3{width:calc(68vw * var(--blob-k,1.7));height:calc(68vw * var(--blob-k,1.7));animation-name:blobFloatCross;animation-delay:-5s}
 @keyframes blobFloat{
-  0%{transform:translate(0,0) scale(1)}
-  100%{transform:translate(var(--blob-dx,10%),var(--blob-dy,15%)) scale(1.2)}
+  0%,100%{transform:translate3d(0,0,0)}
+  25%{transform:translate3d(calc(var(--blob-travel-x,38) * 1vw),calc(var(--blob-travel-y,38) * .45vh),0)}
+  50%{transform:translate3d(calc(var(--blob-travel-x,38) * .65vw),calc(var(--blob-travel-y,38) * 1vh),0)}
+  75%{transform:translate3d(calc(var(--blob-travel-x,38) * -.15vw),calc(var(--blob-travel-y,38) * .55vh),0)}
 }
+@keyframes blobFloatBack{
+  0%,100%{transform:translate3d(0,0,0)}
+  25%{transform:translate3d(calc(var(--blob-travel-x,38) * -1vw),calc(var(--blob-travel-y,38) * -.5vh),0)}
+  50%{transform:translate3d(calc(var(--blob-travel-x,38) * -.6vw),calc(var(--blob-travel-y,38) * -1vh),0)}
+  75%{transform:translate3d(calc(var(--blob-travel-x,38) * .15vw),calc(var(--blob-travel-y,38) * -.45vh),0)}
+}
+@keyframes blobFloatCross{
+  0%,100%{transform:translate3d(calc(var(--blob-travel-x,38) * -.55vw),calc(var(--blob-travel-y,38) * -.15vh),0)}
+  25%{transform:translate3d(calc(var(--blob-travel-x,38) * .2vw),calc(var(--blob-travel-y,38) * -.65vh),0)}
+  50%{transform:translate3d(calc(var(--blob-travel-x,38) * .6vw),0,0)}
+  75%{transform:translate3d(calc(var(--blob-travel-x,38) * -.1vw),calc(var(--blob-travel-y,38) * .6vh),0)}
+}
+/* 光斑与背景模糊合并在光斑层，避免再叠加全屏容器滤镜。 */
 .amb-blobs{filter:none}
-body.bg-filter .amb-blobs{filter:blur(var(--bg-blur,0px)) saturate(var(--bg-sat,1))}
-@keyframes hueSpin{
-  from{filter:blur(var(--bg-blur,0px)) saturate(var(--bg-sat,1)) hue-rotate(0deg)}
-  to{filter:blur(var(--bg-blur,0px)) saturate(var(--bg-sat,1)) hue-rotate(360deg)}
+body.bg-filter .amb-blobs{filter:none}
+body.bg-filter .amb-blobs i{filter:blur(calc(var(--blob-blur,58px) + var(--bg-blur,15px))) saturate(var(--bg-sat,1.9))}
+/* 背景自动变色只交替光斑透明度；blur/saturate 保持不变，让 WebView 复用合成层，
+   避免周期改 hue-rotate 时同时重算三块大面积模糊纹理。 */
+body.bg-hue .amb-blobs i{
+  filter:blur(calc(var(--blob-blur,58px) + var(--bg-blur,15px))) saturate(var(--bg-sat,1.9));
+  animation-duration:var(--blob-speed,9s),var(--bg-hue-dur,10s);
+  animation-timing-function:linear,ease-in-out;
+  animation-iteration-count:infinite,infinite;
+  animation-direction:normal,normal;
 }
-body.bg-hue .amb-blobs{animation:hueSpin var(--bg-hue-dur,40s) linear infinite}
+body.bg-hue .amb-blobs .b1{animation-name:blobFloat,blobTone1;animation-delay:-1s,0s}
+body.bg-hue .amb-blobs .b2{animation-name:blobFloatBack,blobTone2;animation-delay:-3s,0s}
+body.bg-hue .amb-blobs .b3{animation-name:blobFloatCross,blobTone3;animation-delay:-5s,0s}
+@keyframes blobTone1{
+  0%,100%{opacity:calc(var(--blob-op,.8) * var(--blob-user-op,1.3))}
+  33%{opacity:calc(var(--blob-op,.8) * var(--blob-user-op,1.3) * .7)}
+  66%{opacity:calc(var(--blob-op,.8) * var(--blob-user-op,1.3) * .85)}
+}
+@keyframes blobTone2{
+  0%,100%{opacity:calc(var(--blob-op,.8) * var(--blob-user-op,1.3) * .85)}
+  33%{opacity:calc(var(--blob-op,.8) * var(--blob-user-op,1.3))}
+  66%{opacity:calc(var(--blob-op,.8) * var(--blob-user-op,1.3) * .7)}
+}
+@keyframes blobTone3{
+  0%,100%{opacity:calc(var(--blob-op,.8) * var(--blob-user-op,1.3) * .7)}
+  33%{opacity:calc(var(--blob-op,.8) * var(--blob-user-op,1.3) * .85)}
+  66%{opacity:calc(var(--blob-op,.8) * var(--blob-user-op,1.3))}
+}
 body.blob-on[data-blob-n="0"] .amb-blobs{opacity:0}
 body[data-blob-n="1"] .amb-blobs .b2,body[data-blob-n="1"] .amb-blobs .b3{display:none}
 body[data-blob-n="2"] .amb-blobs .b3{display:none}
-body.noise-on .amb-noise{opacity:var(--noise-op,.3)}
+body.noise-on .amb-noise{opacity:var(--noise-op,.2)}
 
 /* ===== DIY 外观扩展：能量光环 ===== */
 body[data-skin] .gauge-track{
@@ -1732,7 +1818,7 @@ body[data-skin] .gauge-glow{ animation:glowBreath var(--glow-dur,3.2s) infinite 
 body[data-skin] .gauge.charg .gauge-glow,
 body.glow-always[data-skin] .gauge-glow{ opacity:var(--glow-max,1); }
 body[data-skin] .gauge-temp{
-  font-size:clamp(44px, calc(var(--gauge-fs,72px) * var(--fs)), 110px);
+  font-size:clamp(44px, calc(var(--gauge-fs,64px) * var(--fs)), 110px);
   font-weight:var(--gauge-fw,300);
 }
 /* 液面高度：按电量 / 固定 / 满格，由 --fill-p 接管 */
@@ -1743,7 +1829,7 @@ body[data-skin] .gauge-wave{
   transform:scaleY(var(--wave-amp,1));
   transform-origin:50% 100%;
 }
-body[data-skin] .gauge-wave-inner{ position:absolute; inset:0; animation:waveBob 6s ease-in-out infinite alternate; }
+body[data-skin] .gauge-wave-inner{ position:absolute; inset:0; animation:waveBob 6s ease-in-out infinite alternate; will-change:transform; }
 body[data-skin] .gauge-wave svg{ animation-duration:calc(7s / var(--wave-speed,1)); }
 body[data-skin] .gauge-wave-2 svg{ animation-duration:calc(10s / var(--wave-speed,1)); }
 body[data-skin] .gauge-wave-3 svg{ animation-duration:calc(13s / var(--wave-speed,1)); }
@@ -1752,7 +1838,7 @@ body[data-wave-n="1"] .gauge-wave-2,body[data-wave-n="1"] .gauge-wave-3{ display
 body[data-wave-n="2"] .gauge-wave-3{ display:none; }
 
 /* ===== DIY 外观扩展：卡片与文字 ===== */
-.card{ margin-bottom:calc(12px * var(--card-gap,1)); }
+.card{ margin-bottom:calc(10px * var(--card-gap,1)); }
 .card .pref{ padding-left:calc(20px * var(--card-pad,1) * var(--cs)); padding-right:calc(20px * var(--card-pad,1) * var(--cs)); }
 body[data-skin] .card,body[data-skin] .panel{
   -webkit-backdrop-filter:var(--glass-filter-user,var(--glass-filter));
@@ -1763,16 +1849,19 @@ body[data-skin] .panel{ border-radius:var(--radius-panel-user,calc(22px * var(--
 body[data-skin] .mini{ border-radius:var(--radius-mini-user,calc(22px * var(--cs))); }
 .topbar h1{ font-size:calc(var(--title-fs,27px) * var(--fs)); }
 .mini-val{ font-size:calc(var(--mini-fs,17px) * var(--fs)); }
-#homeFields{ display:grid; gap:18px 10px; margin-top:18px; grid-template-columns:repeat(3,1fr); }
+#homeFields{ display:grid; gap:8px; margin-top:12px; grid-template-columns:repeat(3,minmax(0,1fr)); }
 #homeFields.auto{ display:block; margin-top:0; }
-#homeFields.auto .mini-grid:first-child{ margin-top:18px; }
-#homeFields.cols2{ grid-template-columns:repeat(2,1fr); }
+#homeFields.auto .mini-grid { display: flex; }
+#homeFields.auto .mini { flex: 1; }
+#homeFields.auto .mini-grid:not(:has(.mini:not(.hide))),
+#homeFields.auto .home-section:not(:has(.mini:not(.hide))) { display: none; }
+#homeFields.cols2{ grid-template-columns:repeat(2,minmax(0,1fr)); }
 #homeFields .mini.hide{ display:none; }
 
 /* ===== DIY 外观扩展：底栏 ===== */
 body[data-skin].floating .tabbar{ border-radius:var(--bar-radius-user,var(--nav-radius)); }
 body.floating .tabbar{
-  bottom:calc(var(--bar-gap-b,14px) + env(safe-area-inset-bottom));
+  bottom:calc(var(--bar-gap-b,14px) + var(--ws-bottom));
   width:calc(calc(var(--bar-w,84) * 1vw) - 2 * var(--bar-side,0px));
 }
 .tab-ico svg{ width:var(--tab-icon,22px); height:var(--tab-icon,22px); }
@@ -1808,7 +1897,7 @@ body.hide-tab-text .tab-ico svg{ width:calc(var(--tab-icon,22px) * 1.09); height
 .pref-title{ white-space:normal; word-break:break-word; }
 
 /* ===== 流畅模式：关闭最吃 GPU 的几项 ===== */
-body.fx-lite .amb-blobs i{ animation:none !important; filter:blur(56px) !important; }
+body.fx-lite .amb-blobs i{ animation-name:blobFloat !important; filter:blur(20px) !important; }
 body.fx-lite .amb-blobs .b2,body.fx-lite .amb-blobs .b3{ display:none !important; }
 body.fx-lite .amb-grad{ animation:none !important; }
 body.fx-lite .amb-noise{ display:none !important; }
@@ -1820,13 +1909,159 @@ body.fx-lite .card,body.fx-lite .panel,body.fx-lite .mini,body.fx-lite .tabbar{
 body.fx-lite .gauge-glow{ animation:none !important; }
 body.fx-lite .fluid-blob{ animation:none !important; filter:blur(8px) !important; }
 body.fx-lite .gauge-wave-inner,body.fx-lite .gauge-wave svg{ animation:none !important; }
-body.fx-lite .page.active{ animation:none !important; }
+body.fx-lite .page.active,body.fx-lite .page > .topbar{ animation:none !important; }
 body.fx-lite .live-dot{ animation:none !important; }
 body.fx-lite .card,body.fx-lite .panel,body.fx-lite .mini{ box-shadow:0 4px 16px var(--shadow-color) !important; }
+body.fx-lite .gauge-spark,body.fx-lite .gauge-bolt{ animation:none !important; }
+
+body.liquid-glass[data-skin]{
+  --liquid-mx:50%; --liquid-my:0%;
+  --liquid-filter:blur(2px) saturate(120%) brightness(1.05);
+  --glass-filter:var(--liquid-filter);
+  --nav-filter:var(--liquid-filter);
+}
+.liquid-filter-defs{ position:absolute; width:0; height:0; pointer-events:none; }
+body.liquid-glass[data-skin] .card,
+body.liquid-glass[data-skin] .panel{
+  position:relative;
+  overflow:hidden;
+  isolation:isolate;
+  transform:translateZ(0);
+  background-color:rgba(var(--glass-rgb),calc(var(--glass-alpha) * .55));
+  background-image:none;
+  border:0;
+  -webkit-backdrop-filter:var(--glass-filter-user,var(--liquid-filter));
+  backdrop-filter:var(--glass-filter-user,var(--liquid-filter));
+  box-shadow:
+    inset 0 1.5px 1px -.5px rgba(255,255,255,.8),
+    inset 0 -1.5px 1px -.5px rgba(255,255,255,.2),
+    inset 0 0 16px var(--liquid-shade,rgba(0,0,0,.3)),
+    0 8px 24px var(--liquid-shadow,rgba(0,0,0,.4));
+}
+@supports ((-webkit-backdrop-filter:blur(2px) url("#liquid-warp")) or (backdrop-filter:blur(2px) url("#liquid-warp"))){
+  body.liquid-glass[data-skin] .card,
+  body.liquid-glass[data-skin] .panel,
+  body.liquid-glass[data-skin] .tabbar{
+    -webkit-backdrop-filter:var(--glass-filter-user,blur(2px) url("#liquid-warp") saturate(120%) brightness(1.05));
+    backdrop-filter:var(--glass-filter-user,blur(2px) url("#liquid-warp") saturate(120%) brightness(1.05));
+  }
+}
+body.liquid-glass[data-skin] .card > *,
+body.liquid-glass[data-skin] .panel > *{ position:relative; z-index:3; }
+body.liquid-glass[data-skin] .card::before,
+body.liquid-glass[data-skin] .panel::before{
+  content:'';
+  position:absolute; inset:0; border-radius:inherit;
+  padding:1px;
+  background:linear-gradient(145deg,
+    rgba(255,255,255,.95) 0%,rgba(255,255,255,.2) 25%,
+    rgba(255,255,255,.05) 50%,rgba(255,255,255,.2) 75%,rgba(255,255,255,.85) 100%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;
+  mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  mask-composite:exclude;
+  pointer-events:none; z-index:5;
+}
+body.liquid-glass[data-skin] .card::after,
+body.liquid-glass[data-skin] .panel::after{
+  content:'';
+  position:absolute; inset:0; border-radius:inherit;
+  background:
+    radial-gradient(circle 100px at var(--liquid-mx) var(--liquid-my),rgba(255,255,255,.1),transparent 80%),
+    linear-gradient(115deg,transparent 15%,rgba(255,255,255,.06) 40%,transparent 65%);
+  background-size:100% 100%,250% 250%;
+  animation:liquidGlassFlow 15s infinite alternate ease-in-out;
+  pointer-events:none; z-index:2;
+  mix-blend-mode:overlay;
+}
+@keyframes liquidGlassFlow{
+  from{ background-position:0 0,0% 50%; }
+  to{ background-position:0 0,100% 50%; }
+}
+body.liquid-glass[data-skin] .card:active::after,
+body.liquid-glass[data-skin] .panel:active::after{ background-color:rgba(255,255,255,.04); }
+#liquidGlassPref:focus-visible{ outline:2px solid var(--accent); outline-offset:-4px; border-radius:inherit; }
+body.liquid-glass[data-skin] #panelBody .home-group{
+  background:rgba(var(--glass-rgb),calc(var(--glass-alpha) * .4));
+  border-color:rgba(var(--divider-line-rgb),var(--divider-line-alpha));
+  box-shadow:
+    inset 0 1.5px 1px -.5px rgba(255,255,255,.5),
+    inset 0 0 12px var(--liquid-shade,rgba(0,0,0,.22));
+}
+body.liquid-glass[data-skin] .mini:not(.home-group .mini){
+  background:rgba(var(--glass-rgb),calc(var(--glass-alpha) * .45));
+  box-shadow:
+    inset 0 1px 1px rgba(255,255,255,.35),
+    inset 0 0 9px var(--liquid-shade,rgba(0,0,0,.16));
+}
+body.liquid-glass[data-skin] .tabbar{
+  overflow:hidden;
+  isolation:isolate;
+  background:
+    radial-gradient(circle 100px at var(--liquid-mx) var(--liquid-my),rgba(255,255,255,.1),transparent 80%),
+    linear-gradient(115deg,transparent 15%,rgba(255,255,255,.06) 40%,transparent 65%),
+    rgba(var(--glass-rgb),calc(var(--glass-alpha) * .58));
+  border:0;
+  -webkit-backdrop-filter:var(--liquid-filter);
+  backdrop-filter:var(--liquid-filter);
+  box-shadow:
+    inset 0 1.5px 1px -.5px rgba(255,255,255,.8),
+    inset 0 -1.5px 1px -.5px rgba(255,255,255,.2),
+    inset 0 0 14px var(--liquid-shade,rgba(0,0,0,.25)),
+    0 8px 24px var(--liquid-shadow,rgba(0,0,0,.4));
+}
+body.liquid-glass[data-skin] .hyper-switch .track{
+  border:1px solid rgba(255,255,255,.25);
+  box-shadow:inset 0 1px 2px rgba(255,255,255,.4),inset 0 0 8px rgba(0,0,0,.24);
+}
+body.liquid-glass[data-skin] .hyper-switch .thumb{
+  background:#fff;
+  box-shadow:0 2px 7px rgba(0,0,0,.35),inset 0 1px 1px #fff;
+}
+body.liquid-glass[data-skin] .mode-pill,
+body.liquid-glass[data-skin] .chip{
+  background-color:rgba(var(--glass-rgb),calc(var(--glass-alpha) * .38));
+  box-shadow:inset 0 1px 2px rgba(255,255,255,.4),0 2px 8px rgba(0,0,0,.18);
+}
+body.fx-lite.liquid-glass .card::after,
+body.fx-lite.liquid-glass .panel::after{ animation:none!important; }
+body.ui-scrolling.liquid-glass .card::after,
+body.ui-scrolling.liquid-glass .panel::after,
+body.ui-hidden.liquid-glass .card::after,
+body.ui-hidden.liquid-glass .panel::after{ animation-play-state:paused!important; }
+@media (prefers-reduced-motion:reduce){
+  body.liquid-glass .card::after,body.liquid-glass .panel::after{ animation:none!important; }
+}
+
+body[data-skin] .amb-grad{ animation:none; }
+body.ui-scrolling .amb-blobs i,
+body.ui-scrolling .gauge *,
+body.ui-scrolling .live-dot,
+body.ui-scrolling .tabbar::before,
+body.ui-scrolling .tabbar::after,
+body.ui-hidden .ambient *,
+body.ui-hidden .gauge *,
+body.ui-hidden .live-dot,
+body.ui-hidden .tabbar::before,
+body.ui-hidden .tabbar::after,
+#panelBody:not(.open) .gauge *,
+.gauge.fx-paused *{ animation-play-state:paused !important; }
+@media (prefers-reduced-motion: reduce) {
+  body .ambient .amb-blobs i { animation: none !important; }
+}
 
 </style>
 </head>
 <body>
+
+<svg class="liquid-filter-defs" aria-hidden="true">
+  <defs>
+    <filter id="liquid-warp" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="2" result="noise"></feTurbulence>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="5" xChannelSelector="R" yChannelSelector="G"></feDisplacementMap>
+    </filter>
+  </defs>
+</svg>
 
 <div class="ambient" aria-hidden="true">
   <div class="amb-grad"></div>
@@ -1911,6 +2146,9 @@ body.fx-lite .card,body.fx-lite .panel,body.fx-lite .mini{ box-shadow:0 4px 16px
       <div class="mode-pill"><span id="sMode">--</span></div>
 
       <div id="homeFields"></div>
+
+      <div class="pref-desc home-heading">温区温度</div>
+      <div class="home-group"><div class="mini-grid" id="dTzGrid"></div></div>
     </div>
   </div>
 
@@ -1934,7 +2172,6 @@ body.fx-lite .card,body.fx-lite .panel,body.fx-lite .mini{ box-shadow:0 4px 16px
     <div class="panel-body" id="deviceBody">
       <div class="info-list">
         <div class="info-row"><span class="info-lbl">模块版本</span><span class="info-val" id="devVer">—</span></div>
-        <div class="info-row"><span class="info-lbl">上游内核</span><span class="info-val" id="devKernel">—</span></div>
         <div class="info-row"><span class="info-lbl">构建日期</span><span class="info-val">2026-10-24</span></div>
         <div class="info-row"><span class="info-lbl">当前日期</span><span class="info-val" id="devDate">--</span></div>
         <div class="info-row"><span class="info-lbl">设备型号</span><span class="info-val" id="devModel">--</span></div>
@@ -1943,6 +2180,19 @@ body.fx-lite .card,body.fx-lite .panel,body.fx-lite .mini{ box-shadow:0 4px 16px
       </div>
     </div>
   </div>
+
+  <div class="card" data-diy-id="console-4">
+    <div class="pref">
+      <div class="pref-body">
+        <div class="pref-title">实时曲线</div>
+        <div class="pref-desc" id="curveDesc">功率 / 温度 / 电量，点右上角可叠加显示</div>
+      </div>
+      <div class="pref-right" id="curveChips"></div>
+    </div>
+    <div id="curveWrap"><canvas id="curveCv"></canvas></div>
+    <div class="pref-desc" id="curveStat" style="text-align:center;margin-top:6px">等待数据…</div>
+  </div>
+
 </div>
 
 
@@ -2191,13 +2441,6 @@ body.fx-lite .card,body.fx-lite .panel,body.fx-lite .mini{ box-shadow:0 4px 16px
       </div>
       <div class="pref-right"><label class="hyper-switch"><input type="checkbox" id="bkApl" onchange="bkAplToggle(this.checked)"><span class="track"></span><span class="thumb"></span></label></div>
     </div>
-    <div class="pref" style="cursor:default">
-      <div class="pref-body">
-        <div class="pref-title">温控守护</div>
-        <div class="pref-desc" id="bkTgDesc">解容侧的自定义温度上限守护，默认不启用（温控档位已不再限制充电电流）</div>
-      </div>
-      <div class="pref-right"><span id="bkTgState" style="font-size:calc(13px * var(--fs));color:var(--text-secondary)">--</span></div>
-    </div>
   </div>
 
   <div class="card" data-diy-id="battery-2">
@@ -2267,13 +2510,24 @@ body.fx-lite .card,body.fx-lite .panel,body.fx-lite .mini{ box-shadow:0 4px 16px
       · 应用后由守护进程维持，被系统改回会重新写入；点「关闭」或卸载时自动还原原始值
     </div>
   </div>
+
+  <div class="card" data-diy-id="battery-5">
+    <div class="pref">
+      <div class="pref-body">
+        <div class="pref-title">充电记录</div>
+        <div class="pref-desc" id="chargeRecDesc">自动记录每次充电会话</div>
+      </div>
+      <div class="pref-right"><button class="btn secondary" style="padding:6px 12px;font-size:calc(11px * var(--fs))" onclick="chargeRecClear()">清空</button></div>
+    </div>
+    <div id="chargeRecList" style="margin-top:10px"></div>
+  </div>
 </div>
 
 
 <div class="page" id="page-appearance">
   <div class="topbar">
     <h1>显示外观</h1>
-    <div class="subtitle">主题 / 强调色 / 缩放 / 质感 / 发光 / 颜色</div>
+    <div class="subtitle">主题 / 玻璃材质 / 缩放 / 背景 / DIY</div>
   </div>
 
   <div class="small-title">主题</div>
@@ -2288,38 +2542,25 @@ body.fx-lite .card,body.fx-lite .panel,body.fx-lite .mini{ box-shadow:0 4px 16px
     </div>
     <div class="expand-body" id="expand-skin">
       <div class="expand-inner">
-        <div class="field-label">六套液态玻璃预设，选中后会同步切换深浅模式；具体颜色仍可在下面调</div>
+        <div class="field-label">八套主题预设；冰川琉璃与月海流银默认开启液态玻璃，选中后同步切换深浅配色</div>
         <div class="chips" id="skinChips" style="margin:0"></div>
+        <button class="btn secondary" id="appearanceResetBtn" onclick="restoreDefaults()">全局恢复默认</button>
+        <div class="field-label">恢复主题、背景、光环、字体、卡片、底栏和 DIY 布局；保留已存方案、刷新间隔与模块运行设置</div>
       </div>
     </div>
   </div>
 
-  <div class="card" data-diy-id="appearance-2">
-    <div class="pref" onclick="toggleExpand('theme')">
+  <div class="card" data-diy-id="appearance-liquid">
+    <div class="pref" id="liquidGlassPref" role="switch" tabindex="0" aria-checked="false" onclick="document.getElementById('liquid_glass').click()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();document.getElementById('liquid_glass').click()}">
       <div class="pref-body">
-        <div class="pref-title">主题模式</div>
-        <div class="pref-desc" id="themeSub">跟随系统</div>
+        <div class="pref-title">液态玻璃</div>
+        <div class="pref-desc" id="liquidGlassSub">高透微凹玻璃、切面高光与轻微折射</div>
       </div>
-      <div class="pref-right"><span class="expand-arrow" id="arrow-theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></span></div>
-    </div>
-    <div class="expand-body" id="expand-theme">
-      <div class="expand-inner">
-        <div class="chips" id="themeChips" style="margin:0"></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card" data-diy-id="appearance-3">
-    <div class="pref" onclick="toggleExpand('accent')">
-      <div class="pref-body">
-        <div class="pref-title">强调色</div>
-        <div class="pref-desc" id="accentSub">蓝</div>
-      </div>
-      <div class="pref-right"><span class="expand-arrow" id="arrow-accent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></span></div>
-    </div>
-    <div class="expand-body" id="expand-accent">
-      <div class="expand-inner">
-        <div class="swatches" id="accentSwatches"></div>
+      <div class="pref-right">
+        <label class="hyper-switch" onclick="event.stopPropagation()">
+          <input type="checkbox" id="liquid_glass" aria-label="液态玻璃" onchange="setLiquidGlass(this.checked)">
+          <span class="track"></span><span class="thumb"></span>
+        </label>
       </div>
     </div>
   </div>
@@ -2328,7 +2569,7 @@ body.fx-lite .card,body.fx-lite .panel,body.fx-lite .mini{ box-shadow:0 4px 16px
     <div class="pref" onclick="document.getElementById('fx_lite').click()">
       <div class="pref-body">
         <div class="pref-title">流畅模式</div>
-        <div class="pref-desc" id="fxLiteSub">关闭光斑漂移、玻璃模糊与波浪动画，界面更跟手</div>
+        <div class="pref-desc" id="fxLiteSub">保留单个移动光斑，关闭玻璃模糊与波浪动画</div>
       </div>
       <div class="pref-right">
         <label class="hyper-switch" onclick="event.stopPropagation()">
@@ -2411,10 +2652,10 @@ body.fx-lite .card,body.fx-lite .panel,body.fx-lite .mini{ box-shadow:0 4px 16px
         <div class="chips" id="easingChips"></div>
         <div class="field-label" style="margin-top:18px">淡入淡出强度</div>
         <div class="chips" id="fadeChips"></div>
-        <div class="field-label" style="margin-top:18px">切换模糊度</div>
+        <div class="field-label" style="margin-top:18px">标题过渡模糊度</div>
         <div class="slider-item" style="padding-top:6px">
           <div class="slider-head">
-            <span class="slider-name">页面切换模糊度</span>
+            <span class="slider-name">标题过渡模糊度</span>
             <span class="slider-val" id="pageBlurVal" onclick="editPageBlur()">10</span>
           </div>
           <input type="range" id="pageBlurRange" min="0" max="30" step="1" value="10"
@@ -2450,59 +2691,6 @@ body.fx-lite .card,body.fx-lite .panel,body.fx-lite .mini{ box-shadow:0 4px 16px
           <input type="range" id="caRange" min="0.10" max="0.95" step="0.01" value="0.20"
                  oninput="onCardAlphaInput(this.value)">
         </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card" data-diy-id="appearance-7">
-    <div class="pref" onclick="toggleExpand('switchglass')">
-      <div class="pref-body">
-        <div class="pref-title">开关按钮玻璃质感</div>
-        <div class="pref-desc" id="switchGlassSub">开启后所有开关按钮具有玻璃质感</div>
-      </div>
-      <div class="pref-right">
-        <label class="hyper-switch" onclick="event.stopPropagation()">
-          <input type="checkbox" id="switch_glass" onchange="toggleSwitchGlass()">
-          <span class="track"></span><span class="thumb"></span>
-        </label>
-        <span class="expand-arrow" id="arrow-switchglass"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></span>
-      </div>
-    </div>
-    <div class="expand-body" id="expand-switchglass">
-      <div class="expand-inner">
-        <div class="field-label" style="margin-top:0">玻璃质感开关按钮使用与玻璃卡片一致的透明度与毛玻璃效果，影响模块内所有开关。</div>
-
-        <div class="field-label" style="margin-top:18px">一键预设</div>
-        <div class="chips" id="switchPresetChips"></div>
-
-        <div class="slider-item" style="padding-top:6px">
-          <div class="slider-head">
-            <span class="slider-name">开关按钮模糊度</span>
-            <span class="slider-val" id="swbVal" onclick="editSwitchBlur()">6</span>
-          </div>
-          <input type="range" id="swbRange" min="0" max="30" step="1" value="6"
-                 oninput="onSwitchBlurInput(this.value)">
-        </div>
-        <div class="slider-item">
-          <div class="slider-head">
-            <span class="slider-name">开启状态透明度</span>
-            <span class="slider-val" id="swOnVal" onclick="editSwitchAlpha('on')">0.70</span>
-          </div>
-          <input type="range" id="swOnRange" min="0.10" max="1.00" step="0.01" value="0.70"
-                 oninput="onSwitchAlphaInput('on', this.value)">
-        </div>
-        <div class="slider-item">
-          <div class="slider-head">
-            <span class="slider-name">关闭状态透明度</span>
-            <span class="slider-val" id="swOffVal" onclick="editSwitchAlpha('off')">0.35</span>
-          </div>
-          <input type="range" id="swOffRange" min="0.10" max="1.00" step="0.01" value="0.35"
-                 oninput="onSwitchAlphaInput('off', this.value)">
-        </div>
-
-        <div class="field-label" style="margin-top:18px">开关强调颜色</div>
-        <div class="swatches" id="switchAccentSwatches"></div>
-        <button class="btn secondary" id="switchAccentResetBtn" style="width:100%;margin-top:12px" onclick="resetSwitchAccent()">跟随主题色</button>
       </div>
     </div>
   </div>
@@ -2578,7 +2766,7 @@ body.fx-lite .card,body.fx-lite .panel,body.fx-lite .mini{ box-shadow:0 4px 16px
         <div class="pref" onclick="document.getElementById('current_icon_opt').click()" style="padding:12px 0;margin:0">
           <div class="pref-body">
             <div class="pref-title">当前页图标优化</div>
-            <div class="pref-desc">指示气泡边缘覆盖底栏图标时放大图标</div>
+            <div class="pref-desc">切换导航时突出当前页面图标</div>
           </div>
           <div class="pref-right">
             <label class="hyper-switch" onclick="event.stopPropagation()">
@@ -2683,14 +2871,15 @@ body.fx-lite .card,body.fx-lite .panel,body.fx-lite .mini{ box-shadow:0 4px 16px
           </div>
         </div>
 
+        <div class="field-label">液态水滴壁纸</div>
+        <div class="pref-desc">点选即应用，可离线使用；模糊度设为 0 可看清折射边缘，搭配深色主题更清晰</div>
+        <div class="mini-grid wp-presets" id="wallpaperPresets"></div>
         <input type="file" id="wpFile" accept="image/*" style="display:none" onchange="onWallpaperFile(event)">
-
-        <button class="btn" style="width:100%;margin-bottom:10px" onclick="document.getElementById('wpFile').click()">
-          选择图片
-        </button>
-        <button class="btn secondary" style="width:100%;margin-bottom:6px" onclick="clearWallpaper()">
-          清除壁纸
-        </button>
+        <div class="wp-actions">
+          <button class="btn secondary" id="wpDefault" onclick="setWallpaperPreset('default')">默认壁纸</button>
+          <button class="btn" onclick="document.getElementById('wpFile').click()">选择本地图片</button>
+          <button class="btn secondary" onclick="clearWallpaper()">清除壁纸</button>
+        </div>
 
         <div class="field-label" style="margin-top:18px">背景模糊度</div>
         <div class="slider-item" style="padding-top:0">
@@ -2768,93 +2957,6 @@ body.fx-lite .card,body.fx-lite .panel,body.fx-lite .mini{ box-shadow:0 4px 16px
         <div class="field-label" style="margin-top:0">字体族（全局即时生效）</div>
         <div id="fsList"></div>
         <button class="btn secondary" style="width:100%;margin-top:18px" onclick="resetAppFont()">恢复默认</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="card" data-diy-id="appearance-12">
-    <div class="pref" onclick="toggleExpand('tempcolor')">
-      <div class="pref-body">
-        <div class="pref-title">调节温度圆圈颜色</div>
-        <div class="pref-desc">自定义低温 / 中温 / 高温颜色与阈值</div>
-      </div>
-      <div class="pref-right"><span class="expand-arrow" id="arrow-tempcolor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></span></div>
-    </div>
-    <div class="expand-body" id="expand-tempcolor">
-      <div class="expand-inner">
-        <div class="field-label" style="margin-top:0">低温颜色</div>
-        <div class="swatches" id="tclSwatches"></div>
-
-        <div class="slider-item" style="padding-top:12px">
-          <div class="slider-head">
-            <span class="slider-name">中温阈值</span>
-            <span class="slider-val" id="tt1Val" onclick="editTempT(1)">40°C</span>
-          </div>
-          <input type="range" id="tt1Range" min="20" max="60" step="1" value="40"
-                 oninput="onTempTInput(1, this.value)">
-        </div>
-
-        <div class="field-label">中温颜色</div>
-        <div class="swatches" id="tcmSwatches"></div>
-
-        <div class="slider-item" style="padding-top:12px">
-          <div class="slider-head">
-            <span class="slider-name">高温阈值</span>
-            <span class="slider-val" id="tt2Val" onclick="editTempT(2)">45°C</span>
-          </div>
-          <input type="range" id="tt2Range" min="20" max="60" step="1" value="45"
-                 oninput="onTempTInput(2, this.value)">
-        </div>
-
-        <div class="field-label">高温颜色</div>
-        <div class="swatches" id="tchSwatches"></div>
-
-        <button class="btn secondary" style="width:100%;margin-top:18px" onclick="resetTempColors()">恢复默认</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="card" data-diy-id="appearance-13">
-    <div class="pref" onclick="toggleExpand('indicator')">
-      <div class="pref-body">
-        <div class="pref-title">调节底栏指示气泡</div>
-        <div class="pref-desc">自定义宽度 / 高度 / 颜色</div>
-      </div>
-      <div class="pref-right"><span class="expand-arrow" id="arrow-indicator"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></span></div>
-    </div>
-    <div class="expand-body" id="expand-indicator">
-      <div class="expand-inner">
-        <div class="slider-item" style="padding-top:0">
-          <div class="slider-head">
-            <span class="slider-name">气泡宽度</span>
-            <span class="slider-val" id="iwVal" onclick="editIndicator('w')">83%</span>
-          </div>
-          <input type="range" id="iwRange" min="30" max="100" step="1" value="83"
-                 oninput="onIndicatorInput('w', this.value)">
-        </div>
-
-        <div class="slider-item">
-          <div class="slider-head">
-            <span class="slider-name">气泡高度</span>
-            <span class="slider-val" id="ihVal" onclick="editIndicator('h')">83%</span>
-          </div>
-          <input type="range" id="ihRange" min="30" max="100" step="1" value="83"
-                 oninput="onIndicatorInput('h', this.value)">
-        </div>
-
-        <div class="field-label">气泡颜色</div>
-        <div class="swatches" id="indSwatches"></div>
-
-        <div class="slider-item" style="padding-top:12px">
-          <div class="slider-head">
-            <span class="slider-name">气泡透明度</span>
-            <span class="slider-val" id="iaVal" onclick="editIndicator('a')">0.05</span>
-          </div>
-          <input type="range" id="iaRange" min="0.05" max="1.00" step="0.01" value="0.05"
-                 oninput="onIndicatorInput('a', this.value)">
-        </div>
-
-        <button class="btn secondary" style="width:100%;margin-top:18px" onclick="resetIndicator()">恢复默认</button>
       </div>
     </div>
   </div>
@@ -2938,87 +3040,13 @@ body.fx-lite .card,body.fx-lite .panel,body.fx-lite .mini{ box-shadow:0 4px 16px
     </div>
   </div>
 
-  <div class="small-title">发光</div>
-
-  <div class="card" data-diy-id="appearance-16">
-    <div class="pref" onclick="toggleExpand('cardglow')">
-      <div class="pref-body">
-        <div class="pref-title">卡片边缘发光</div>
-        <div class="pref-desc" id="cardglowSub">已关闭</div>
-      </div>
-      <div class="pref-right">
-        <label class="hyper-switch" onclick="event.stopPropagation()">
-          <input type="checkbox" id="card_glow" onchange="toggleCardGlow()">
-          <span class="track"></span><span class="thumb"></span>
-        </label>
-        <span class="expand-arrow" id="arrow-cardglow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></span>
-      </div>
-    </div>
-    <div class="expand-body" id="expand-cardglow">
-      <div class="expand-inner">
-        <div class="slider-item" style="padding-top:0">
-          <div class="slider-head">
-            <span class="slider-name">发光程度</span>
-            <span class="slider-val" id="cgVal" onclick="editGlow('card')">12</span>
-          </div>
-          <input type="range" id="cgRange" min="0" max="24" step="1" value="12"
-                 oninput="onGlowInput('card', this.value)">
-        </div>
-        <div class="field-label">发光颜色</div>
-        <div class="swatches" id="cgColorSwatches"></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card" data-diy-id="appearance-17">
-    <div class="pref" onclick="toggleExpand('btnglow')">
-      <div class="pref-body">
-        <div class="pref-title">按钮发光</div>
-        <div class="pref-desc" id="btnglowSub">已关闭</div>
-      </div>
-      <div class="pref-right">
-        <label class="hyper-switch" onclick="event.stopPropagation()">
-          <input type="checkbox" id="btn_glow" onchange="toggleBtnGlow()">
-          <span class="track"></span><span class="thumb"></span>
-        </label>
-        <span class="expand-arrow" id="arrow-btnglow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></span>
-      </div>
-    </div>
-    <div class="expand-body" id="expand-btnglow">
-      <div class="expand-inner">
-        <div class="slider-item" style="padding-top:0">
-          <div class="slider-head">
-            <span class="slider-name">发光程度</span>
-            <span class="slider-val" id="bgVal" onclick="editGlow('btn')">12</span>
-          </div>
-          <input type="range" id="bgRange" min="0" max="24" step="1" value="12"
-                 oninput="onGlowInput('btn', this.value)">
-        </div>
-        <div class="field-label">发光颜色</div>
-        <div class="swatches" id="bgColorSwatches"></div>
-
-        <div class="pref" onclick="document.getElementById('ind_glow').click()" style="padding:12px 0 6px;margin:0">
-          <div class="pref-body">
-            <div class="pref-title">底部指示气泡发光</div>
-            <div class="pref-desc">指示气泡跟随发光效果</div>
-          </div>
-          <div class="pref-right">
-            <label class="hyper-switch" onclick="event.stopPropagation()">
-              <input type="checkbox" id="ind_glow" onchange="toggleIndGlow()">
-              <span class="track"></span><span class="thumb"></span>
-            </label>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
   <div class="small-title">DIY 美化</div>
 
   <div class="card" data-diy-id="appearance-18" data-diy-keep="1">
     <div class="pref" onclick="toggleExpand('diybg')">
       <div class="pref-body">
         <div class="pref-title">背景光斑与噪点</div>
-        <div class="pref-desc" id="diyBgSub">光斑 3 个 · 噪点关闭</div>
+        <div class="pref-desc" id="diyBgSub">光斑 3 个 · 噪点开启</div>
       </div>
       <div class="pref-right"><span class="expand-arrow" id="arrow-diybg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></span></div>
     </div>
@@ -3262,7 +3290,7 @@ body.fx-lite .card,body.fx-lite .panel,body.fx-lite .mini{ box-shadow:0 4px 16px
     <div class="pref" onclick="openProfileConf()">
       <div class="pref-body">
         <div class="pref-title">配置档案</div>
-        <div class="pref-desc" id="profileSub">轮询间隔 / 温度保护 / 旁路电流等</div>
+        <div class="pref-desc" id="profileSub">轮询间隔 / 旁路电流 / 配置锁定等</div>
       </div>
       <div class="pref-right"><span class="expand-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></span></div>
     </div>
@@ -3281,20 +3309,6 @@ body.fx-lite .card,body.fx-lite .panel,body.fx-lite .mini{ box-shadow:0 4px 16px
       <div class="pref-body">
         <div class="pref-title">卸载模块</div>
         <div class="pref-desc">卸载并还原系统原配置（需二次确认）</div>
-      </div>
-      <div class="pref-right"><span class="expand-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></span></div>
-    </div>
-    <div class="pref" onclick="takeChargeSnapshot('mod')" style="cursor:pointer">
-      <div class="pref-body">
-        <div class="pref-title">采集充电快照（二改版）</div>
-        <div class="pref-desc">记录当前所有充电/电池节点，用于与原版解容对比</div>
-      </div>
-      <div class="pref-right"><span class="expand-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></span></div>
-    </div>
-    <div class="pref" onclick="takeChargeSnapshot('stock')" style="cursor:pointer">
-      <div class="pref-body">
-        <div class="pref-title">采集充电快照（原版解容）</div>
-        <div class="pref-desc">装了原版电池解容工具箱时用，采同一台设备的基准数据</div>
       </div>
       <div class="pref-right"><span class="expand-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></span></div>
     </div>
@@ -3582,8 +3596,14 @@ body.fx-lite .card,body.fx-lite .panel,body.fx-lite .mini{ box-shadow:0 4px 16px
 
 【主页】
 · 顶部光环：中间是实时充电功率（W），液面高度 = 电量，充电时光晕亮起
-· 数据格：电量 / 状态 / 设计容量 / 满充容量 / 健康度 / 电压 / 电流 / 温度 / 循环 / 伪装 / 充电协议
+· 显示优化：滚动时装饰动画暂停，停下后恢复；光环移出屏幕或面板收起时暂停动画
+· 数据格：电量 / 状态 / 容量 / 健康度 / 电压 / 电流 / 温度 / 循环 / 充电协议 /
+  剩余容量 / 电池寿命，全部随秒级刷新
 · 充电功率：全速（不限流）/ 40W / 25W / 10W。无线充电发热大，温度高时建议降一档
+· 实时运行面板：光环下按实时状态 / 容量与寿命 / 温区分组，点标题可整体收起
+  字段显隐与列数在「外观 → DIY 美化」中调整
+· 实时曲线：功率 / 温度 / 电量曲线可叠加显示（点卡片右上角切换）
+· 沉浸式全屏：管理器支持 insets 时，页面背景自动延伸到状态栏 / 导航栏，取色随主题
 
 【温控】
 · 温控档位：无限制或一~五档，数字越大温度越低（对应 26~50℃ 区间）
@@ -3591,18 +3611,23 @@ body.fx-lite .card,body.fx-lite .panel,body.fx-lite .mini{ box-shadow:0 4px 16px
 · 场景：亮屏充电 / 息屏 / 时间段分别设档位
 · 游戏加速：指定应用内切到游戏档位；HyperOS 三倍速可单独开
 · 高温保护：解除系统高温停充；另有一项「高温自动降充电功率」，到档位温度自动降功率
+· 高温兜底：电池达到 60℃ 时自动降为三档，固定值不可调，机型档案里不再提供这两项
 · 旁路供电：达到设定温度或电量时转为旁路供电，减少边充边放发热
 
 【电池】
 · 电池解容（挂载 BAA，防低电量锁容）/ 公版 PPS 解锁 / 云控屏蔽
 · 自适应功率爬坡（APL）：全速档按实测硬件上限动态上探，默认关闭，切到全速自动启停
-· 温控守护：显示解容侧守护进程是否真的在跑（默认不启用；温控档位已不再限制充电电流）
-· DTBO：刷入内置的本机解容 DTBO（刷前自动备份）；安装时可用音量键选择刷不刷
+· DTBO：按本机代号读取内置镜像（包含 popsicle），安装时跳过后仍可手动刷；刷前自动备份，重启生效
 · 循环次数伪装、电池电压（满电电压 / 关机电压）
 
 【外观】
-· 主题预设 6 套、强调色、字体与卡片缩放、玻璃质感、颜色与发光
-· 流畅模式：卡顿时打开，关掉光斑漂移 / 玻璃模糊 / 波浪动画
+· 主题预设 8 套：新增冰川琉璃（浅色）与月海流银（深色），保留字体、缩放、背景和 DIY
+· 自定义背景：内置青柠 / 冰蓝 / 紫晶 / 琥珀四款液态水滴壁纸，点选即应用，也可选择本地图片
+· 液态玻璃：外观页独立开关，卡片 / 面板 / 底栏使用高透微凹玻璃、1px 切面高光、轻微折射与缓慢反光；两套新主题默认开启
+· 背景光斑：八套主题统一使用 3 个光斑、170% 大小、58px 模糊、38% 幅度 / 9 秒漂移，默认开启噪点与自动变色
+· 外观保存：主题与液态玻璃选择随刷新保留，可保存为方案；v1.0.73 的首次重置规则仅执行一次
+· 全局恢复默认：在「主题预设」内确认后还原整套外观，保留已存方案、刷新间隔与温控 / 电池设置
+· 流畅模式：卡顿时打开，保留单个移动光斑，关闭玻璃模糊 / 波浪动画
 · 数据刷新：主页数据间隔 0.5 / 1（默认）/ 2 / 3 / 5 秒或关闭，可看耗时、可手动刷新
 · DIY 美化：背景光斑与噪点、能量光环（环宽/发光/波浪/液面高度）、卡片与文字尺寸、
   底栏尺寸、主页字段与卡片显隐、外观方案（可导入导出）与自定义 CSS
@@ -3611,7 +3636,7 @@ body.fx-lite .card,body.fx-lite .panel,body.fx-lite .mini{ box-shadow:0 4px 16px
 · 检查更新、更新日志、作者与 QQ 群
 · 工具：日志 / 机型档案 / 诊断包（反馈问题前请先导一份诊断包）
 · 备份与恢复：普通备份只含界面设置，完整备份包含 config 与 profiles
-· 恢复默认配置：清空外观设置
+· 恢复默认配置：与主题预设的「全局恢复默认」相同，只还原外观
 
 常见提示
 · 模块更新会自动保留你的设置（含解容配置），无需重新配置
@@ -3633,9 +3658,12 @@ var __kexecProbe = '';
 var __kexecMode = 'none';
 try {
   var _keys = (typeof ksu !== 'undefined' && ksu) ? Object.keys(ksu).join(',') : '-';
-  __kexecProbe = 'exec=' + (typeof exec) + ' ksu=' + (typeof ksu) + ' keys=' + _keys;
+  var _sp = (typeof ksu !== 'undefined' && ksu) ? (typeof ksu.spawn) : '-';
+  __kexecProbe = 'exec=' + (typeof exec) + ' spawn=' + _sp + ' ksu=' + (typeof ksu) + ' keys=' + _keys;
 } catch(e) { __kexecProbe = 'probe-err'; }
-if (typeof ksu !== 'undefined' && ksu && typeof ksu.exec === 'function') __kexecMode = 'ksu.exec';
+/* spawn 通道优先：native 异步排队执行，JS 线程不再等脚本跑完；exec 作回退 */
+if (typeof ksu !== 'undefined' && ksu && typeof ksu.spawn === 'function') __kexecMode = 'ksu.spawn';
+else if (typeof ksu !== 'undefined' && ksu && typeof ksu.exec === 'function') __kexecMode = 'ksu.exec';
 
 const MODDIR='/data/adb/modules/HyperOS_XJ', CONF=MODDIR+'/config/settings.json';
 
@@ -3659,12 +3687,17 @@ const MODES=[{id:'default',l:'系统默认'},...LEVELS];
 const MODE_NAMES={default:'默认',unlimited:'无限制',level_1:'一档',level_2:'二档',level_3:'三档',level_4:'四档',level_5:'五档',bypass:'旁路',off:'关闭'};
 
 
+/* spawn 通道：native 侧 enqueue 异步执行，脚本跑多久都不再阻塞 JS/渲染线程；
+   回调协议为 cb.stdout.emit('data',段) / cb.stderr.emit('data',段) / cb.emit('exit',code)，
+   每段 stdout 都是一次 loadUrl 注入，因此把输出压成单行（tr 换行→\x01，JS 还原），
+   退出码用 @@RC@@ 附加在尾部回传，避免被管道换成 tr 的退出码。 */
 function __kexec(cmd, timeoutMs){
   const TO = timeoutMs || 20000;
   return new Promise(r=>{
     const cb='cb_'+Date.now()+'_'+Math.random().toString(36).slice(2);
     let done=false;
     let tm=null;
+    let sOut='', sErr='';
     const fin=(e,o,s)=>{
       if(done) return;
       done=true;
@@ -3672,10 +3705,30 @@ function __kexec(cmd, timeoutMs){
       if(tm){ clearTimeout(tm); tm=null; }
       r({errno:e,stdout:o||'',stderr:s||''});
     };
-    window[cb]=(e,o,s)=>{ fin(e,o,s); };
+    const finSpawn=()=>{
+      let e=0, out=sOut;
+      const i=out.lastIndexOf('@@RC@@');
+      if(i>=0){
+        const p=parseInt(out.slice(i+6).trim(),10);
+        if(isFinite(p)) e=p;
+        out=out.slice(0,i);
+        if(out.slice(-1)==='\n') out=out.slice(0,-1);
+      }
+      fin(e,out,sErr);
+    };
+    if(__kexecMode === 'ksu.spawn'){
+      window[cb]={
+        stdout:{emit:function(_t,s){ if(sOut) sOut += '\n'; sOut += String(s).split('\x01').join('\n'); }},
+        stderr:{emit:function(_t,s){ sErr += String(s); }},
+        emit:function(t,v){ if(t==='exit') finSpawn(); }
+      };
+    } else {
+      window[cb]=(e,o,s)=>{ fin(e,o,s); };
+    }
     tm=setTimeout(()=>{ fin(-2,'','执行超时（'+TO+'ms 无回调），可能是 root 授权未响应，请重试或检查 KernelSU 授权'); }, TO);
     try{
-      if(__kexecMode === 'ksu.exec') ksu.exec(cmd,'{}',cb);
+      if(__kexecMode === 'ksu.spawn') ksu.spawn('{ ' + cmd + ' 2>&1; echo "@@RC@@$?"; } | tr \'\\n\' \'\\001\'', '[]', '{}', cb);
+      else if(__kexecMode === 'ksu.exec') ksu.exec(cmd,'{}',cb);
       else fin(-1,'','未找到可用的命令通道（' + __kexecProbe + '）');
     }catch(x){ fin(-1,'',String(x)); }
   });
@@ -3687,10 +3740,11 @@ const USAGE_TEXT = `使用说明（按页面看）
 ━━ 安装时 ━━
 
 · 全新安装时，安装界面会用音量键逐项问你（每项 10 秒，不按键就保持默认）：
-  电池解容 / 公版 PPS 解锁 / 云控屏蔽 / 温控守护 / 自适应爬坡（APL）
+  电池解容 / 公版 PPS 解锁 / 云控屏蔽 / 自适应爬坡（APL）
   音量 + = 开，音量 - = 关。最后一步问 DTBO 刷不刷：音量 + 现在刷（重启生效），音量 - 跳过，
   之后随时可在「电池 → DTBO」卡片自己刷。
-· 升级安装不询问：直接沿用你上一版的设置，避免覆盖。
+· 升级安装不询问：沿用上一版的温控和电池设置。
+  v1.0.73 首次打开页面会把整套外观恢复默认；只执行一次，之后重新调整外观会正常保留。
 · 安装时不想选？什么都不按，10 秒后自动跳过，装上后到对应页面改即可。
 
 ━━ 主页 ━━
@@ -3701,13 +3755,30 @@ const USAGE_TEXT = `使用说明（按页面看）
 · 档位标识
   光环下方的胶囊显示当前生效的温控档位（无限制 / 一档…五档 / 旁路）。
 · 数据格
-  电量、状态、设计容量、满充容量、健康度、电压、电流、温度、循环次数、伪装次数、充电协议。
-  显示哪些格子、几列排布、顺序，都在「外观 → DIY 美化 → 主页字段与卡片显隐」里改。
+  自动排版分为「实时状态」与「容量与寿命」：电量、状态、充电协议、电压、电流、温度，
+  剩余容量、满充容量、设计容量、健康度、电池寿命（SOH%）、循环次数与伪装次数。
+  数字与标签分层显示；标签可换行，不裁切电池寿命等长名称。
+  字段显隐与列数在「外观 → DIY 美化 → 主页字段与卡片显隐」里改；2/3 列使用平铺布局。
+· 温区温度
+  数据格下方是热传感器温度（最多 8 个温区），电池温度优先显示，
+  重复的「充电接口 2」不显示；同样随秒级刷新。
+  以上内容都在「实时运行面板」内，点面板标题可整体收起。
 · 充电功率
   全速（不限流）/ 40W / 25W / 10W 四档，改的是电池解容的供电档位。
   无线充电发热大，温度高时建议降到 25W 或 10W。
 · 设备信息
   模块版本、构建日期、机型、系统、Root 方案、运行环境。数据不刷新时先看「运行环境」有没有识别到命令通道。
+· 实时曲线
+  功率 / 温度 / 电量三条走势，可任选几条叠加显示（点卡片右上角的名称切换），
+  随「数据刷新」的间隔采样（默认 1 秒），显示最近 120 个采样点；
+  滚动与离屏时暂停重绘。
+· 沉浸式全屏
+  在 KernelSU/SukiSU 管理器中打开时，若管理器支持 insets，页面背景会自动延伸到
+  状态栏和导航栏下面，取色跟随主题；老版管理器拿不到 inset 时保持原样。
+  状态栏图标的深浅由系统 / 管理器决定，页面控制不了。
+· 充电记录
+  自动记录每次充电会话（峰值功率/温度、平均功率、起止电量、持续时间），
+  存在「电池 → 充电记录」卡，最多保留最近 10 次，可手动清空。
 
 ━━ 温控 ━━
 
@@ -3748,16 +3819,13 @@ const USAGE_TEXT = `使用说明（按页面看）
   全速档下按实测硬件上限动态上探/退让，不再写死电流上限。
   默认关闭；只有功率档为「全速」且开关为开、且进程真的在跑时才会采用它的目标值。
   切换到全速会自动拉起，切到限流档会自动停掉；开关状态与当前目标电流在描述里显示。
-· 温控守护
-  解容侧的自定义温度上限守护，默认不启用（降功率统一交给温控档位）。
-  右侧显示「未启用 / 运行中 / 已停止（异常）」，异常时说明开关是开但进程没在跑。
-  新：温控档位不再直接限制充电电流（SIC-BAT 已放开），降功率改由温控页的
-  「高温自动降充电功率」调用解容的功率档完成；想用自定义温度上限也可另开本守护。
 · DTBO
-  刷入内置的本机解容 DTBO（刷前自动整分区备份、写入后校验），**重启后生效**。
-  刷不刷由你定：安装时会问一次（音量 + 刷 / 音量 - 跳过），也可以在「电池 → DTBO」卡片随时刷。
-  卡片右侧会显示结果：「已刷入」（带时间，可点击重刷）/「失败」（带原因）；
-  分区已是该镜像时显示「已刷入 · 无需重复刷入」。
+  刷入上游提供的本机解容 DTBO，仅支持已适配机型与 HyperOS 4；刷前自动整分区备份、
+  写入后整分区校验，重启后生效。镜像内置在模块中，不需要另行下载。
+  安装时可选音量 + 刷 / 音量 - 跳过；跳过不影响镜像识别，之后点「电池 → DTBO」仍可手动刷。
+  页面按本机代号读取对应镜像（包含 popsicle / 小米17 Pro Max），显示「可刷入 / 已刷入 / 失败」；
+  不支持的机型、系统不满足条件或资源缺失时分别显示原因，不会借用其它机型镜像。
+  分区已是该镜像时显示「已刷入 · 无需重复刷入」，点击仍可重刷；槽位无法确认时中止。
 · 循环次数伪装
   输入目标次数后点「应用」，把电池循环次数显示为设定值，重启后仍生效；「清除」恢复真实值。
 · 电池电压
@@ -3772,43 +3840,65 @@ const USAGE_TEXT = `使用说明（按页面看）
 ━━ 外观 ━━
 
 · 主题预设
-  六套液态玻璃皮肤：极光浅色、全息流体、暗黑霓虹、幻彩极光、赛博霓虹、熔岩鎏金。
-  选中会同步切换深浅模式，强调色跟随该套主题。
-· 主题模式 / 强调色
-  跟随系统或固定浅色/深色；强调色影响按钮、开关、圆环、图标。
+  八套配色：极光浅色、全息流体、暗黑霓虹、幻彩极光、赛博霓虹、熔岩鎏金、冰川琉璃、月海流银。
+  在「外观 → 主题预设」点选，深浅模式和强调色同步跟随主题，背景光斑使用各自配色。
+  冰川琉璃为冰蓝浅色，月海流银为深海蓝灰配银青高光；两套默认开启液态玻璃。
+  选择其它六套预设时使用毛玻璃材质，不覆盖你保存的 DIY 布局、背景参数与颜色。
+· 液态玻璃
+  在「外观 → 液态玻璃」开关切换：卡片、面板和底栏采用高透明微凹玻璃，内部只做 2px 轻模糊，
+  四周内暗形成凹陷感，1px 明暗切面封住边缘；背景经 SVG 微量扭曲产生轻微折射。
+  玻璃上有 15 秒缓慢移动的反光带，鼠标或手写笔移动时触点高光跟随；滚动、切后台、
+  系统减少动态效果或开启流畅模式时暂停 / 关闭反光动画，不影响数据刷新。
+  可搭配任意主题；关闭后回到毛玻璃，选择随页面刷新和外观方案保存。
+  卡片模糊度与饱和度仍可在 DIY 调整；设为「跟随主题」使用上述液态玻璃默认值。
+  WebView 不支持 SVG backdrop-filter 时自动退回 2px 轻模糊，切面、内凹和反光仍保留。
+· 全局恢复默认
+  外观 → 主题预设 →「全局恢复默认」，确认后恢复极光浅色、背景光斑、光环、字体、
+  卡片与底栏、字段显隐、布局默认策略和自定义 CSS，页面自动刷新。
+  已保存的外观方案、备份路径、数据刷新间隔与充电记录保留；温控 / 电池运行设置不变。
+  只在需要还原整套外观时使用；建议先把当前外观保存成方案，以后可重新应用。
 · 流畅模式
-  卡顿时打开：关掉光斑漂移、玻璃模糊、波浪与页面切换动画。开关即时生效。
+  卡顿时打开：保留单个移动光斑，关闭玻璃模糊、波浪、亮点脉冲、闪电与页面切换动画。开关即时生效。
+  普通模式下，滚动时暂时冻结装饰动画，停下约 0.16 秒恢复；光环离屏或面板收起时也会暂停。
+  切到后台时暂停动画与数据轮询，返回前台自动恢复，不影响已有数据刷新间隔。
 · 数据刷新
   主页数据多久拉一次：0.5 秒 / 1 秒（默认）/ 2 秒 / 3 秒 / 5 秒 / 关闭。
-  高频刷新走轻量脚本（一次 awk 读 5 个节点），不会因为刷新而卡；面板里会显示「上次耗时 xx ms」。
+  高频刷新走轻量脚本（一次 awk 读 5 个节点），相同数值不会重复改写显示；设置面板可看「上次耗时 xx ms」。
   选「关闭」后可用「立即刷新」手动取数。
 · 缩放
   界面字体缩放、卡片缩放、卡片圆角，都即时生效。
 · 页面切换动效
-  切换曲线、淡入淡出强度、切换时模糊度。
+  可调切换曲线、淡入淡出强度与标题过渡模糊度；模糊仅作用于标题区域，内容区保留淡入淡出。
 · 质感
-  玻璃卡片质感（透明度、毛玻璃）、开关按钮玻璃质感（模糊、开启/关闭透明度、颜色）、
-  悬浮底栏（宽度、高度、透明度、纯色、模糊、扭曲、隐藏文字、跟随卡片透明度、图标优化、滑动方向）。
+  玻璃卡片质感与卡片透明度；毛玻璃模糊和饱和度在「DIY → 卡片与文字尺寸」中调整。
+  悬浮底栏可调宽度、高度、透明度、纯色、模糊、扭曲、隐藏文字、跟随卡片透明度、图标优化和滑动方向。
 · 自定义背景
-  选一张图片做背景，可调背景模糊；卡片可选毛玻璃。
-  新：之前壁纸被背景底图层盖住不显示，已修复。
-· 颜色
-  分类字体、卡片字体、说明字体各自的颜色与透明度；字体族；
-  温度圈低温/中温/高温配色与阈值；分割线颜色；底栏指示气泡的宽高、颜色、透明度。
+  在「外观 → 自定义背景」点选青柠凝露 / 冰蓝凝露 / 紫晶凝露 / 琥珀凝露，立即启用对应壁纸；
+  四款均为内置静态图片，可离线使用，选择随刷新、升级与外观方案保存；也可恢复默认壁纸或选本地图片。
+  液态水滴壁纸以黑底与折射高光呈现，启用时暂时隐藏光斑与噪点，不改你保存的 DIY 参数；
+  切回本地 / 默认图片或关闭自定义背景后恢复。建议搭配深色主题，背景模糊度设为 0 时边缘最清晰。
+  「清除壁纸」会清除选择并关闭背景；背景模糊与卡片毛玻璃仍可单独调整。
+· 颜色与字体
+  分类字体、卡片字体、说明字体的颜色与透明度；全局字体族；分割线颜色。
 · 显示
   界面字体是否生效、卡片分类标题、卡片注释、顶部注释的显隐。
-· 发光
-  卡片边缘发光、按钮发光、指示气泡发光，各自可调强度与颜色。
 · DIY 美化
   ① 背景光斑与噪点：光斑数量 0~3、大小、模糊、透明度、飘动幅度与速度、背景模糊/饱和度、
-     自动变色周期、噪点开关与强度、三个光斑各自换色。
+     自动变色周期、噪点开关与强度、三个光斑各自换色。八套主题共用默认参数，颜色跟随各自主题：
+     3 个光斑，噪点和自动变色开启；大小 170%、光斑模糊 58px、透明度 1.30×，
+     飘动幅度 38% 视口、速度 9 秒；背景模糊 15px、饱和度 1.90×、变色周期 10 秒、噪点强度 0.20。
+     光斑亮芯沿不同方向持续绕行；「飘动幅度」按屏幕宽高计算，设为 0 则停止位移。
+     v1.0.73 首次打开时重置旧外观（含主题、字体、卡片、底栏、DIY 布局与自定义 CSS），
+     已存方案、备份路径、刷新间隔与充电记录保留；完成后再调整、刷新页面或后续升级不会重复重置。
+     想手动还原时使用主题预设中的「全局恢复默认」。
+     系统开启减少动态效果时光斑静止，滚动 / 切后台时暂时暂停。
   ② 能量光环：圆环粗细、轨道可见度、进度弧发光强度与颜色、末端亮点大小与脉冲速度、
-     中心数字字号与粗细、波浪层数/起伏/速度、液面高度（按电量/固定高度/常亮满格）、
+     中心数字字号与粗细、波浪层数（默认 2 层，可选 1~3 层）/起伏/速度、液面高度（按电量/固定高度/常亮满格）、
      光晕强度与呼吸速度、光晕是否常驻。
   ③ 卡片与文字尺寸：卡片间距、内边距、毛玻璃模糊与饱和度、标题字号、数据格字号、
      卡片/面板/数据格三种圆角。
   ④ 底栏尺寸：悬浮底栏圆角、距底部距离、左右留白、图标大小。
-  ⑤ 主页字段与卡片显隐：数据格列数（自动/2/3）、11 个字段逐项显隐、面板默认状态、
+  ⑤ 主页字段与卡片显隐：数据格列数（自动/2/3）、13 个字段逐项显隐、面板默认状态、
      每张卡片逐项显隐（开关式，不涉及拖动）、恢复默认布局。
   ⑥ 外观方案与自定义 CSS：把当前外观存成方案随时切换，方案可导入导出；也能直接贴一段 CSS。
 
@@ -3821,28 +3911,28 @@ const USAGE_TEXT = `使用说明（按页面看）
 · 更新日志
   查看各版本改动。
 · 工具
-  运行日志、机型档案、诊断包（反馈问题前先导一份诊断包，里面包含温控、电池、无线与 dmesg 现场）。
-  「采集充电快照」分两项：二改版 / 原版解容。会把当前所有充电与电池节点（power_supply、xm_power、
-  BAA 载荷、device-tree 充电参数、温控表）写成一个 txt 到 Download，用于两个版本逐项对比。
-  两种测法：① 先装原版工具箱采一份 stock，卸掉再装二改版采一份 mod（同电量、同充电方式）；
-  ② 不换装，把「电池解容」「云控屏蔽」关掉采一份当基准，再打开采一份当对比。
-  采集脚本不依赖模块目录，也可以拷到 /data/local/tmp 手动跑：sh snapshot_charge.sh （自动识别环境）。
+  运行日志、机型档案、诊断包（反馈问题前先导一份诊断包）。
+  诊断包按【00-总览 / 10-温控 / 20-解容 / 30-节点 / 40-系统】分区：
+  00-总览一页看清设备/版本/档位/降功率联动判定/解容状态；10-温控含联动自检、关键事件与配置运行标记；
+  20-解容含完整文本诊断与状态（功率档/电压/PPS/循环/APL）；30-节点含充电/电池/无线/BAA/DT 现场；
+  40-系统含机型信息、关键脚本校验值、进程、dmesg、logcat。敏感信息自动脱敏，整个包直接发即可。
 · 备份与恢复
   普通备份只含界面设置；完整备份包含 config/ 与 profiles/，可跨版本迁移。
   「立即备份当前设置」：把功率档 / 满电电压 / PPS / 循环伪装 / APL / 温控配置同步到模块目录外，
   之后升级或重装模块会自动恢复；改设置时也会自动同步，这里是手动再补一次。
   也可以通过提示框粘贴 JSON 直接恢复界面设置。
 · 恢复默认配置
-  清空外观相关设置（主题、缩放、质感、颜色、DIY 等），模块运行参数不受影响。
+  与外观 → 主题预设的「全局恢复默认」相同；只还原外观，保留方案、刷新间隔、记录与模块运行参数。
 
 ━━ 其他提示 ━━
 
-· 模块更新会自动保留你的设置（含解容配置与电压档位），无需重新配置。
+· 模块更新会自动保留温控与电池设置（含解容配置与电压档位），无需重新配置。
+  v1.0.73 首次打开时外观恢复默认一次，之后重新调整会保留。
 · 某页卡片不见了：外观 → DIY 美化 → 主页字段与卡片显隐 → 恢复默认布局。
 · 读不到数据：先看关于页「运行环境」，确认命令通道被识别；仍失败可重启管理器或重新授权。
 · 反馈问题请附：机型、系统版本、模块版本、诊断包。
 
-2026年11月1日 · 小米热炸了`;
+2026年11月2日 · 小米热炸了`;
 
 function openUsage(){
   let mask = document.getElementById('usageMask');
@@ -3969,7 +4059,8 @@ function bkKV(t){
 }
 function bkTxt(id, v){
   const e = document.getElementById(id);
-  if (e) e.textContent = (v === undefined || v === null || v === '') ? '--' : v;
+  const text = (v === undefined || v === null || v === '') ? '--' : String(v);
+  if (e && e.textContent !== text) e.textContent = text;
 }
 function bkPair(key, v){
   bkTxt('bk' + key, v);
@@ -4001,7 +4092,10 @@ function bkApplyFast(kv){
     ringEl.classList.toggle('charg', window.__stShown === 'Charging');
     ringEl.classList.toggle('dischg', window.__stShown === 'Discharging');
     const socPct = parseFloat(kv.soc);
-    if (isFinite(socPct)) ringEl.style.setProperty('--p', Math.max(0, Math.min(100, socPct)).toFixed(2));
+    if (isFinite(socPct)) {
+      const pct = Math.max(0, Math.min(100, socPct)).toFixed(2);
+      if (ringEl.style.getPropertyValue('--p') !== pct) ringEl.style.setProperty('--p', pct);
+    }
   }
   const uv = parseFloat(kv.voltage_uv);
   bkPair('Volt', (isFinite(uv) && uv > 0) ? (uv / 1000000).toFixed(3) : '--');
@@ -4010,31 +4104,364 @@ function bkApplyFast(kv){
   // 部分机型充电时 current_now 给负数，界面按“充电为正、放电为负”统一
   if (charging && isFinite(ma) && ma < 0) ma = -ma;
   bkPair('Cur', isFinite(ma) ? (ma / 1000).toFixed(2) : '--');
-  // status_kv 的 power_w 是档位名（inf/fast/mid/slow），不是瓦数；
-  // 真正的功率是 battery_power_w（电流×电压的绝对值），放电时补负号。
+  // status_kv 的 power_w 是档位名，不是瓦数；真正的功率是 battery_power_w（电流×电压绝对值）。
+  // 符号按去抖后的 __stShown 算：满电维持期系统 status 在 Charging/Discharging 间抖，
+  // 若按当拍 status 算，同一秒符号会在 ±9.5W 之间乱跳（用户看到的「功率跳舞」）。
   const bp = parseFloat(kv.battery_power_w);
-  let ptxt = '--';
-  if (isFinite(bp) && bp >= 0) ptxt = (charging ? bp : -bp).toFixed(1);
-  bkTxt('sPower', ptxt);
+  const shownCharging = (window.__stShown === 'Charging' || window.__stShown === 'Full');
+  let dispP = isFinite(bp) && bp >= 0 ? (shownCharging ? bp : -bp) : NaN;
+  // 满电维持：soc 顶格且电芯电流已转放电方向（诊断包实证：soc=100 current=-1913mA status=Charging），
+  // 只是维持负载从电池流过，不是充电。连续 4 拍满足才置 0，避免抖动误判。
+  const socN = parseFloat(kv.soc), maRaw = parseFloat(kv.battery_current_ma);
+  window.__fillCnt = (shownCharging && socN >= 99.5 && isFinite(maRaw) && maRaw < 0) ? (window.__fillCnt || 0) + 1 : 0;
+  if (window.__fillCnt >= 4) dispP = 0;
+  // 秒级毛刺平滑（EMA）：跳变 > 40W（充电泵调脉冲）时直接跟随，否则衰减缝合
+  if (isFinite(dispP)) {
+    const prev = window.__pwrEma;
+    window.__pwrEma = (prev === undefined || !isFinite(prev) || Math.abs(dispP - prev) > 40)
+      ? dispP : prev * 0.65 + dispP * 0.35;
+    if (prev === undefined || !isFinite(prev)) window.__pwrEma = dispP;
+  }
+  bkTxt('sPower', isFinite(dispP) ? window.__pwrEma.toFixed(1) : '--');
   const tc = parseFloat(kv.temp_c);
   bkPair('Temp', isFinite(tc) ? (tc / 10).toFixed(1) : '--');
+  // 容量/健康度/循环/充电协议由 status_fast.sh 每拍提供；读空沿用上次值，避免闪成 --/0
+  if (kv.charge_design_mah) window.__lastDes = kv.charge_design_mah;
+  if (kv.charge_full_mah) window.__lastFull = kv.charge_full_mah;
+  bkPair('Des', window.__lastDes || '');
+  bkPair('Full', window.__lastFull || '');
+  const _fd = parseFloat(window.__lastDes), _ff = parseFloat(window.__lastFull);
+  bkPair('Health', (_fd > 0 && _ff > 0) ? Math.round(_ff / _fd * 100) : '');
+  // 循环次数显示真实值（qmax_cyclecount，不受伪装影响）
+  bkPair('Cycle', kv.cycle_real || kv.cycle);
+  const protoMap = { PD_PPS: 'PPS', PD: 'PD', USB_DCP: 'DCP', USB_CDP: 'CDP', USB_SDP: 'SDP', UNKNOWN: '未知' };
+  const plugged = (kv.status === 'Charging' || kv.status === 'Full' || kv.status === 'Not charging');
+  bkTxt('pcProto', plugged ? (protoMap[(kv.charge_proto || '').toUpperCase()] || kv.charge_proto || '--') : '未插入充电器');
+  curvePush(isFinite(dispP) ? dispP : NaN,
+            isFinite(tc) ? tc / 10 : NaN,
+            parseFloat(kv.soc));
+  chargeTrack(kv, shownCharging, dispP, tc);
+}
+
+/* ===== 主页扩展：实时曲线 / 电池详情 / 充电协议 / 温区 ===== */
+/* 曲线数据随轮询节拍入列（默认 1 秒一拍），窗口最近 120 点；
+   功率 / 温度 / 电量三条可多选叠加，各自归一化；
+   页面隐藏时轮询定时器已停，离屏时 IntersectionObserver 打 fx-paused 跳过重绘 */
+const CURVE_MAX = 120;
+const CURVE_SERIES = [
+  { id:'w',   l:'功率', color:'#4A9EFF', unit:'W',  fix:1 },
+  { id:'t',   l:'温度', color:'#FF9F0A', unit:'℃', fix:1 },
+  { id:'soc', l:'电量', color:'#30D158', unit:'%',  fix:0 }
+];
+window.__curve = { d:{ w:[], t:[], soc:[] }, on:{ w:true, t:true, soc:false } };
+function curvePush(w, t, soc){
+  const c = window.__curve;
+  c.d.w.push(w); c.d.t.push(t); c.d.soc.push(soc);
+  if (c.d.w.length > CURVE_MAX) { c.d.w.shift(); c.d.t.shift(); c.d.soc.shift(); }
+  drawCurve();
+}
+function curveToggle(id){
+  const on = window.__curve.on;
+  on[id] = !on[id];
+  renderCurveChips();
+  drawCurve();
+}
+function renderCurveChips(){
+  const el = document.getElementById('curveChips');
+  if (!el) return;
+  el.innerHTML = CURVE_SERIES.map(function(s){
+    return '<div class="chip' + (window.__curve.on[s.id] ? ' active' : '')
+      + '" onclick="curveToggle(\'' + s.id + '\')"><span>' + s.l + '</span></div>';
+  }).join('');
+}
+function initCurve(){
+  renderCurveChips();
+  drawCurve();
+}
+
+/* ===== 充电记录 ===== */
+/* 监听充电状态变化：Charging 开始会话，Discharging/Full 结束会话并保存。
+   每条记录：起止时间戳、峰值功率/温度、平均功率、起止电量、持续秒数。
+   localStorage 存 ht_charge_records，最多 10 条，电池页显示最近 5 条。 */
+window.__chargeSession = null;
+function chargeTrack(kv, charging, bp, tc){
+  const soc = parseFloat(kv.soc);
+  const now = Date.now();
+  const s = window.__chargeSession;
+  if (charging && !s) {
+    window.__chargeSession = {
+      start: now, peakW: 0, peakT: 0, sumW: 0, cnt: 0,
+      startSoc: isFinite(soc) ? soc : null, endSoc: null
+    };
+  } else if (!charging && s) {
+    s.end = now;
+    s.endSoc = isFinite(soc) ? soc : null;
+    if (s.cnt > 0) s.avgW = s.sumW / s.cnt;
+    saveChargeRecord(s);
+    window.__chargeSession = null;
+    renderChargeRecords();
+  } else if (s && charging) {
+    if (isFinite(bp) && bp > s.peakW) s.peakW = bp;
+    if (isFinite(tc) && tc > s.peakT) s.peakT = tc;
+    if (isFinite(bp)) { s.sumW += bp; s.cnt++; }
+    s.endSoc = isFinite(soc) ? soc : null;
+  }
+}
+function saveChargeRecord(rec){
+  try {
+    const arr = JSON.parse(localStorage.getItem('ht_charge_records') || '[]');
+    arr.unshift({
+      start: rec.start, end: rec.end || Date.now(),
+      peakW: rec.peakW, peakT: rec.peakT, avgW: rec.avgW || 0,
+      startSoc: rec.startSoc, endSoc: rec.endSoc,
+      dur: Math.round(((rec.end || Date.now()) - rec.start) / 1000)
+    });
+    localStorage.setItem('ht_charge_records', JSON.stringify(arr.slice(0, 10)));
+  } catch(e){}
+}
+function chargeRecClear(){
+  try { localStorage.removeItem('ht_charge_records'); } catch(e){}
+  renderChargeRecords();
+  toast('已清空充电记录');
+}
+function fmtChargeTime(ts){
+  const d = new Date(ts);
+  const pad = n => n < 10 ? '0' + n : n;
+  return (d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+function fmtDur(sec){
+  if (sec < 60) return sec + '秒';
+  const m = Math.floor(sec / 60), s = sec % 60;
+  if (m < 60) return m + '分' + (s > 0 ? s + '秒' : '');
+  const h = Math.floor(m / 60), mm = m % 60;
+  return h + '小时' + mm + '分';
+}
+function renderChargeRecords(){
+  const box = document.getElementById('chargeRecList');
+  if (!box) return;
+  let arr;
+  try { arr = JSON.parse(localStorage.getItem('ht_charge_records') || '[]'); } catch(e){ arr = []; }
+  if (!arr.length) {
+    box.innerHTML = '<div class="pref-desc" style="text-align:center;padding:16px 0">暂无充电记录（充电结束后自动保存）</div>';
+    return;
+  }
+  box.innerHTML = arr.slice(0, 5).map(function(r, i){
+    const socStr = (r.startSoc != null && r.endSoc != null) ? Math.round(r.startSoc) + '% → ' + Math.round(r.endSoc) + '%' : '--';
+    return '<div class="info-row" style="padding:10px 0' + (i > 0 ? ';border-top:.5px solid rgba(var(--divider-line-rgb),var(--divider-line-alpha))' : '') + '">' +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="font-size:calc(13px * var(--fs));font-weight:600;color:var(--font-card)">' + fmtChargeTime(r.start) + ' ~ ' + fmtChargeTime(r.end) + '</div>' +
+        '<div style="font-size:calc(11px * var(--fs));color:var(--font-desc);margin-top:3px">' + socStr + ' · ' + fmtDur(r.dur) + '</div>' +
+      '</div>' +
+      '<div style="text-align:right;font-size:calc(12px * var(--fs));color:var(--text)">' +
+        '<div>峰值 ' + r.peakW.toFixed(1) + ' W</div>' +
+        '<div style="color:var(--font-desc);font-size:calc(10px * var(--fs))">均 ' + (r.avgW || 0).toFixed(1) + ' W · ' + r.peakT.toFixed(1) + '℃</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+function drawCurve(){
+  const cv = document.getElementById('curveCv');
+  if (!cv || cv.classList.contains('fx-paused')) return;
+  const c = window.__curve;
+  const dpr = window.devicePixelRatio || 1;
+  const cw = cv.clientWidth, ch = cv.clientHeight;
+  if (!cw) return;
+  if (cv.width !== Math.round(cw * dpr) || cv.height !== Math.round(ch * dpr)) {
+    cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
+  }
+  const ctx = cv.getContext('2d');
+  if (!ctx) return;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, cw, ch);
+  const dim = getComputedStyle(document.body).getPropertyValue('--text-tertiary').trim() || 'rgba(128,128,128,.6)';
+  const isFin = function(v){ return isFinite(v); };
+  const active = CURVE_SERIES.filter(function(s){ return c.on[s.id] && c.d[s.id].some(isFin); });
+  if (!active.length) {
+    ctx.fillStyle = dim; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('在上方勾选要显示的曲线', cw / 2, ch / 2);
+    const st0 = document.getElementById('curveStat');
+    if (st0) st0.textContent = '等待数据…';
+    return;
+  }
+  /* 绘图区统一在左侧（右侧 55px 留给刻度值）；所有曲线共用同一 x 映射 */
+  const x = function(idx){ return 3 + (idx / (CURVE_MAX - 1)) * (cw - 63); };
+  const plotR = cw - 60;
+  /* 主曲线（第一条激活）的量程，用于刻度值标定 */
+  const mainS = active[0];
+  const mainRange = (function(){
+    const valid = c.d[mainS.id].filter(isFin);
+    let min = Math.min(0, Math.min.apply(null, valid));
+    let max = Math.max.apply(null, valid);
+    if (min < 0) max = Math.max(max, 0);
+    if (max - min < 1e-6) { max += 0.5; min -= 0.5; }
+    const pad = (max - min) * 0.14;
+    return { min: min - pad, max: max + pad, fix: mainS.fix, unit: mainS.unit };
+  })();
+  // 水平网格线（5 条）+ 主曲线刻度值（右侧小字，从顶到底）
+  const gridLines = 5;
+  ctx.strokeStyle = dim; ctx.lineWidth = 0.5; ctx.setLineDash([2, 3]);
+  ctx.fillStyle = dim; ctx.font = '9px sans-serif';
+  for (let g = 0; g <= gridLines; g++) {
+    const gy = 10 + (g / gridLines) * (ch - 20);
+    ctx.beginPath(); ctx.moveTo(3, gy); ctx.lineTo(plotR, gy); ctx.stroke();
+    const gval = mainRange.max - (g / gridLines) * (mainRange.max - mainRange.min);
+    ctx.textAlign = 'right';
+    ctx.fillText(gval.toFixed(mainRange.fix) + mainRange.unit, cw - 4, gy + 3);
+  }
+  ctx.setLineDash([]);
+  active.forEach(function(s){
+    const data = c.d[s.id];
+    const valid = data.filter(isFin);
+    let min, max;
+    if (s === mainS) {
+      // 主曲线复用刻度量程，刻度值与曲线精确对齐
+      min = mainRange.min; max = mainRange.max;
+    } else {
+      min = Math.min(0, Math.min.apply(null, valid));
+      max = Math.max.apply(null, valid);
+      if (min < 0) max = Math.max(max, 0);
+      if (max - min < 1e-6) { max += 0.5; min -= 0.5; }
+      const pad0 = (max - min) * 0.14;
+      max += pad0; min -= pad0;
+    }
+    const y = function(v){ return ch - 10 - ((v - min) / (max - min)) * (ch - 22); };
+    const off = CURVE_MAX - data.length;
+    let firstIdx = -1, lastIdx = -1;
+    for (let k = 0; k < data.length; k++) if (isFin(data[k])) { firstIdx = k; break; }
+    for (let k = data.length - 1; k >= 0; k--) if (isFin(data[k])) { lastIdx = k; break; }
+    const path = new Path2D();
+    let started = false;
+    data.forEach(function(v, k){
+      if (!isFin(v)) return;
+      const px = x(k + off), py = y(v);
+      if (!started) { path.moveTo(px, py); started = true; }
+      else path.lineTo(px, py);
+    });
+    ctx.lineWidth = 2; ctx.strokeStyle = s.color; ctx.stroke(path);
+    const fill = new Path2D(path);
+    fill.lineTo(x(lastIdx + off), ch - 10); fill.lineTo(x(firstIdx + off), ch - 10); fill.closePath();
+    ctx.fillStyle = s.color + (active.length > 1 ? '18' : '44');
+    ctx.fill(fill);
+    ctx.beginPath(); ctx.arc(x(lastIdx + off), y(data[lastIdx]), 3, 0, Math.PI * 2);
+    ctx.fillStyle = s.color; ctx.fill();
+    ctx.fillStyle = s.color; ctx.font = '10px sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText(data[lastIdx].toFixed(s.fix) + s.unit, x(lastIdx + off) - 6, y(data[lastIdx]) - 5);
+  });
+  ctx.font = '10px sans-serif';
+  let lx = 5;
+  active.forEach(function(s){
+    ctx.fillStyle = s.color; ctx.textAlign = 'left';
+    ctx.fillText(s.l, lx, 11);
+    lx += ctx.measureText(s.l).width + 10;
+  });
+  const stat = document.getElementById('curveStat');
+  if (stat) {
+    const parts = active.map(function(s){
+      const valid = c.d[s.id].filter(isFin);
+      const peak = Math.max.apply(null, valid), low = Math.min.apply(null, valid);
+      return s.l + ' ' + low.toFixed(s.fix) + '~' + peak.toFixed(s.fix) + s.unit;
+    });
+    stat.textContent = '最近 ' + c.d[active[0].id].length + ' 点 · ' + parts.join('，');
+  }
+}
+
+/* 扩展采样结果（detail_kv.sh）落到卡片；键缺失即显示 --（机型不支持该节点） */
+function fmtDiv(v, div, fix){
+  const n = parseFloat(v);
+  return isFinite(n) ? (n / div).toFixed(fix) : '--';
+}
+function detailApply(kv){
+  if (!kv || kv.tzlist === undefined) return;
+  window.__bkDetail = kv;
+  bkTxt('dRm', fmtDiv(kv.rm_uah, 1000, 0));
+  bkTxt('dSoh', kv.soh !== '' ? kv.soh : '--');
+  renderTz(kv.tzlist);
+}
+/* 温区节点名 → 中文（未收录的保留原始节点名） */
+var TZ_ZH = [
+  ['batvery', '电池过热'], ['batt', '电池'], ['conn', '充电接口'],
+  ['charger', '充电芯片'], ['chg', '充电芯片'], ['usb', 'USB 接口'],
+  ['skin', '外壳'], ['quiet', '主板'], ['cpu', '处理器'], ['gpu', 'GPU'],
+  ['camera', '相机'], ['video', '视频'], ['modem', '基带'], ['display', '屏幕'],
+  ['wifi', 'WiFi'], ['npu', 'NPU']
+];
+function tzZhName(tp){
+  const s = tp.toLowerCase();
+  const num = (s.match(/\d+$/) || [''])[0];
+  for (var i = 0; i < TZ_ZH.length; i++){
+    if (s.indexOf(TZ_ZH[i][0]) === 0) return TZ_ZH[i][1] + (num && num !== '0' ? ' ' + num : '');
+  }
+  return tp;
+}
+function renderTz(list){
+  const grid = document.getElementById('dTzGrid');
+  if (!grid) return;
+  const empty = '<div class="mini"><div class="mini-val">--</div><div class="mini-lbl">未检测到温区</div></div>';
+  if (!list) { grid.innerHTML = empty; return; }
+  const cells = list.split(',').map(function(item){
+    const i = item.indexOf(':');
+    if (i < 0) return null;
+    const tp = item.slice(0, i), raw = parseFloat(item.slice(i + 1));
+    const label = tzZhName(tp);
+    // 「充电接口 2」这类重复接口温区不显示；电池温区已由 detail_kv.sh 优先收录
+    if (label === '充电接口 2') return null;
+    // thermal_zone temp 是毫氏度（millidegree），÷1000 得 ℃
+    const c = isFinite(raw) ? (raw / 1000).toFixed(1) + '℃' : '--';
+    return '<div class="mini"><div class="mini-val">' + c
+      + '</div><div class="mini-lbl">' + label + '</div></div>';
+  }).filter(Boolean).slice(0, 8).join('');
+  grid.innerHTML = cells || empty;
+}
+
+/* 沉浸全屏（管理器 WebUI）：管理器默认给 WebView 顶部加安全区 padding，
+   状态栏/导航栏区域露出管理器底色，与页面主题割裂。insets.css 引用后若能拿到
+   有效 inset 就请求 edge-to-edge，让页面背景延伸到系统栏下面（取色随主题）；
+   拿不到变量（老管理器）则保持原状。enableEdgeToEdge 为新版接口名，旧名为 enableInsets。 */
+function enableWebUIEdgeToEdge(){
+  if (document.documentElement.classList.contains('e2e')) return;
+  if (typeof ksu === 'undefined' || !ksu) return;
+  let top = 0;
+  try { top = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--window-inset-top')) || 0; }
+  catch(e){ return; }
+  if (top <= 0) return;
+  try {
+    if (typeof ksu.enableEdgeToEdge === 'function') ksu.enableEdgeToEdge(true);
+    else if (typeof ksu.enableInsets === 'function') ksu.enableInsets(true);
+    else return;
+    document.documentElement.classList.add('e2e');
+  } catch(e){}
 }
 
 /* 高频刷新只跑 status_fast.sh（一次 awk，几十毫秒），慢变字段交给定期完整刷新。
    两把独立的锁：完整刷新慢（可能几百毫秒到数秒）时不能把高频采样一起冻住——
    共用一把锁的旧写法在慢读期间会让界面停止更新，看起来像“刷新卡住”。 */
+/* status.json（温控守护快照：温度/档位/兜底电量）随每秒轮询一并读取。
+   KernelSU 每次 exec 都要新建 root shell 并用 loadUrl 注入回调，
+   每次都是一次可感知的渲染打断，能合就合在同一个命令里。 */
+const BK_STATUS_SEP = '__XJ_STATUS__';
 async function bkRefreshFast(){
-  if (bkBusy) return;
+  if (document.hidden || bkBusy) return;
   if (Date.now() < window.__bkPauseUntil) return;
   bkBusy = true;
   const _now = () => ((window.performance && performance.now) ? performance.now() : Date.now());
   const _t0 = _now();
   try {
-    const raw = await bkSh(BK_DIR + '/status_fast.sh');
-    const kv = bkKV(raw);
-    if (!raw || !kv.soc) return;
-    window.__bkFresh = Date.now();
-    bkApplyFast(kv);
+    /* 扩展采样（剩余容量 / SOH / 温区）每拍拼接在同一条命令里：
+       detail_kv.sh 运行期纯内建 read，不增加可感知耗时与命令打断次数 */
+    const raw = await bkSh(BK_DIR + '/status_fast.sh'
+      + '; sh ' + BK_DIR + '/detail_kv.sh'
+      + '; echo ' + BK_STATUS_SEP + '; cat ' + MODDIR + '/config/status.json 2>/dev/null');
+    if (document.hidden) return;
+    const sep = raw.indexOf(BK_STATUS_SEP);
+    const fastText = sep >= 0 ? raw.slice(0, sep) : raw;
+    const statusText = sep >= 0 ? raw.slice(sep + BK_STATUS_SEP.length) : '';
+    const kv = bkKV(fastText);
+    if (kv.soc) {
+      window.__bkFresh = Date.now();
+      bkApplyFast(kv);
+    }
+    if (kv.tzlist !== undefined) detailApply(kv);
+    if (statusText.trim()) applyStatusSnapshot(statusText);
   } catch(e) {
   } finally {
     bkBusy = false;
@@ -4055,13 +4482,14 @@ async function bkPoll(){
 }
 
 async function bkRefresh(force){
-  if (window.__bkFullBusy) return;
+  if (document.hidden || window.__bkFullBusy) return;
   if (!force && Date.now() < window.__bkPauseUntil) return;
   window.__bkFullBusy = true;
   const _now = () => ((window.performance && performance.now) ? performance.now() : Date.now());
   const _t0 = _now();
   try {
     const raw = await bkSh(BK_DIR + '/status_kv.sh');
+    if (document.hidden) return;
     const kv = bkKV(raw);
     window.__bkKv = kv;
     if (raw && kv.soc) window.__bkFresh = Date.now();
@@ -4077,14 +4505,6 @@ async function bkRefresh(force){
     window.__bkFail = 0;
     bkApplyFast(kv);
 
-    // 慢变字段只在完整刷新时更新（status_fast.sh 不提供这几项）；读空时沿用上次值，避免闪成 --
-    if (kv.charge_design_mah) window.__lastDes = kv.charge_design_mah;
-    if (kv.charge_full_mah) window.__lastFull = kv.charge_full_mah;
-    bkPair('Des', window.__lastDes || '');
-    bkPair('Full', window.__lastFull || '');
-    const _d = parseFloat(window.__lastDes), _f = parseFloat(window.__lastFull);
-    bkPair('Health', (_d > 0 && _f > 0) ? Math.round(_f / _d * 100) : '');
-
     const u = document.getElementById('bkUnlock'); if (u) u.checked = (kv.unlock === '1');
     const ap = document.getElementById('bkApl');
     if (ap && kv.apl_enable !== undefined) ap.checked = (kv.apl_enable === '1');
@@ -4093,15 +4513,6 @@ async function bkRefresh(force){
       if (kv.apl_alive === '1') apd.textContent = '运行中 · 目标 ' + (kv.apl_target_ma || '--') + 'mA / 上限 ' + (kv.apl_cap_ma || '--') + 'mA';
       else if (kv.apl_enable === '1') apd.textContent = (kv.power_limit === 'inf') ? '已开启 · 等待充电时启动' : '已开启 · 切到「全速」功率档才生效';
       else apd.textContent = '全速档按实测硬件上限动态上探，需要「全速」功率档';
-    }
-    const tg = document.getElementById('bkTgState');
-    const tgd = document.getElementById('bkTgDesc');
-    if (tg) {
-      const on = kv.thermal_guard === '1';
-      const alive = kv.thermal_guard_alive === '1';
-      if (!on) { tg.textContent = '未启用'; tg.style.color = 'var(--text-secondary)'; if (tgd) tgd.textContent = '解容侧的自定义温度上限守护，默认不启用（温控档位已不再限制充电电流）'; }
-      else if (alive) { tg.textContent = '运行中'; tg.style.color = 'var(--success)'; if (tgd) tgd.textContent = '上限 ' + (kv.thermal_limit || '--') + '℃ · 动作 ' + (kv.thermal_action || '--'); }
-      else { tg.textContent = '已停止（异常）'; tg.style.color = 'var(--warn)'; if (tgd) tgd.textContent = '开关为开但守护进程没在跑，可关闭后重开或重启设备'; }
     }
     const pp = document.getElementById('bkPps'); if (pp) pp.checked = (kv.freepps === '1');
     const c = document.getElementById('bkCloud'); if (c) c.checked = (kv.cloud_guard === '1');
@@ -4143,9 +4554,7 @@ async function bkRefresh(force){
     bkTxt('voltTermNow', kv.term_v ? (kv.term_v + ' mV') : '未设置');
     // 副标题由上面的生效状态逻辑负责（这行旧文案会把「已生效」盖掉）
     bkTxt('bkCycleDesc', kv.cycle ? ('真实循环 ' + kv.cycle + ' 次，可改为任意显示值') : '把电池循环次数显示为设定值');
-    const hasImg = (kv.dtbo_local === '1') ? 'yes' : 'no';
-    const has = hasImg;
-    if (has === 'yes') {
+    if (kv.dtbo_local === '1' && kv.dtbo_os4 === '1') {
       const _df = (kv.dtbo_flash || '').trim();
       const _dt = (kv.dtbo_flash_time || '').trim();
       if (_df === 'OK') {
@@ -4159,11 +4568,17 @@ async function bkRefresh(force){
         bkTxt('bkDtboDesc', '上次刷入 ' + (_df || '') + '（' + (_dt || '') + '），点击重试或看诊断包');
       } else {
         bkTxt('bkDtboState', '可刷入');
-        bkTxt('bkDtboDesc', '点击刷入内置的本机解容 DTBO（刷前自动备份）');
+        bkTxt('bkDtboDesc', '内置镜像 ' + kv.dtbo_image + ' · 点击刷入，刷前自动备份');
       }
+    } else if (kv.dev_code === 'unsupported') {
+      bkTxt('bkDtboState', '未适配');
+      bkTxt('bkDtboDesc', '上游未提供本机 DTBO，不会使用其它机型镜像');
+    } else if (kv.dtbo_local === '1') {
+      bkTxt('bkDtboState', '系统不支持');
+      bkTxt('bkDtboDesc', '已内置本机镜像 ' + kv.dtbo_image + '，仅支持 HyperOS 4 刷入');
     } else {
-      bkTxt('bkDtboState', '--');
-      bkTxt('bkDtboDesc', '未找到本机镜像，可在 KernelSU 管理器中重装模块');
+      bkTxt('bkDtboState', '资源缺失');
+      bkTxt('bkDtboDesc', '本机 ' + (kv.dev_code || '未知') + ' 的 DTBO 资源缺失，请重新安装完整模块包');
     }
   } finally {
     window.__bkFullBusy = false;
@@ -4328,7 +4743,11 @@ async function bkDtboFlash(){
   const st = document.getElementById('bkDtboState');
   const kv = window.__bkKv || {};
   // 只看镜像是否存在（已刷入也要能重刷），不再用文字判断
-  if (!st || kv.dtbo_local !== '1') { toast('本机没有可刷入的镜像'); return; }
+  if (!st || kv.dtbo_local !== '1') {
+    toast(kv.dev_code === 'unsupported' ? '上游未提供本机 DTBO 镜像' : '本机镜像资源缺失，请重新安装完整模块包');
+    return;
+  }
+  if (kv.dtbo_os4 !== '1') { toast('内置 DTBO 仅支持 HyperOS 4 刷入'); return; }
   const go = await showModal(
     '刷入解容 DTBO',
     '将把内置的本机解容 DTBO 写入当前槽。\n\n刷写前会自动整分区备份到 Download/dtbo_backup，写入后按整分区校验；重启后生效。',
@@ -4473,6 +4892,7 @@ async function bkCycleClear(){
 }
 
 function bkShouldRefresh(){
+  if (document.hidden) return false;
   return ['page-console', 'page-battery'].some(function(id){
     const el = document.getElementById(id);
     return el && el.classList.contains('active');
@@ -4480,7 +4900,7 @@ function bkShouldRefresh(){
 }
 setTimeout(function(){ if (bkShouldRefresh()) bkRefresh(); }, 1500);
 
-function setTxt(id,v){const e=document.getElementById(id);if(e)e.textContent=(v===undefined||v===null||v==='')?'--':v;}
+function setTxt(id,v){ bkTxt(id,v); }
 
 function openLink(url){
   try {
@@ -4502,16 +4922,46 @@ function getAllBackupKeys(){
   } catch(e){}
   return keys;
 }
-function restoreDefaults(){
-  if(!window.confirm('确定要将所有外观设置恢复为默认配置吗？\n\n此操作不可撤销，完成后页面将自动刷新。')) return;
+function resetAppearanceSettings(){
+  const keys = new Set([
+    'ht_skin','ht_theme','ht_accent','ht_swipe_easing','ht_fade_strength','ht_page_blur','ht_icon_opt','ht_swipe_reverse',
+    'ht_glass','ht_liquid_glass','ht_card_alpha','ht_frost','ht_switch_glass','ht_switch_blur','ht_switch_on_alpha','ht_switch_off_alpha',
+    'ht_switch_preset','ht_switch_accent_c','ht_floating','ht_hidetabtext','ht_bar_alpha','ht_bar_solid','ht_bar_solid_c',
+    'ht_bar_blur','ht_bar_blur_on','ht_bar_follow_card','ht_bar_distort','ht_ind_w','ht_ind_h','ht_ind_a','ht_ind_c',
+    'ht_fc_cat','ht_fc_card','ht_fc_desc','ht_fca_cat','ht_fca_card','ht_fca_desc','ht_app_font',
+    'ht_temp_low','ht_temp_mid','ht_temp_high','ht_temp_t1','ht_temp_t2','ht_divider_c','ht_divider_a',
+    'ht_show_category','ht_show_desc','ht_show_top_note','ht_cg','ht_bg','ht_cg_color','ht_bg_color',
+    'ht_cardglow_on','ht_btnglow_on','ht_indglow_on','ht_wp_blur','ht_wp_on','ht_wp_url','ht_wp_preset',
+    'ht_diy_blob_n','ht_diy_fill_mode','ht_diy_home_cols','ht_diy_home_hidden','ht_diy_hidden_cards',
+    'ht_diy_panel','ht_diy_home_order','ht_diy_css'
+  ]);
+  [SCALE_DEFS, DIY_SLIDERS, DIY_SWITCHES, DIY_COLORS].forEach(defs => {
+    Object.values(defs).forEach(d => keys.add(d.key));
+  });
+  keys.forEach(k => localStorage.removeItem(k));
+  getAllBackupKeys().forEach(k => {
+    if(k.startsWith('ht_diy_order_') || k.startsWith('ht_diy_rows_')) localStorage.removeItem(k);
+  });
+}
+function migrateAppearance(){
+  // 完成标记不纳入 ht_* 备份，避免应用旧方案后再次重置外观。
+  const key = 'xj_appearance_revision', revision = '1.0.73';
+  if(localStorage.getItem(key) === revision) return;
+  resetAppearanceSettings();
+  localStorage.setItem(key, revision);
+}
+async function restoreDefaults(){
+  const go = await showModal('全局恢复默认',
+    '将恢复极光浅色及全部外观：背景光斑、光环、字体、卡片、底栏、DIY 布局和自定义 CSS。\n\n已保存的外观方案、备份路径、刷新间隔与充电记录保留；温控和电池设置不变。\n\n确认后页面自动刷新，未保存为方案的外观调整会被清除。',
+    '恢复默认', '取消');
+  if(!go) return;
   try {
-    
-    const keep = ['ht_backup_path'];
-    getAllBackupKeys().forEach(k => {
-      if(keep.indexOf(k) === -1) localStorage.removeItem(k);
-    });
-  } catch(e){}
-  toast('已恢复默认配置');
+    resetAppearanceSettings();
+  } catch(e){
+    toast('恢复失败：无法写入浏览器存储');
+    return;
+  }
+  toast('外观已恢复默认，正在刷新');
   setTimeout(() => { try { location.reload(); } catch(e){} }, 700);
 }
 function utf8ToBase64(str){
@@ -5061,12 +5511,12 @@ function onPageBlurInput(v){
   try { localStorage.setItem('ht_page_blur', String(n)); } catch(e){}
 }
 function editPageBlur(){
-  const v = window.prompt('页面切换模糊度（0-30，0 为不模糊）', String(getPageBlur()));
+  const v = window.prompt('标题过渡模糊度（0-30，0 为不模糊）', String(getPageBlur()));
   if(v === null) return;
   const n = parseInt(v);
   if(isNaN(n)){ toast('请输入 0-30 的数字'); return; }
   onPageBlurInput(n);
-  toast('页面切换模糊度已设为 ' + Math.min(30, Math.max(0, n)));
+  toast('标题过渡模糊度已设为 ' + Math.min(30, Math.max(0, n)));
 }
 function initPageBlur(){
   const v = getPageBlur();
@@ -5086,233 +5536,6 @@ function initSwipeEasing(){
   initPageBlur();
 }
 
-
-function updateSwitchGlassSub(){
-  const on = document.getElementById('switch_glass') && document.getElementById('switch_glass').checked;
-  const el = document.getElementById('switchGlassSub');
-  if(el) el.textContent = on ? `已开启 · 开关模糊度 ${getSwitchBlur()}` : '开启后所有开关按钮具有玻璃质感';
-}
-function toggleSwitchGlass(){
-  const on = document.getElementById('switch_glass').checked;
-  document.body.classList.toggle('switch-glass', on);
-  try { localStorage.setItem('ht_switch_glass', on ? '1' : '0'); } catch(e){}
-  updateSwitchGlassSub();
-  updateSwitchControlsLockUI();
-  if(on) toast('开关按钮玻璃质感已开启');
-}
-
-function getSwitchBlur(){
-  let v = 6;
-  try { const s = localStorage.getItem('ht_switch_blur'); if(s!==null) v=parseInt(s); if(isNaN(v)) v=6; } catch(e){}
-  return Math.min(30, Math.max(0, v));
-}
-function applySwitchBlur(v){ document.documentElement.style.setProperty('--switch-blur', v); }
-function refreshSwitchBlurUI(v){
-  const r = document.getElementById('swbRange');
-  const t = document.getElementById('swbVal');
-  if(r) r.value = v;
-  if(t) t.textContent = v;
-}
-function clearPresetHighlight(){
-  if(switchPresetId){
-    switchPresetId = null;
-    try { localStorage.removeItem('ht_switch_preset'); } catch(e){}
-    renderSwitchPresetChips();
-  }
-}
-function setSwitchBlur(v){
-  v = parseInt(v);
-  if(isNaN(v)){ toast('请输入有效数值'); return; }
-  v = Math.min(30, Math.max(0, v));
-  applySwitchBlur(v);
-  refreshSwitchBlurUI(v);
-  try { localStorage.setItem('ht_switch_blur', String(v)); } catch(e){}
-  updateSwitchGlassSub();
-  clearPresetHighlight();
-}
-function onSwitchBlurInput(v){ setSwitchBlur(v); }
-function editSwitchBlur(){
-  const cur = getSwitchBlur();
-  const input = prompt('请输入 0 - 30 之间的数值（开关按钮模糊度）', cur);
-  if(input === null) return;
-  setSwitchBlur(input);
-}
-
-function getSwitchAlpha(kind){
-  const def = kind === 'on' ? 0.70 : 0.35;
-  const key = kind === 'on' ? 'ht_switch_on_alpha' : 'ht_switch_off_alpha';
-  let v = def;
-  try { const s = localStorage.getItem(key); if(s!==null) v=parseFloat(s); if(isNaN(v)) v=def; } catch(e){}
-  return Math.min(1, Math.max(0.10, v));
-}
-function applySwitchAlpha(kind, v){
-  const css = kind === 'on' ? '--switch-on-alpha' : '--switch-off-alpha';
-  document.documentElement.style.setProperty(css, v);
-}
-function refreshSwitchAlphaUI(kind, v){
-  const rid = kind === 'on' ? 'swOnRange' : 'swOffRange';
-  const vid = kind === 'on' ? 'swOnVal'   : 'swOffVal';
-  const r = document.getElementById(rid);
-  const t = document.getElementById(vid);
-  if(r) r.value = v;
-  if(t) t.textContent = v.toFixed(2);
-}
-function setSwitchAlpha(kind, v){
-  v = parseFloat(v);
-  if(isNaN(v)){ toast('请输入有效数值'); return; }
-  v = Math.min(1, Math.max(0.10, Math.round(v*100)/100));
-  applySwitchAlpha(kind, v);
-  refreshSwitchAlphaUI(kind, v);
-  try {
-    localStorage.setItem(kind === 'on' ? 'ht_switch_on_alpha' : 'ht_switch_off_alpha', String(v));
-  } catch(e){}
-  clearPresetHighlight();
-}
-function onSwitchAlphaInput(kind, v){ setSwitchAlpha(kind, v); }
-function editSwitchAlpha(kind){
-  const cur = getSwitchAlpha(kind);
-  const label = kind === 'on' ? '开启状态' : '关闭状态';
-  const input = prompt(`请输入 0.10 - 1.00 之间的数值（${label}透明度）`, cur.toFixed(2));
-  if(input === null) return;
-  setSwitchAlpha(kind, input);
-}
-
-const SWITCH_PRESETS = [
-  { id:'light',    l:'轻盈', blur:6,  onAlpha:0.70, offAlpha:0.35 },
-  { id:'balanced', l:'均衡', blur:12, onAlpha:0.85, offAlpha:0.55 },
-  { id:'solid',    l:'浓郁', blur:18, onAlpha:0.95, offAlpha:0.75 },
-  { id:'frosty',   l:'霜雾', blur:24, onAlpha:0.60, offAlpha:0.40 }
-];
-let switchPresetId = 'light';
-
-function renderSwitchPresetChips(){
-  const el = document.getElementById('switchPresetChips');
-  if(!el) return;
-  el.innerHTML = SWITCH_PRESETS.map(p =>
-    `<div class="chip${switchPresetId === p.id ? ' active' : ''}" onclick="applySwitchPreset('${p.id}')">${p.l}</div>`
-  ).join('');
-}
-function applySwitchPreset(id){
-  const p = SWITCH_PRESETS.find(x => x.id === id);
-  if(!p) return;
-
-  applySwitchBlur(p.blur);
-  refreshSwitchBlurUI(p.blur);
-  try { localStorage.setItem('ht_switch_blur', String(p.blur)); } catch(e){}
-
-  applySwitchAlpha('on', p.onAlpha);
-  refreshSwitchAlphaUI('on', p.onAlpha);
-  try { localStorage.setItem('ht_switch_on_alpha', String(p.onAlpha)); } catch(e){}
-
-  applySwitchAlpha('off', p.offAlpha);
-  refreshSwitchAlphaUI('off', p.offAlpha);
-  try { localStorage.setItem('ht_switch_off_alpha', String(p.offAlpha)); } catch(e){}
-
-  switchPresetId = id;
-  try { localStorage.setItem('ht_switch_preset', id); } catch(e){}
-
-  updateSwitchGlassSub();
-  renderSwitchPresetChips();
-  toast('已应用预设「' + p.l + '」');
-}
-function initSwitchPreset(){
-  let v = '';
-  try { v = localStorage.getItem('ht_switch_preset') || ''; } catch(e){}
-  if(v && SWITCH_PRESETS.find(p => p.id === v)) switchPresetId = v;
-  else switchPresetId = 'light';
-  renderSwitchPresetChips();
-}
-
-const SWITCH_ACCENT_PALETTE = [
-  {c:'#3482FF', n:'蓝'},{c:'#4A9EFF', n:'浅蓝'},
-  {c:'#07C160', n:'绿'},{c:'#2FD47F', n:'浅绿'},
-  {c:'#FFA940', n:'橙'},{c:'#FF8A00', n:'深橙'},
-  {c:'#FA5151', n:'红'},{c:'#FF6B6B', n:'浅红'},
-  {c:'#FF6BB5', n:'粉'},{c:'#8B5CF6', n:'紫'},
-  {c:'#FFFFFF', n:'白'},{c:'#000000', n:'黑'}
-];
-function getSwitchAccentColor(){
-  try { const v = localStorage.getItem('ht_switch_accent_c'); if(v) return v; } catch(e){}
-  return null;
-}
-function applySwitchAccentColor(){
-  const root = document.documentElement.style;
-  const c = getSwitchAccentColor();
-  if(c){
-    root.setProperty('--switch-on-rgb', hexToRgb(c));
-  } else {
-    root.removeProperty('--switch-on-rgb');
-  }
-}
-function setSwitchAccentColor(color){
-  try { localStorage.setItem('ht_switch_accent_c', color); } catch(e){}
-  applySwitchAccentColor();
-  renderSwitchAccentSwatches();
-  toast('开关强调颜色已更新');
-}
-function resetSwitchAccent(){
-  try { localStorage.removeItem('ht_switch_accent_c'); } catch(e){}
-  applySwitchAccentColor();
-  renderSwitchAccentSwatches();
-  toast('已跟随主题色');
-}
-function renderSwitchAccentSwatches(){
-  const el = document.getElementById('switchAccentSwatches');
-  if(!el) return;
-  const cur = getSwitchAccentColor();
-  el.innerHTML = SWITCH_ACCENT_PALETTE.map(p => {
-    const active = cur && cur.toLowerCase() === p.c.toLowerCase();
-    return `<div class="swatch${active?' active':''}" style="background:${p.c}" title="${p.n}" onclick="setSwitchAccentColor('${p.c}')"></div>`;
-  }).join('');
-}
-
-function isSwitchGlassOn(){
-  const el = document.getElementById('switch_glass');
-  return !!(el && el.checked);
-}
-function updateSwitchControlsLockUI(){
-  const on = isSwitchGlassOn();
-  const ids = ['swbRange','swOnRange','swOffRange','swbVal','swOnVal','swOffVal'];
-  ids.forEach(id => {
-    const el = document.getElementById(id);
-    if(el) el.classList.toggle('locked', !on);
-  });
-  const presetEl = document.getElementById('switchPresetChips');
-  if(presetEl) presetEl.style.pointerEvents = on ? '' : 'none';
-  if(presetEl) presetEl.style.opacity = on ? '' : '0.45';
-  const accEl = document.getElementById('switchAccentSwatches');
-  if(accEl) accEl.classList.toggle('locked', !on);
-  const btnReset = document.getElementById('switchAccentResetBtn');
-  if(btnReset) btnReset.disabled = !on;
-  if(btnReset) btnReset.style.opacity = on ? '' : '0.45';
-}
-function initSwitchGlass(){
-  let v='1';
-  try { v = localStorage.getItem('ht_switch_glass') || '1'; } catch(e){}
-  const on = v==='1';
-  const el = document.getElementById('switch_glass');
-  if(el) el.checked = on;
-  document.body.classList.toggle('switch-glass', on);
-
-  const bv = getSwitchBlur();
-  applySwitchBlur(bv);
-  refreshSwitchBlurUI(bv);
-
-  const aOn = getSwitchAlpha('on');
-  applySwitchAlpha('on', aOn);
-  refreshSwitchAlphaUI('on', aOn);
-
-  const aOff = getSwitchAlpha('off');
-  applySwitchAlpha('off', aOff);
-  refreshSwitchAlphaUI('off', aOff);
-
-  applySwitchAccentColor();
-  renderSwitchAccentSwatches();
-  initSwitchPreset();
-
-  updateSwitchGlassSub();
-  updateSwitchControlsLockUI();
-}
 
 
 
@@ -5392,8 +5615,8 @@ function updateTabIndicator(){
   if(!tabbar || !indicator || !activeTab) return;
   const tabbarRect = tabbar.getBoundingClientRect();
   const tabRect = activeTab.getBoundingClientRect();
-  const wPct = getIndicatorW() / 100;
-  const hPct = getIndicatorH() / 100;
+  const wPct = .83;
+  const hPct = .83;
   const width = tabRect.width * wPct;
   const height = tabRect.height * hPct;
   const left = (tabRect.left - tabbarRect.left) + (tabRect.width - width) / 2;
@@ -5418,35 +5641,45 @@ function updateIconBoostOnce(){
   const icons = document.querySelectorAll('.tab-ico');
   if(!icons.length) return;
   if(!isIconOptOn()){
-    icons.forEach(ic => { ic.style.transform = ''; ic.style.opacity = ''; });
+    icons.forEach(ic => {
+      if (ic.style.transform) ic.style.transform = '';
+      if (ic.style.opacity) ic.style.opacity = '';
+    });
     return;
   }
   const indicator = document.getElementById('tabIndicator');
   if(!indicator) return;
   const ir = indicator.getBoundingClientRect();
   if(ir.width === 0){
-    icons.forEach(ic => { ic.style.transform = ''; ic.style.opacity = ''; });
+    icons.forEach(ic => {
+      if (ic.style.transform) ic.style.transform = '';
+      if (ic.style.opacity) ic.style.opacity = '';
+    });
     return;
   }
   const padX = 2, padY = 6;
-  icons.forEach(ic => {
+  const states = Array.from(icons, ic => {
     const r = ic.getBoundingClientRect();
     const overlap = !(r.right < ir.left - padX || r.left > ir.right + padX ||
                       r.bottom < ir.top - padY || r.top > ir.bottom + padY);
-    if(overlap){
-      ic.style.transform = 'translateY(-2px) scale(1.28)';
-      ic.style.opacity = '1';
-    } else {
-      ic.style.transform = '';
-      ic.style.opacity = '';
-    }
+    return {ic, transform:overlap ? 'translateY(-2px) scale(1.28)' : '', opacity:overlap ? '1' : ''};
+  });
+  states.forEach(({ic, transform, opacity}) => {
+    if (ic.style.transform !== transform) ic.style.transform = transform;
+    if (ic.style.opacity !== opacity) ic.style.opacity = opacity;
   });
 }
 
 function startIconBoostTracking(duration){
   if(iconBoostRafId) cancelAnimationFrame(iconBoostRafId);
+  iconBoostRafId = null;
+  if(document.hidden || !isIconOptOn()){
+    updateIconBoostOnce();
+    return;
+  }
   const endTime = performance.now() + (duration || 500);
   function loop(now){
+    if(document.hidden){ iconBoostRafId = null; return; }
     updateIconBoostOnce();
     if(now < endTime){
       iconBoostRafId = requestAnimationFrame(loop);
@@ -5510,18 +5743,20 @@ function applyDragBlur(px){
   const vw = window.innerWidth || 1;
   const k = Math.min(Math.abs(px) / vw, 1);
   const maxBlur = 8 * (getFadeStrength().value || 0);
+  const title = el.querySelector('.topbar');
   if(k > 0.02 && maxBlur > 0){
-    el.style.filter = 'blur(' + (k * maxBlur).toFixed(2) + 'px)';
+    if(title) title.style.filter = 'blur(' + (k * maxBlur).toFixed(2) + 'px)';
     el.style.opacity = (1 - k * 0.12).toFixed(3);
   } else {
-    el.style.filter = '';
+    if(title) title.style.filter = '';
     el.style.opacity = '';
   }
 }
 function clearDragBlur(){
   document.querySelectorAll('.page').forEach(el => {
-    el.style.filter = '';
-    el.style.opacity = '';
+    const title = el.querySelector('.topbar');
+    if(title && title.style.filter) title.style.filter = '';
+    if(el.style.opacity) el.style.opacity = '';
   });
 }
 function onSwipeStart(e){
@@ -5658,16 +5893,7 @@ function initPanelState(){
 }
 
 
-const ACCENTS={
-  blue:  {l:'蓝', light:'#3482FF', dark:'#4A9EFF'},
-  green: {l:'绿', light:'#07C160', dark:'#2FD47F'},
-  orange:{l:'橙', light:'#FF8A00', dark:'#FFA940'},
-  purple:{l:'紫', light:'#8B5CF6', dark:'#A78BFA'},
-  pink:  {l:'粉', light:'#FF6BB5', dark:'#FF8EC7'},
-  red:   {l:'红', light:'#FA5151', dark:'#FF6B6B'}
-};
-const THEMES=[{id:'system',l:'跟随系统'},{id:'light',l:'浅色'},{id:'dark',l:'深色'}];
-let themeId='system', accentId='blue';
+let themeId='light';
 
 function hexToRgb(h){
   h=h.replace('#','');
@@ -5678,89 +5904,55 @@ function isDarkNow(){
   if(themeId==='light')return false;
   return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 }
-function applyTheme(){
-  const root=document.documentElement;
-  if(themeId==='system') root.removeAttribute('data-theme');
-  else root.setAttribute('data-theme', themeId);
-  applyAccent();
-  applyBarSolidColor();
-  
-  applyFontColors();
-}
-function applyAccent(){
-  const a=ACCENTS[accentId]||ACCENTS.blue;
-  const c=isDarkNow()?a.dark:a.light;
-  const rgb=hexToRgb(c);
-  const root=document.documentElement.style;
-  root.setProperty('--primary', c);
-  root.setProperty('--primary-rgb', rgb);
-  root.setProperty('--primary-light', `rgba(${rgb},.12)`);
-  root.setProperty('--switch-on', c);
-  applySwitchAccentColor();
-}
-function renderThemeChips(){
-  document.getElementById('themeChips').innerHTML=
-    THEMES.map(t=>`<div class="chip${themeId===t.id?' active':''}" onclick="setTheme('${t.id}')">${t.l}</div>`).join('');
-}
-function updateThemeSub(){
-  const t=THEMES.find(x=>x.id===themeId)||THEMES[0];
-  const el=document.getElementById('themeSub');
-  if(el) el.textContent=t.l;
-}
-function setTheme(id){
-  themeId=id;
-  try{localStorage.setItem('ht_theme',id)}catch(e){}
-  applyTheme(); renderThemeChips(); updateThemeSub();
-  renderBarSolidSwatches();
-  
-  try{ const _tl=(THEMES.find(x=>x.id===id)||{}).l||id; logOp('主题切换：'+_tl); }catch(e){}
-}
-function renderAccentSwatches(){
-  document.getElementById('accentSwatches').innerHTML=
-    Object.keys(ACCENTS).map(k=>{
-      const a=ACCENTS[k], c=isDarkNow()?a.dark:a.light;
-      return `<div class="swatch${accentId===k?' active':''}" style="background:${c}" title="${a.l}" onclick="setAccent('${k}')"></div>`;
-    }).join('');
-}
-function updateAccentSub(){
-  const a=ACCENTS[accentId]||ACCENTS.blue;
-  const el=document.getElementById('accentSub');
-  if(el) el.textContent=a.l;
-}
-function setAccent(id){
-  accentId=id;
-  try{localStorage.setItem('ht_accent',id)}catch(e){}
-  applyAccent(); renderAccentSwatches(); updateAccentSub();
-}
-function initAppearance(){
-  try{
-    themeId=localStorage.getItem('ht_theme')||'system';
-    accentId=localStorage.getItem('ht_accent')||'blue';
-  }catch(e){}
-  applyTheme(); renderThemeChips(); renderAccentSwatches();
-  updateThemeSub(); updateAccentSub();
-  if(window.matchMedia){
-    const mq=window.matchMedia('(prefers-color-scheme: dark)');
-    const h=()=>{ if(themeId==='system'){ applyAccent(); renderAccentSwatches(); applyBarSolidColor(); renderBarSolidSwatches(); applyFontColors(); } };
-    mq.addEventListener ? mq.addEventListener('change',h) : mq.addListener(h);
-  }
-}
 
-
-/* ===== 液态玻璃皮肤（参考 1.html / 2.html）===== */
+/* ===== 主题预设 ===== */
 const SKINS=[
   {id:'aurora',       l:'极光浅色', dark:false},
   {id:'holographic',  l:'全息流体', dark:false},
   {id:'neon-dark',    l:'暗黑霓虹', dark:true},
   {id:'aurora-vivid', l:'幻彩极光', dark:true, vivid:true},
   {id:'cyber',        l:'赛博霓虹', dark:true, vivid:true},
-  {id:'lava',         l:'熔岩鎏金', dark:true, vivid:true}
+  {id:'lava',         l:'熔岩鎏金', dark:true, vivid:true},
+  {id:'glacier',      l:'冰川琉璃', dark:false, liquid:true},
+  {id:'moonsea',      l:'月海流银', dark:true, liquid:true}
 ];
 let skinId='aurora';
+function applyLiquidGlass(){
+  const preset = SKINS.find(s => s.id === skinId);
+  const on = diyFlag('ht_liquid_glass', !!(preset && preset.liquid) || DEF_SETTINGS.webui_defaults.liquid_glass);
+  document.body.classList.toggle('liquid-glass', on);
+  document.getElementById('liquid_glass').checked = on;
+  document.getElementById('liquidGlassPref').setAttribute('aria-checked', String(on));
+  document.getElementById('liquidGlassSub').textContent = on
+    ? '已开启 · 高透微凹玻璃、切面高光与轻微折射'
+    : '开启后采用高透微凹玻璃，可搭配任意主题';
+}
+function setLiquidGlass(on){
+  diySave('ht_liquid_glass', on ? '1' : '0');
+  applyLiquidGlass();
+}
+let _liquidLightRaf = 0, _liquidLightX = 0, _liquidLightY = 0;
+function liquidLightMove(e){
+  if(!document.body.classList.contains('liquid-glass') || document.hidden || document.body.classList.contains('ui-scrolling')) return;
+  _liquidLightX = e.clientX;
+  _liquidLightY = e.clientY;
+  if(_liquidLightRaf) return;
+  _liquidLightRaf = requestAnimationFrame(function(){
+    _liquidLightRaf = 0;
+    const x = Math.max(0, Math.min(100, _liquidLightX / Math.max(1, innerWidth) * 100));
+    const y = Math.max(0, Math.min(100, _liquidLightY / Math.max(1, innerHeight) * 100));
+    document.body.style.setProperty('--liquid-mx', x.toFixed(1) + '%');
+    document.body.style.setProperty('--liquid-my', y.toFixed(1) + '%');
+  });
+}
 function applySkin(){
   document.body.setAttribute('data-skin', skinId);
   document.body.classList.add('blob-on');
   document.body.classList.toggle('skin-vivid', !!(SKINS.find(x=>x.id===skinId)||{}).vivid);
+  applyLiquidGlass();
+  applyFontColors();
+  applyBarSolidColor();
+  renderBarSolidSwatches();
 }
 function renderSkinChips(){
   const el=document.getElementById('skinChips');
@@ -5780,8 +5972,8 @@ function setSkin(id){
   themeId = (s && s.dark) ? 'dark' : 'light';
   try{ localStorage.setItem('ht_theme', themeId); }catch(e){}
   document.documentElement.setAttribute('data-theme', themeId);
+  diySave('ht_liquid_glass', s.liquid ? '1' : '0');
   applySkin(); renderSkinChips(); updateSkinSub();
-  renderThemeChips(); updateThemeSub(); renderAccentSwatches();
   try{ logOp('皮肤切换：' + (s?s.l:id)); }catch(e){}
 }
 function initSkin(){
@@ -6076,114 +6268,6 @@ function initBarDistort(){
 }
 
 
-function getIndicatorW(){
-  let v = 83;
-  try { const s = localStorage.getItem('ht_ind_w'); if(s!==null) v=parseFloat(s); } catch(e){}
-  return Math.min(100, Math.max(30, isNaN(v)?83:v));
-}
-function getIndicatorH(){
-  let v = 83;
-  try { const s = localStorage.getItem('ht_ind_h'); if(s!==null) v=parseFloat(s); } catch(e){}
-  return Math.min(100, Math.max(30, isNaN(v)?83:v));
-}
-function getIndicatorAlpha(){
-  let v = 0.05;
-  try { const s = localStorage.getItem('ht_ind_a'); if(s!==null) v=parseFloat(s); } catch(e){}
-  return Math.min(1, Math.max(0.05, isNaN(v)?0.05:v));
-}
-function getIndicatorColor(){
-  let v = null;
-  try { v = localStorage.getItem('ht_ind_c'); } catch(e){}
-  return v || '#FFFFFF';
-}
-function applyIndicator(){
-  const rgb = hexToRgb(getIndicatorColor());
-  const root = document.documentElement.style;
-  root.setProperty('--ind-rgb', rgb);
-  root.setProperty('--ind-alpha', getIndicatorAlpha());
-  root.setProperty('--ind-w', getIndicatorW());
-  root.setProperty('--ind-h', getIndicatorH());
-  updateTabIndicator();
-  startIconBoostTracking(150);
-}
-function onIndicatorInput(type, val){
-  if(type==='w'){
-    let v = Math.min(100, Math.max(30, Math.round(parseFloat(val)||100)));
-    try { localStorage.setItem('ht_ind_w', String(v)); } catch(e){}
-    document.getElementById('iwVal').textContent = v + '%';
-    document.getElementById('iwRange').value = v;
-    document.documentElement.style.setProperty('--ind-w', v);
-    updateTabIndicator();
-    startIconBoostTracking(150);
-  } else if(type==='h'){
-    let v = Math.min(100, Math.max(30, Math.round(parseFloat(val)||100)));
-    try { localStorage.setItem('ht_ind_h', String(v)); } catch(e){}
-    document.getElementById('ihVal').textContent = v + '%';
-    document.getElementById('ihRange').value = v;
-    document.documentElement.style.setProperty('--ind-h', v);
-    updateTabIndicator();
-    startIconBoostTracking(150);
-  } else if(type==='a'){
-    let v = Math.min(1, Math.max(0.05, Math.round((parseFloat(val)||0.15)*100)/100));
-    try { localStorage.setItem('ht_ind_a', String(v)); } catch(e){}
-    document.getElementById('iaVal').textContent = v.toFixed(2);
-    document.getElementById('iaRange').value = v;
-    document.documentElement.style.setProperty('--ind-alpha', v);
-  }
-}
-function editIndicator(type){
-  const cur = type==='w' ? getIndicatorW() : type==='h' ? getIndicatorH() : getIndicatorAlpha();
-  const hint = type==='w' ? '请输入 30 - 100 之间的数值（气泡宽度%）'
-             : type==='h' ? '请输入 30 - 100 之间的数值（气泡高度%）'
-             : '请输入 0.05 - 1.00 之间的数值（气泡透明度）';
-  const def = type==='a' ? cur.toFixed(2) : cur;
-  const input = prompt(hint, def);
-  if(input===null) return;
-  onIndicatorInput(type, input);
-}
-function setIndicatorColor(color){
-  try { localStorage.setItem('ht_ind_c', color); } catch(e){}
-  applyIndicator();
-  renderIndicatorSwatches();
-}
-function resetIndicator(){
-  try { ['ht_ind_w','ht_ind_h','ht_ind_a','ht_ind_c'].forEach(k => localStorage.removeItem(k)); } catch(e){}
-  applyIndicator();
-  renderIndicatorSwatches();
-  document.getElementById('iwRange').value = 83;
-  document.getElementById('iwVal').textContent = '83%';
-  document.getElementById('ihRange').value = 83;
-  document.getElementById('ihVal').textContent = '83%';
-  document.getElementById('iaRange').value = 0.05;
-  document.getElementById('iaVal').textContent = '0.05';
-  toast('已恢复默认');
-}
-const IND_PALETTE = [
-  {c:'#3482FF', n:'蓝'},{c:'#4A9EFF', n:'浅蓝'},{c:'#07C160', n:'绿'},{c:'#2FD47F', n:'浅绿'},
-  {c:'#FFA940', n:'橙'},{c:'#FF8A00', n:'深橙'},{c:'#FA5151', n:'红'},{c:'#FF6B6B', n:'浅红'},
-  {c:'#FF6BB5', n:'粉'},{c:'#8B5CF6', n:'紫'},{c:'#FFFFFF', n:'白'},{c:'#000000', n:'黑'}
-];
-function renderIndicatorSwatches(){
-  const el = document.getElementById('indSwatches');
-  if(!el) return;
-  const cur = getIndicatorColor();
-  el.innerHTML = IND_PALETTE.map(p => {
-    const active = cur && cur.toLowerCase() === p.c.toLowerCase();
-    return `<div class="swatch${active?' active':''}" style="background:${p.c}" title="${p.n}" onclick="setIndicatorColor('${p.c}')"></div>`;
-  }).join('');
-}
-function initIndicator(){
-  const w = getIndicatorW(), h = getIndicatorH(), a = getIndicatorAlpha();
-  document.getElementById('iwRange').value = w;
-  document.getElementById('iwVal').textContent = w + '%';
-  document.getElementById('ihRange').value = h;
-  document.getElementById('ihVal').textContent = h + '%';
-  document.getElementById('iaRange').value = a;
-  document.getElementById('iaVal').textContent = a.toFixed(2);
-  applyIndicator();
-  renderIndicatorSwatches();
-}
-
 
 const FONT_PALETTE = [
   {c:'#000000', n:'黑'},{c:'#333333', n:'深灰'},{c:'#666666', n:'中灰'},{c:'#888888', n:'灰'},
@@ -6326,78 +6410,6 @@ function initAppFont(){
 }
 
 
-const TEMP_PALETTE = [
-  {c:'#07C160', n:'绿'},{c:'#2FD47F', n:'浅绿'},{c:'#3482FF', n:'蓝'},{c:'#4A9EFF', n:'浅蓝'},
-  {c:'#FFA940', n:'橙'},{c:'#FF8A00', n:'深橙'},{c:'#FA5151', n:'红'},{c:'#FF6B6B', n:'浅红'},
-  {c:'#FF6BB5', n:'粉'},{c:'#8B5CF6', n:'紫'},{c:'#FFFFFF', n:'白'},{c:'#000000', n:'黑'}
-];
-const TEMP_DEFAULTS = { low:'#07C160', mid:'#FFA940', high:'#FA5151', t1:40, t2:45 };
-function getTempColor(kind){
-  try { const v = localStorage.getItem('ht_temp_' + kind); return v || TEMP_DEFAULTS[kind]; }
-  catch(e){ return TEMP_DEFAULTS[kind]; }
-}
-function setTempColor(kind, color){
-  try { localStorage.setItem('ht_temp_' + kind, color); } catch(e){}
-  renderTempSwatches();
-  toast('颜色已更新');
-}
-function resetTempColors(){
-  try { ['ht_temp_low','ht_temp_mid','ht_temp_high','ht_temp_t1','ht_temp_t2'].forEach(k => localStorage.removeItem(k)); } catch(e){}
-  renderTempSwatches();
-  initTempThresholds();
-  toast('已恢复默认');
-}
-function getTempThreshold(idx){
-  const key = 'ht_temp_t' + idx;
-  let v = TEMP_DEFAULTS['t'+idx];
-  try { const s = localStorage.getItem(key); if(s!==null) v=parseInt(s); if(isNaN(v)) v=TEMP_DEFAULTS['t'+idx]; } catch(e){}
-  return Math.min(60, Math.max(20, v));
-}
-function setTempThreshold(idx, v){
-  v = parseInt(v);
-  if(isNaN(v)) return;
-  v = Math.min(60, Math.max(20, v));
-  if(idx === 1){
-    const t2 = getTempThreshold(2);
-    if(v >= t2) v = t2 - 1;
-  } else {
-    const t1 = getTempThreshold(1);
-    if(v <= t1) v = t1 + 1;
-  }
-  try { localStorage.setItem('ht_temp_t' + idx, String(v)); } catch(e){}
-  refreshTempThresholdUI(idx, v);
-}
-function onTempTInput(idx, v){ setTempThreshold(idx, v); }
-function refreshTempThresholdUI(idx, v){
-  const r = document.getElementById('tt' + idx + 'Range');
-  const t = document.getElementById('tt' + idx + 'Val');
-  if(r) r.value = v;
-  if(t) t.textContent = v + '°C';
-}
-function editTempT(idx){
-  const cur = getTempThreshold(idx);
-  const input = prompt('请输入 20 - 60 之间的温度值（°C）', cur);
-  if(input === null) return;
-  setTempThreshold(idx, input);
-}
-function renderTempSwatches(){
-  const map = { low: 'tclSwatches', mid: 'tcmSwatches', high: 'tchSwatches' };
-  Object.keys(map).forEach(kind => {
-    const el = document.getElementById(map[kind]);
-    if(!el) return;
-    const cur = getTempColor(kind);
-    el.innerHTML = TEMP_PALETTE.map(p => {
-      const active = cur && cur.toLowerCase() === p.c.toLowerCase();
-      return `<div class="swatch${active?' active':''}" style="background:${p.c}" title="${p.n}" onclick="setTempColor('${kind}','${p.c}')"></div>`;
-    }).join('');
-  });
-}
-function initTempThresholds(){
-  refreshTempThresholdUI(1, getTempThreshold(1));
-  refreshTempThresholdUI(2, getTempThreshold(2));
-}
-function initTempColors(){ renderTempSwatches(); initTempThresholds(); }
-
 
 const DIVIDER_PALETTE = [
   {c:'#F0F0F0', n:'浅灰'},{c:'#E0E0E0', n:'灰'},{c:'#CCCCCC', n:'中灰'},{c:'#999999', n:'深灰'},{c:'#666666', n:'灰黑'},
@@ -6512,146 +6524,6 @@ function initShowTopNote(){
   document.body.classList.toggle('hide-top-note', !on);
 }
 
-
-const GLOW_PALETTE = [
-  {c:'#3482FF', n:'蓝'},{c:'#4A9EFF', n:'浅蓝'},{c:'#07C160', n:'绿'},{c:'#2FD47F', n:'浅绿'},
-  {c:'#FFA940', n:'橙'},{c:'#FF8A00', n:'深橙'},{c:'#FA5151', n:'红'},{c:'#FF6B6B', n:'浅红'},
-  {c:'#FF6BB5', n:'粉'},{c:'#8B5CF6', n:'紫'},{c:'#FFFFFF', n:'白'},{c:'#000000', n:'黑'}
-];
-function getGlow(type){
-  const key = type==='card' ? 'ht_cg' : 'ht_bg';
-  const def = 12;
-  let v=def;
-  try{ const s=localStorage.getItem(key); if(s!==null) v=parseInt(s); if(isNaN(v)) v=def; }catch(e){}
-  return Math.min(24, Math.max(0, v));
-}
-function applyGlow(type, v){
-  const css = type==='card' ? '--card-glow' : '--btn-glow';
-  document.documentElement.style.setProperty(css, v);
-}
-function refreshGlowUI(type, v){
-  const rid = type==='card' ? 'cgRange' : 'bgRange';
-  const vid = type==='card' ? 'cgVal'   : 'bgVal';
-  const r=document.getElementById(rid);
-  const t=document.getElementById(vid);
-  if(r) r.value = v;
-  if(t) t.textContent = v;
-}
-function updateGlowSub(){
-  const cgOn = document.getElementById('card_glow') && document.getElementById('card_glow').checked;
-  const bgOn = document.getElementById('btn_glow') && document.getElementById('btn_glow').checked;
-  const cgs=document.getElementById('cardglowSub');
-  const bgs=document.getElementById('btnglowSub');
-  if(cgs) cgs.textContent = cgOn ? `发光强度 ${getGlow('card')}` : '已关闭';
-  if(bgs) bgs.textContent = bgOn ? `发光强度 ${getGlow('btn')}` : '已关闭';
-}
-function setGlow(type, val){
-  let v = parseInt(val);
-  if(isNaN(v)){ toast('请输入有效数值'); return; }
-  v = Math.min(24, Math.max(0, v));
-  applyGlow(type, v);
-  refreshGlowUI(type, v);
-  try{ localStorage.setItem(type==='card'?'ht_cg':'ht_bg', String(v)); }catch(e){}
-  updateGlowSub();
-}
-function onGlowInput(type, val){ setGlow(type, val); }
-function editGlow(type){
-  const cur=getGlow(type);
-  const input=prompt('请输入 0 - 24 之间的数值', cur);
-  if(input===null) return;
-  setGlow(type, input);
-}
-function toggleCardGlow(){
-  const on=document.getElementById('card_glow').checked;
-  document.body.classList.toggle('card-glow', on);
-  try{ localStorage.setItem('ht_cardglow_on', on?'1':'0'); }catch(e){}
-  updateGlowSub();
-}
-function toggleBtnGlow(){
-  const on=document.getElementById('btn_glow').checked;
-  document.body.classList.toggle('btn-glow', on);
-  try{ localStorage.setItem('ht_btnglow_on', on?'1':'0'); }catch(e){}
-  updateGlowSub();
-}
-
-function getCardGlowColor(){
-  try { const v = localStorage.getItem('ht_cg_color'); if(v) return v; } catch(e){}
-  return isDarkNow() ? '#4A9EFF' : '#3482FF';
-}
-function getBtnGlowColor(){
-  try { const v = localStorage.getItem('ht_bg_color'); if(v) return v; } catch(e){}
-  return isDarkNow() ? '#4A9EFF' : '#3482FF';
-}
-function applyGlowColors(){
-  const root = document.documentElement.style;
-  root.setProperty('--card-glow-rgb', hexToRgb(getCardGlowColor()));
-  root.setProperty('--btn-glow-rgb', hexToRgb(getBtnGlowColor()));
-}
-function setCardGlowColor(color){
-  try { localStorage.setItem('ht_cg_color', color); } catch(e){}
-  applyGlowColors();
-  renderGlowSwatches();
-  toast('卡片发光颜色已更新');
-}
-function setBtnGlowColor(color){
-  try { localStorage.setItem('ht_bg_color', color); } catch(e){}
-  applyGlowColors();
-  renderGlowSwatches();
-  toast('按钮发光颜色已更新');
-}
-function renderGlowSwatches(){
-  const cgEl = document.getElementById('cgColorSwatches');
-  if(cgEl){
-    const cur = getCardGlowColor();
-    cgEl.innerHTML = GLOW_PALETTE.map(p => {
-      const active = cur && cur.toLowerCase() === p.c.toLowerCase();
-      return `<div class="swatch${active?' active':''}" style="background:${p.c}" title="${p.n}" onclick="setCardGlowColor('${p.c}')"></div>`;
-    }).join('');
-  }
-  const bgEl = document.getElementById('bgColorSwatches');
-  if(bgEl){
-    const cur = getBtnGlowColor();
-    bgEl.innerHTML = GLOW_PALETTE.map(p => {
-      const active = cur && cur.toLowerCase() === p.c.toLowerCase();
-      return `<div class="swatch${active?' active':''}" style="background:${p.c}" title="${p.n}" onclick="setBtnGlowColor('${p.c}')"></div>`;
-    }).join('');
-  }
-}
-
-function toggleIndGlow(){
-  const on = document.getElementById('ind_glow').checked;
-  document.body.classList.toggle('ind-glow', on);
-  try{ localStorage.setItem('ht_indglow_on', on?'1':'0'); }catch(e){}
-}
-function initIndGlow(){
-  let v='0';
-  try{ v=localStorage.getItem('ht_indglow_on')||'0'; }catch(e){}
-  const on = v==='1';
-  const el = document.getElementById('ind_glow');
-  if(el) el.checked = on;
-  document.body.classList.toggle('ind-glow', on);
-}
-
-function initGlow(){
-  const cv=getGlow('card'), bv=getGlow('btn');
-  applyGlow('card', cv); refreshGlowUI('card', cv);
-  applyGlow('btn',  bv); refreshGlowUI('btn',  bv);
-
-  let cOn='0', bOn='0';
-  try{
-    cOn=localStorage.getItem('ht_cardglow_on')||'0';
-    bOn=localStorage.getItem('ht_btnglow_on')||'0';
-  }catch(e){}
-  const cel=document.getElementById('card_glow');
-  const bel=document.getElementById('btn_glow');
-  if(cel) cel.checked = cOn==='1';
-  if(bel) bel.checked = bOn==='1';
-  document.body.classList.toggle('card-glow', cOn==='1');
-  document.body.classList.toggle('btn-glow',  bOn==='1');
-  updateGlowSub();
-  applyGlowColors();
-  renderGlowSwatches();
-}
 
 
 function updateGlassSub(){
@@ -6780,9 +6652,59 @@ function editWpBlur(){
   if(input === null) return;
   setWpBlur(input);
 }
-function applyWallpaper(url){
+const WALLPAPER_PRESETS = [
+  {id:'lime', name:'青柠凝露'},
+  {id:'ice', name:'冰蓝凝露'},
+  {id:'violet', name:'紫晶凝露'},
+  {id:'amber', name:'琥珀凝露'}
+];
+function getWallpaperPreset(){
+  let id = DEF_SETTINGS.webui_defaults.wallpaper_preset;
+  try { id = localStorage.getItem('ht_wp_preset') || id; } catch(e){}
+  return WALLPAPER_PRESETS.find(p => p.id === id);
+}
+function wallpaperPresetUrl(preset){
+  return preset ? 'assets/wallpapers/liquid-' + preset.id + '.webp' : defaultWallpaperUrl();
+}
+function renderWallpaperPresets(){
+  const box = document.getElementById('wallpaperPresets');
+  if(!box) return;
+  box.replaceChildren();
+  WALLPAPER_PRESETS.forEach(preset => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'chip wp-preset';
+    button.dataset.wallpaper = preset.id;
+    const image = document.createElement('img');
+    image.src = wallpaperPresetUrl(preset);
+    image.alt = '';
+    image.loading = 'lazy';
+    const label = document.createElement('span');
+    label.textContent = preset.name;
+    button.append(image, label);
+    button.onclick = () => setWallpaperPreset(preset.id);
+    box.appendChild(button);
+  });
+}
+function applyWallpaper(url, preset){
   if(url) document.documentElement.style.setProperty('--wp-url', `url("${url}")`);
   else document.documentElement.style.removeProperty('--wp-url');
+  if(preset) document.body.dataset.wpPreset = preset.id;
+  else delete document.body.dataset.wpPreset;
+}
+function setWallpaperPreset(id){
+  const preset = WALLPAPER_PRESETS.find(p => p.id === id);
+  if(id !== 'default' && !preset) return;
+  try {
+    localStorage.setItem('ht_wp_preset', id);
+    localStorage.setItem('ht_wp_on', '1');
+    localStorage.removeItem('ht_wp_url');
+  } catch(e){ toast('保存失败：无法写入浏览器存储'); return; }
+  applyWallpaper(wallpaperPresetUrl(preset), preset);
+  document.getElementById('wallpaper_on').checked = true;
+  document.body.classList.add('wallpaper');
+  updateWallpaperSub();
+  toast((preset ? preset.name : '默认壁纸') + '已设置');
 }
 function toggleWallpaper(){
   const on = document.getElementById('wallpaper_on').checked;
@@ -6798,7 +6720,16 @@ function updateWallpaperSub(){
   const el = document.getElementById('wallpaperSub');
   const on = document.getElementById('wallpaper_on')?.checked;
   const has = !!document.documentElement.style.getPropertyValue('--wp-url');
-  if(el) el.textContent = on ? (has ? '已启用' : '未选择图片') : '已关闭';
+  const preset = getWallpaperPreset();
+  let custom = false;
+  try { custom = !!localStorage.getItem('ht_wp_url'); } catch(e){}
+  if(el) el.textContent = on ? (has ? '已启用 · ' + (custom ? '本地图片' : preset ? preset.name : '默认壁纸') : '未选择图片') : '已关闭';
+  document.querySelectorAll('[data-wallpaper]').forEach(button => {
+    const selected = !custom && !!preset && preset.id === button.dataset.wallpaper;
+    button.classList.toggle('active', selected);
+    button.setAttribute('aria-pressed', String(selected));
+  });
+  document.getElementById('wpDefault').setAttribute('aria-pressed', String(!custom && !preset && has));
 }
 function onWallpaperFile(e){
   const file = e.target.files[0];
@@ -6824,6 +6755,7 @@ function onWallpaperFile(e){
       if(dataUrl.length > 2.5 * 1024 * 1024){ toast('图片处理过大，请换一张'); return; }
       try {
         localStorage.setItem('ht_wp_url', dataUrl);
+        localStorage.removeItem('ht_wp_preset');
         applyWallpaper(dataUrl);
         const el = document.getElementById('wallpaper_on');
         if(el && !el.checked){
@@ -6842,7 +6774,13 @@ function onWallpaperFile(e){
   e.target.value = '';
 }
 function clearWallpaper(){
-  try { localStorage.removeItem('ht_wp_url'); } catch(e){}
+  try {
+    localStorage.removeItem('ht_wp_url');
+    localStorage.removeItem('ht_wp_preset');
+    localStorage.setItem('ht_wp_on', '0');
+  } catch(e){ toast('清除失败：无法写入浏览器存储'); return; }
+  document.getElementById('wallpaper_on').checked = false;
+  document.body.classList.remove('wallpaper');
   applyWallpaper(null);
   updateWallpaperSub();
   toast('壁纸已清除');
@@ -6854,18 +6792,10 @@ function initWallpaper(){
   const useOn = on === '1';
   const el = document.getElementById('wallpaper_on');
   if(el) el.checked = useOn;
-  if(useOn){
-    document.body.classList.add('wallpaper');
-    if(url){
-      applyWallpaper(url);
-    } else {
-      
-      applyDefaultWallpaper();
-    }
-  } else {
-    applyWallpaper(url);
-    document.body.classList.remove('wallpaper');
-  }
+  const preset = getWallpaperPreset();
+  applyWallpaper(url || wallpaperPresetUrl(preset), url ? null : preset);
+  document.body.classList.toggle('wallpaper', useOn);
+  renderWallpaperPresets();
   const bv = getWpBlur();
   applyWpBlur(bv);
   refreshWpBlurUI(bv);
@@ -6874,10 +6804,11 @@ function initWallpaper(){
 
 
 function defaultWallpaperUrl(){
-  return 'file://' + AUTHOR_BASE + '默认壁纸.jpg';
+  return '.file/默认壁纸.jpg';
 }
 function applyDefaultWallpaper(){
-  applyWallpaper(defaultWallpaperUrl());
+  const preset = getWallpaperPreset();
+  applyWallpaper(wallpaperPresetUrl(preset), preset);
   updateWallpaperSub();
 }
 
@@ -7007,19 +6938,20 @@ function sheetEls(){
   if(ov) return ov;
   ov = document.createElement('div');
   ov.id = 'xjSheet';
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);z-index:9999;display:none;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;';
+  ov.className = 'notice-mask';
+  ov.style.zIndex = '100001';
   const stop = e => e.stopPropagation();
   ov.addEventListener('touchstart', stop, { passive:true });
   ov.addEventListener('touchmove', stop, { passive:true });
   const box = document.createElement('div');
   box.id = 'xjSheetBox';
-  box.style.cssText = 'width:100%;max-width:440px;max-height:78vh;display:flex;flex-direction:column;background:var(--card);color:var(--text);border-radius:18px;padding:18px;box-sizing:border-box;box-shadow:0 12px 40px rgba(0,0,0,.35);';
+  box.className = 'notice-card';
   const title = document.createElement('div');
   title.id = 'xjSheetTitle';
-  title.style.cssText = 'font-size:calc(16px * var(--fs));font-weight:600;margin-bottom:10px;flex:0 0 auto;color:var(--font-card);';
+  title.className = 'notice-title';
   const body = document.createElement('div');
   body.id = 'xjSheetBody';
-  body.style.cssText = 'flex:1 1 auto;overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;';
+  body.className = 'notice-body';
   const row = document.createElement('div');
   row.style.cssText = 'display:flex;margin-top:14px;flex:0 0 auto;';
   const close = document.createElement('button');
@@ -7103,8 +7035,6 @@ async function openProfileConf(){
     { k:'foreground_interval', t:'num', l:'前台轮询间隔', u:'秒', s:1,    d:'亮屏（前台）时的采样间隔' },
     { k:'bypass_current',      t:'num', l:'旁路电流阈值', u:'mA', s:1000, d:'充电时允许绕过温控的电流上限' },
     { k:'restart_cooldown',    t:'num', l:'重启冷却时间', u:'秒', s:1,    d:'两次自动重启之间的最小间隔' },
-    { k:'enable_guard',        t:'sw',  l:'温度守护',                d:'温度超过守护值时自动降档保护' },
-    { k:'temp_guard',          t:'num', l:'守护温度',     u:'℃', s:10,   d:'触发自动降档的目标温度' },
     { k:'lock_conf',           t:'sw',  l:'配置锁定',                d:'锁定配置文件，避免被自动调参覆盖' },
     { k:'charge_node',         t:'txt', l:'充电节点',     u:'',   s:1,    d:'留空则自动探测（一般无需修改）' }
   ];
@@ -7845,28 +7775,8 @@ function _barAscent(pv, from, cap, stepMs){
   return function(){ clearInterval(t); };
 }
 
-async function takeChargeSnapshot(tag){
-  const t = (tag === 'stock') ? 'stock' : 'mod';
-  const label = t === 'stock' ? '原版解容' : '二改版';
-  toast('正在采集充电快照（' + label + '）…');
-  const r = await __kexec(`sh ${MODDIR}/snapshot_charge.sh ${t} 2>&1`);
-  const out = ((r && r.stdout) || '').trim();
-  const path = (out.match(/^PATH=(.+)$/m) || [])[1] || '';
-  logOp('充电快照｜' + label + '｜' + (path || '无输出'));
-  if (!path) {
-    await showModal('采集未完成', (out || '未取得结果，请重试或检查 root 通道').slice(0, 160), '知道了');
-    return;
-  }
-  await showModal('快照已生成',
-    '已采集【' + label + '】的充电节点快照：\n' + path
-    + '\n\n同一台设备、相近电量、同一种充电方式（有线/无线）各采一次；'
-    + '两个版本都采完把两份文件发我即可。\n'
-    + '只装了某个模块时，标签只影响文件名，采集内容一样。',
-    '知道了');
-}
-
 async function runDiagnoseScript(){
-  const cf = _mkModal('诊断与日志打包', '将执行 diagnose.sh：\n\n· 采集温控 / 电量 / 机型 / 进程 / dmesg 等现场信息\n· 配置文件按白名单采集，敏感信息（序列号 / IMEI / MAC / 手机号）自动脱敏\n· 打包为 HyperOS_XJ_diag_<时间戳>.tar.gz\n· 保存到 /sdcard/Download/\n\n共 8 个步骤，过程中会有十几秒无响应，确定继续吗？');
+  const cf = _mkModal('诊断与日志打包', '将执行 diagnose.sh，产出整个模块（温控 + 解容）的诊断包：\n\n· 温控：档位与场景、降功率联动判定、配置与运行标记、关键事件日志\n· 解容：配置与状态、完整文本诊断、解容日志\n· 节点：电池 / 充电 / 无线 / BAA / DT 快充现场\n· 系统：机型信息、模块文件校验、进程、dmesg、logcat\n· 打包为「诊断包_月-日-时-分.tar.gz」存到 /sdcard/Download/\n\n共 9 个步骤，约需 30~60 秒（含解容侧 20 秒采样），期间无响应属正常，确定继续吗？');
   document.body.appendChild(cf);
   cf.__out.style.minHeight = '0';
   cf.__out.style.flex = '0 0 auto';
@@ -7878,7 +7788,7 @@ async function runDiagnoseScript(){
 }
 async function doDiagnose(){
   
-  const ov = _mkProgress('诊断与日志打包', '执行 diagnose.sh，采集温控 / 电量 / 机型 / 进程 / dmesg 现场信息');
+  const ov = _mkProgress('诊断与日志打包', '执行 diagnose.sh，采集温控 / 解容 / 节点 / 系统现场信息');
   const out = ov.__out;
   const btn = _modalBtn(ov, '打包中', false, null);
   btn.disabled = true;
@@ -8244,7 +8154,7 @@ function updateSubs(){
   if(h4s) h4s.textContent=document.getElementById('hyperos4').checked?'已开启 · 立即生效 + 每次开机自动执行':'开启后立即生效 · 每次开机自动执行（仅 HyperOS 可用）';
 }
 
-const DEF_SETTINGS={schema:2,enabled:true,default_mode:'default',charge_mode:true,charge_level:'unlimited',sleep_level:'level_1',time_start:0,time_end:0,time_level:'level_1',game_mode:true,game_level:'unlimited',game_apps:'',game_fps:0,game_bypass:false,bypass_temp_on:0,bypass_temp_off:0,bypass_level:0,bypass_current:500000,hyperos4:false,no_hitemp_stop:false,charge_gov:true,power_plan_on:false,power_plan_start:23,power_plan_end:7,power_plan_mode:'slow'};
+const DEF_SETTINGS={schema:2,enabled:true,default_mode:'default',charge_mode:true,charge_level:'unlimited',sleep_level:'level_1',time_start:0,time_end:0,time_level:'level_1',game_mode:true,game_level:'unlimited',game_apps:'',game_fps:0,game_bypass:false,bypass_temp_on:0,bypass_temp_off:0,bypass_level:0,bypass_current:500000,hyperos4:false,no_hitemp_stop:false,charge_gov:true,power_plan_on:false,power_plan_start:23,power_plan_end:7,power_plan_mode:'slow',webui_defaults:{liquid_glass:false,wallpaper_preset:'default',blob_count:3,noise:true,bg_hue:true,blob_size:170,blob_blur:58,blob_op:1.3,blob_drift:38,blob_speed:9,bg_blur:15,bg_sat:1.9,bg_hue_dur:10,noise_op:0.2}};
 
 
 let _saveChain = Promise.resolve();
@@ -8283,7 +8193,8 @@ async function saveImpl(){
     power_plan_on:chk('plan_on',false),
     power_plan_start:clampInt('plan_start',23,0,23),
     power_plan_end:clampInt('plan_end',7,0,23),
-    power_plan_mode:(settings.power_plan_mode||'slow')
+    power_plan_mode:(settings.power_plan_mode||'slow'),
+    webui_defaults:DEF_SETTINGS.webui_defaults
   };
   settings=out;
   const json=JSON.stringify(out,null,2)+'\n';
@@ -8436,7 +8347,7 @@ async function initProfileSub(){
   try {
     const r = await __kexec(`P="${MODDIR}/profiles/$(getprop ro.product.model).conf"; ` +
       `[ -f "$P" ] || P="${MODDIR}/profiles/default.conf"; [ -f "$P" ] || exit 0; ` +
-      `echo "$(basename "$P")"; grep -E '^(poll_interval|temp_protect|bypass_current)=' "$P" 2>/dev/null`);
+      `echo "$(basename "$P")"; grep -E '^(poll_interval|bypass_current)=' "$P" 2>/dev/null`);
     const lines = (((r && r.stdout) || '').trim()).split('\n').filter(x => x.trim());
     if(!lines.length) return;
     const name = lines[0].trim();
@@ -8447,7 +8358,6 @@ async function initProfileSub(){
     });
     const bits = [];
     if(kv.poll_interval) bits.push('轮询 ' + kv.poll_interval + 's');
-    if(kv.temp_protect) bits.push('保护 ' + (Number(kv.temp_protect) / 10).toFixed(1) + '℃');
     if(kv.bypass_current) bits.push('旁路 ' + Math.round(Number(kv.bypass_current) / 1000) + 'mA');
     el.textContent = bits.length ? (name + ' ｜ ' + bits.join(' ｜ ')) : name;
   } catch(e){}
@@ -8471,60 +8381,59 @@ async function initVersion(){
     const out = (r && r.stdout) || '';
     const mv = out.match(/^\s*version\s*=\s*(.+)\s*$/m);
     if(mv) setTxt('devVer', mv[1].trim());
-    // 上游内核版本单独显示（当前基于动态温控 K3）
-    const cu = out.match(/^\s*author\s*=.*?动态温控\s*([Kk][0-9]+)/m);
-    if(cu){
-      const el = document.getElementById('devKernel');
-      if(el) el.textContent = '温控内核 ' + cu[1].toUpperCase();
-    }
     const mc = out.match(/^\s*versionCode\s*=\s*(.+)\s*$/m);
     if(mc) document.documentElement.setAttribute('data-module-version', mc[1].trim());
   } catch(e){}
 }
-async function refreshStatus(){
-  if(document.hidden) return;   
-  const r=await __kexec(`cat ${MODDIR}/config/status.json 2>/dev/null`);
-  if(!r.stdout.trim())return;
-  let s;try{s=JSON.parse(r.stdout.trim())}catch(e){return}
+function applyStatusSnapshot(text){
+  if(document.hidden || !text || !text.trim()) return;
+  let s;try{s=JSON.parse(text.trim())}catch(e){return}
   const tc=s.temp/10;
-  const lowColor = getTempColor('low');
-  const midColor = getTempColor('mid');
-  const highColor = getTempColor('high');
-  const t1 = getTempThreshold(1);
-  const t2 = getTempThreshold(2);
-  const color = tc >= t2 ? highColor : tc >= t1 ? midColor : lowColor;
+  const color = tc >= 45 ? '#FA5151' : tc >= 40 ? '#FFA940' : '#07C160';
 
   const tempEl=document.getElementById('sTemp');
-  if(tempEl){ tempEl.textContent=tc.toFixed(1); tempEl.style.color=color; }
+  if(tempEl){
+    bkTxt('sTemp', tc.toFixed(1));
+    if (tempEl.style.color !== color) tempEl.style.color=color;
+  }
 
   const ring=document.getElementById('gaugeRing');
   if(ring){
     // 环的百分比按电量显示（由 bkRefresh 用实时 soc 更新，此处不写，避免两源抖动）；
     // 这里只负责温度配色，实时取数持续失败时才用 status.json 的电量兜底
-    ring.style.setProperty('--ring-color', color);
-    if(!window.__bkFresh || Date.now() - window.__bkFresh > 12000){
+    if (ring.style.getPropertyValue('--ring-color') !== color) ring.style.setProperty('--ring-color', color);
+    if(diyBkInterval() > 0 && (!window.__bkFresh || Date.now() - window.__bkFresh > 12000)){
       const capPct = parseFloat(s.capacity);
-      if(isFinite(capPct)) ring.style.setProperty('--p', Math.max(0, Math.min(100, capPct)).toFixed(2));
+      if(isFinite(capPct)) {
+        const pct = Math.max(0, Math.min(100, capPct)).toFixed(2);
+        if (ring.style.getPropertyValue('--p') !== pct) ring.style.setProperty('--p', pct);
+      }
     }
   }
 
   // 主页电量/状态以 status_kv 实时值为准；status.json 是守护进程的轮询快照（可能滞后或被卡住），
   // 只在实时取数接连失败时兜底，否则两个来源交替写同一元素会来回跳
-  document.getElementById('sMode').textContent=MODE_NAMES[s.mode]||s.mode||'--';
+  bkTxt('sMode', MODE_NAMES[s.mode]||s.mode||'--');
   // 用户把「数据刷新」设为关闭时，这里也不能偷偷写电量/状态——否则看起来"关了还在刷新"。
   // 模式名仍更新（它来自温控守护的快照，不属于主页数据刷新）。
   if (typeof diyBkInterval === 'function' && diyBkInterval() === 0) return;
   if (!window.__bkFresh || Date.now() - window.__bkFresh > 12000){
-    document.getElementById('sCapacity').textContent=s.capacity;
+    bkTxt('sCapacity', s.capacity);
     const st = s.status==='Charging'?'充电中':s.status==='Full'?'已充满':'放电中';
-    const sStatusEl=document.getElementById('sStatus');
-    if(sStatusEl) sStatusEl.textContent=st;
+    bkTxt('sStatus', st);
     const ringEl = document.getElementById('gaugeRing');
     if(ringEl){
       ringEl.classList.toggle('charg', s.status==='Charging');
       ringEl.classList.toggle('dischg', s.status==='Discharging');
     }
   }
+}
+/* 轮询关闭时的独立刷新入口（也是关于页初始化时的一次性取数） */
+async function refreshStatus(){
+  if(document.hidden) return;
+  const r=await __kexec(`cat ${MODDIR}/config/status.json 2>/dev/null`);
+  if(document.hidden || !r.stdout.trim())return;
+  applyStatusSnapshot(r.stdout);
 }
 
 
@@ -8560,18 +8469,62 @@ function diyBkMigrate(){
 function diyRestartPolling(){
   if(_diyBkTimer){ clearInterval(_diyBkTimer); _diyBkTimer = null; }
   if(_diyStTimer){ clearInterval(_diyStTimer); _diyStTimer = null; }
+  if(document.hidden) return;
   const lite = diyFlag('ht_fx_lite', false);
   const iv = diyBkInterval();
   if(iv > 0){
     _diyBkTimer = setInterval(function(){
       try{ bkPoll(); }catch(e){}
     }, iv);
+  } else {
+    /* 轮询关闭时温度/模式仍按原节奏取守护快照；轮询开启时已随每秒命令一并返回 */
+    _diyStTimer = setInterval(function(){
+      try{ safeInit('refreshStatus', refreshStatus); }catch(e){}
+    }, lite ? 6000 : 3000);
   }
-  _diyStTimer = setInterval(function(){
-    try{ safeInit('refreshStatus', refreshStatus); }catch(e){}
-  }, lite ? 6000 : 3000);
   diyUpdateRefreshUI();
 }
+let _uiScrollEnd = null;
+
+function initRenderPerformance(){
+  document.body.classList.toggle('ui-hidden', document.hidden);
+  const ring = document.getElementById('gaugeRing');
+  const curveCv = document.getElementById('curveCv');
+  if (typeof IntersectionObserver === 'function' && (ring || curveCv)) {
+    const observer = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        const visible = entry.isIntersecting && entry.intersectionRect.width > 0 && entry.intersectionRect.height > 0;
+        entry.target.classList.toggle('fx-paused', !visible);
+        if (entry.target === curveCv && visible) drawCurve();
+      });
+    });
+    if (ring) observer.observe(ring);
+    if (curveCv) observer.observe(curveCv);
+  }
+  document.addEventListener('scroll', function(){
+    if (document.hidden) return;
+    document.body.classList.add('ui-scrolling');
+    clearTimeout(_uiScrollEnd);
+    _uiScrollEnd = setTimeout(function(){
+      document.body.classList.remove('ui-scrolling');
+      _uiScrollEnd = null;
+    }, 160);
+  }, {passive:true});
+}
+
+document.addEventListener('visibilitychange', function(){
+  document.body.classList.toggle('ui-hidden', document.hidden);
+  if (document.hidden) {
+    if (_diyBkTimer) { clearInterval(_diyBkTimer); _diyBkTimer = null; }
+    if (_diyStTimer) { clearInterval(_diyStTimer); _diyStTimer = null; }
+    clearTimeout(_uiScrollEnd);
+    _uiScrollEnd = null;
+    document.body.classList.remove('ui-scrolling');
+  } else {
+    diyRestartPolling();
+    setTimeout(function(){ try{ if (bkShouldRefresh()) bkRefresh(); }catch(e){} }, 300);
+  }
+});
 function diyRenderBkChips(){
   if(typeof renderChips !== 'function') return;
   renderChips('bkIntervalChips', DIY_BK_OPTIONS, String(diyBkInterval()), 'diySetBkInterval');
@@ -8616,16 +8569,16 @@ function diyVivid(){ const s = SKINS.find(x => x.id === skinId) || {}; return !!
 /* ---------- 数值项 ---------- */
 const DIY_SLIDERS = {
   /* 背景 */
-  blobSize:  { label:'光斑大小',     key:'ht_diy_blob_k',      min:40,  max:170, step:5,    def:100, fmt:v=>v+'%',        apply:v=>diyVar('--blob-k', (v/100).toFixed(2)) },
-  blobBlur:  { label:'光斑模糊度',   key:'ht_diy_blob_blur',   min:20,  max:200, step:5,    def:72,  fmt:v=>v+'px',       apply:v=>diyVar('--blob-blur', v+'px') },
-  blobOp:    { label:'光斑透明度',   key:'ht_diy_blob_op',     min:0.2, max:1.6, step:0.05, def:1,   fmt:v=>v.toFixed(2)+'×', apply:v=>diyVar('--blob-user-op', v) },
-  blobDrift: { label:'飘动幅度',     key:'ht_diy_blob_drift',  min:0,   max:40,  step:1,    def:15,  fmt:v=>v+'%',
-               apply:v=>{ diyVar('--blob-dx', (v * 0.67).toFixed(1) + '%'); diyVar('--blob-dy', v + '%'); } },
-  blobSpeed: { label:'飘动速度',     key:'ht_diy_blob_speed',  min:5,   max:40,  step:1,    def:15,  fmt:v=>v+'s',        apply:v=>diyVar('--blob-speed', v+'s') },
-  bgBlur:    { label:'背景模糊',     key:'ht_diy_bg_blur',     min:0,   max:20,  step:1,    def:0,   fmt:v=>v+'px',       apply:()=>diyApplyBgFilter() },
-  bgSat:     { label:'背景饱和度',   key:'ht_diy_bg_sat',      min:0.4, max:2.2, step:0.05, def:1,   fmt:v=>v.toFixed(2)+'×', apply:()=>diyApplyBgFilter() },
-  bgHueDur:  { label:'自动变色周期', key:'ht_diy_bg_hue_dur',  min:10,  max:120, step:5,    def:40,  fmt:v=>v+'s',        apply:v=>diyVar('--bg-hue-dur', v+'s') },
-  noiseOp:   { label:'噪点强度',     key:'ht_diy_noise_op',    min:0.05,max:0.6, step:0.05, def:0.3, fmt:v=>v.toFixed(2), apply:v=>diyVar('--noise-op', v) },
+  blobSize:  { label:'光斑大小',     key:'ht_diy_blob_k',      min:40,  max:170, step:5,    def:DEF_SETTINGS.webui_defaults.blob_size, fmt:v=>v+'%',        apply:v=>diyVar('--blob-k', (v/100).toFixed(2)) },
+  blobBlur:  { label:'光斑模糊度',   key:'ht_diy_blob_blur',   min:20,  max:200, step:2,    def:DEF_SETTINGS.webui_defaults.blob_blur, fmt:v=>v+'px', apply:v=>diyVar('--blob-blur', v+'px') },
+  blobOp:    { label:'光斑透明度',   key:'ht_diy_blob_op',     min:0.2, max:1.6, step:0.05, def:DEF_SETTINGS.webui_defaults.blob_op, fmt:v=>v.toFixed(2)+'×', apply:v=>diyVar('--blob-user-op', v) },
+  blobDrift: { label:'飘动幅度',     key:'ht_diy_blob_drift',  min:0,   max:40,  step:1,    def:DEF_SETTINGS.webui_defaults.blob_drift, fmt:v=>v+'% 视口',
+               apply:v=>{ diyVar('--blob-travel-x', v); diyVar('--blob-travel-y', v); } },
+  blobSpeed: { label:'飘动速度',     key:'ht_diy_blob_speed',  min:5,   max:40,  step:1,    def:DEF_SETTINGS.webui_defaults.blob_speed, fmt:v=>v+'s', apply:v=>diyVar('--blob-speed', v+'s') },
+  bgBlur:    { label:'背景模糊',     key:'ht_diy_bg_blur',     min:0,   max:20,  step:1,    def:DEF_SETTINGS.webui_defaults.bg_blur, fmt:v=>v+'px', apply:()=>diyApplyBgFilter() },
+  bgSat:     { label:'背景饱和度',   key:'ht_diy_bg_sat',      min:0.4, max:2.2, step:0.05, def:DEF_SETTINGS.webui_defaults.bg_sat, fmt:v=>v.toFixed(2)+'×', apply:()=>diyApplyBgFilter() },
+  bgHueDur:  { label:'自动变色周期', key:'ht_diy_bg_hue_dur',  min:10,  max:120, step:5,    def:DEF_SETTINGS.webui_defaults.bg_hue_dur, fmt:v=>v+'s',        apply:v=>diyVar('--bg-hue-dur', v+'s') },
+  noiseOp:   { label:'噪点强度',     key:'ht_diy_noise_op',    min:0.05,max:0.6, step:0.05, def:DEF_SETTINGS.webui_defaults.noise_op, fmt:v=>v.toFixed(2), apply:v=>diyVar('--noise-op', v) },
 
   /* 能量光环 */
   ringW:     { label:'圆环粗细',     key:'ht_diy_ring_w',      min:0,   max:24,  step:0.5,  def:0,   fmt:v=>v>0?(v+'px'):'跟随主题',
@@ -8636,9 +8589,9 @@ const DIY_SLIDERS = {
   sparkSize: { label:'末端亮点大小', key:'ht_diy_spark_w',     min:2,   max:14,  step:0.5,  def:8,   fmt:v=>v+'px',
                apply:v=>{ diyVar('--spark-w-max', v); diyVar('--spark-w-min', Math.max(1, v - 3)); } },
   sparkSpeed:{ label:'亮点脉冲速度', key:'ht_diy_spark_dur',   min:0.6, max:4,   step:0.1,  def:1.9, fmt:v=>v.toFixed(1)+'s', apply:v=>diyVar('--spark-dur', v+'s') },
-  gaugeFs:   { label:'中心数字字号', key:'ht_diy_gauge_fs',    min:44,  max:110, step:2,    def:72,  fmt:v=>v+'px',       apply:v=>diyVar('--gauge-fs', v+'px') },
+  gaugeFs:   { label:'中心数字字号', key:'ht_diy_gauge_fs',    min:44,  max:110, step:2,    def:64,  fmt:v=>v+'px',       apply:v=>diyVar('--gauge-fs', v+'px') },
   gaugeFw:   { label:'中心数字粗细', key:'ht_diy_gauge_fw',    min:100, max:700, step:100,  def:300, fmt:v=>String(v),    apply:v=>diyVar('--gauge-fw', v) },
-  waveN:     { label:'波浪层数',     key:'ht_diy_wave_n',      min:1,   max:3,   step:1,    def:3,   fmt:v=>v+' 层',      apply:v=>document.body.setAttribute('data-wave-n', String(v)) },
+  waveN:     { label:'波浪层数',     key:'ht_diy_wave_n',      min:1,   max:3,   step:1,    def:2,   fmt:v=>v+' 层',      apply:v=>document.body.setAttribute('data-wave-n', String(v)) },
   waveAmp:   { label:'波浪起伏',     key:'ht_diy_wave_amp',    min:0.4, max:2,   step:0.05, def:1,   fmt:v=>v.toFixed(2)+'×', apply:v=>diyVar('--wave-amp', v) },
   waveSpeed: { label:'波浪速度',     key:'ht_diy_wave_speed',  min:0.3, max:2.5, step:0.05, def:1,   fmt:v=>v.toFixed(2)+'×', apply:v=>diyVar('--wave-speed', v) },
   fillFixed: { label:'固定液面高度', key:'ht_diy_fill_fixed',  min:0,   max:100, step:1,    def:50,  fmt:v=>v+'%',        apply:()=>diyApplyFill() },
@@ -8666,10 +8619,10 @@ const DIY_SLIDERS = {
 
 /* ---------- 开关项 ---------- */
 const DIY_SWITCHES = {
-  noise:      { label:'噪点纹理',   desc:'背景叠一层细噪点',        key:'ht_diy_noise',       def:false, apply:on=>document.body.classList.toggle('noise-on', on) },
-  bgHue:      { label:'背景自动变色', desc:'光斑颜色缓慢循环',      key:'ht_diy_bg_hue',      def:false, apply:on=>document.body.classList.toggle('bg-hue', on) },
-  lite:       { label:'流畅模式',   desc:'关掉光斑漂移、玻璃模糊、波浪动画，界面滑动更跟手', key:'ht_fx_lite', def:false,
-                apply:on=>{ document.body.classList.toggle('fx-lite', on); if(typeof diyRestartPolling === 'function') diyRestartPolling(); } },
+  noise:      { label:'噪点纹理',   desc:'背景叠一层细噪点',        key:'ht_diy_noise',       def:DEF_SETTINGS.webui_defaults.noise, apply:on=>document.body.classList.toggle('noise-on', on) },
+  bgHue:      { label:'背景自动变色', desc:'光斑颜色缓慢循环',      key:'ht_diy_bg_hue',      def:DEF_SETTINGS.webui_defaults.bg_hue, apply:on=>document.body.classList.toggle('bg-hue', on) },
+  lite:       { label:'流畅模式',   desc:'保留单个移动光斑，关闭玻璃模糊与波浪动画', key:'ht_fx_lite', def:false,
+                apply:on=>{ document.body.classList.toggle('fx-lite', on); diyRestartPolling(); } },
   glowAlways: { label:'光晕常驻',   desc:'关闭后仅在充电时出现',    key:'ht_diy_glow_always', def:false, apply:on=>document.body.classList.toggle('glow-always', on) }
 };
 
@@ -8758,8 +8711,8 @@ function diySyncLiteUI(){
   const on = diyFlag(DIY_SWITCHES.lite.key, false);
   if(el) el.checked = on;
   if(sub) sub.textContent = on
-    ? '已开启 · 已停止光斑漂移/玻璃模糊/波浪动画，轮询降频'
-    : '关闭光斑漂移、玻璃模糊与波浪动画，界面更跟手';
+    ? '已开启 · 单个光斑漂移，玻璃模糊/波浪动画关闭，轮询降频'
+    : '保留单个移动光斑，关闭玻璃模糊与波浪动画';
 }
 function diySetColor(id, color){
   const d = DIY_COLORS[id];
@@ -8815,8 +8768,8 @@ function diyApplyRadii(){
   Object.keys(r).forEach(k => { if(r[k] > 0) diyVar(k, r[k] + 'px'); else diyUnset(k); });
 }
 function diyApplyBgFilter(){
-  const b = diyNum(DIY_SLIDERS.bgBlur.key, 0);
-  const s = diyNum(DIY_SLIDERS.bgSat.key, 1);
+  const b = diyNum(DIY_SLIDERS.bgBlur.key, DIY_SLIDERS.bgBlur.def);
+  const s = diyNum(DIY_SLIDERS.bgSat.key, DIY_SLIDERS.bgSat.def);
   diyVar('--bg-blur', b + 'px');
   diyVar('--bg-sat', s);
   document.body.classList.toggle('bg-filter', b > 0 || Math.abs(s - 1) > 0.001);
@@ -8840,7 +8793,7 @@ const DIY_HOME_COLS   = [{id:'auto',l:'自动'},{id:'2',l:'2 列'},{id:'3',l:'3 
 const DIY_PANEL_MODES = [{id:'remember',l:'记住上次'},{id:'open',l:'默认展开'},{id:'closed',l:'默认收起'}];
 
 function diyRenderChipsAll(){
-  renderChips('diyBlobCountChips', DIY_BLOB_COUNTS, diyLS('ht_diy_blob_n', '3'), 'diySetBlobCount');
+  renderChips('diyBlobCountChips', DIY_BLOB_COUNTS, diyLS('ht_diy_blob_n', String(DEF_SETTINGS.webui_defaults.blob_count)), 'diySetBlobCount');
   renderChips('diyFillChips', DIY_FILL_MODES, diyLS('ht_diy_fill_mode', 'soc'), 'diySetFillMode');
   renderChips('diyHomeColsChips', DIY_HOME_COLS, diyLS('ht_diy_home_cols', 'auto'), 'diySetHomeCols');
   renderChips('diyPanelChips', DIY_PANEL_MODES, diyLS('ht_diy_panel', 'remember'), 'diySetPanelMode');
@@ -8866,29 +8819,41 @@ const HOME_FIELDS = [
   {id:'sCapacity', l:'电量 %'}, {id:'sStatus', l:'状态'},
   {id:'pcDes', l:'设计容量 mAh'}, {id:'pcFull', l:'满充容量 mAh'}, {id:'pcHealth', l:'健康度 %'},
   {id:'pcVolt', l:'电压 V'}, {id:'pcCur', l:'电流 A'}, {id:'pcTemp', l:'温度 ℃'},
-  {id:'pcCycle', l:'循环次数'}, {id:'pcFake', l:'伪装次数'}, {id:'pcProto', l:'充电协议', small:true}
+  {id:'pcCycle', l:'循环次数'}, {id:'pcFake', l:'伪装次数'}, {id:'pcProto', l:'充电协议', small:true},
+  {id:'dRm', l:'剩余容量 mAh'}, {id:'dSoh', l:'电池寿命（SOH%）'}
 ];
-const HOME_GROUPS = [[0,1],[2,3,4],[5,6,7],[8,9,10]];
+const HOME_GROUPS = [
+  {title:'实时状态', rows:[[0,1,10],[5,6,7]]},
+  {title:'容量与寿命', rows:[[11,3,2],[4,12],[8,9]]}
+];
 function diyHomeHidden(){ return diyJson('ht_diy_home_hidden', []); }
 function diyRenderHome(){
   const box = document.getElementById('homeFields');
   if(!box) return;
+  const values = {};
+  HOME_FIELDS.forEach(f => {
+    const el = document.getElementById(f.id);
+    if(el) values[f.id] = el.textContent;
+  });
   const cols = diyLS('ht_diy_home_cols', 'auto');
   const hidden = diyHomeHidden();
-  const cell = f => `<div class="mini${hidden.indexOf(f.id) >= 0 ? ' hide' : ''}">`
-    + `<div class="mini-val" id="${f.id}"${f.small ? ' style="font-size:calc(12.5px * var(--fs))"' : ''}>--</div>`
+  const cell = f => `<div class="mini${f.id === 'sCapacity' ? ' mini-soc' : ''}${f.small || f.id === 'sStatus' ? ' mini-status' : ''}${hidden.indexOf(f.id) >= 0 ? ' hide' : ''}">`
+    + `<div class="mini-val" id="${f.id}">--</div>`
     + `<div class="mini-lbl">${f.l}</div></div>`;
   if(cols === 'auto'){
     box.className = 'auto';
     box.innerHTML = HOME_GROUPS.map(g =>
-      `<div class="mini-grid" style="grid-template-columns:repeat(${g.length},1fr)">` + g.map(i => cell(HOME_FIELDS[i])).join('') + '</div>'
+      '<section class="home-section"><div class="pref-desc home-heading">' + g.title + '</div><div class="home-group">'
+      + g.rows.map(row => '<div class="mini-grid" style="grid-template-columns:repeat(' + row.length + ',minmax(0,1fr))">'
+        + row.map(i => cell(HOME_FIELDS[i])).join('') + '</div>').join('') + '</div></section>'
     ).join('');
   } else {
     box.className = cols === '2' ? 'cols2' : '';
     box.innerHTML = HOME_FIELDS.map(cell).join('');
   }
-  const ids = ['sCapacity','sStatus','pcDes','pcFull','pcHealth','pcVolt','pcCur','pcTemp','pcCycle','pcFake','pcProto'];
+  const ids = ['sCapacity','sStatus','pcDes','pcFull','pcHealth','pcVolt','pcCur','pcTemp','pcCycle','pcFake','pcProto','dRm','dSoh'];
   ids.forEach(id => { if(!document.getElementById(id)){ const d = document.createElement('div'); d.id = id; d.style.display = 'none'; d.textContent = '--'; box.appendChild(d); } });
+  HOME_FIELDS.forEach(f => bkTxt(f.id, values[f.id]));
 }
 function diySetHomeCols(id){
   diySave('ht_diy_home_cols', id);
@@ -8908,7 +8873,10 @@ function diyToggleHomeField(id){
   const i = hidden.indexOf(id);
   if(i >= 0) hidden.splice(i, 1); else hidden.push(id);
   diySaveJson('ht_diy_home_hidden', hidden);
-  diyRenderHome(); diyRenderHomeFields(); diyUpdateSubs();
+  const value = document.getElementById(id);
+  const cell = value && value.closest('.mini');
+  if(cell) cell.classList.toggle('hide', hidden.indexOf(id) >= 0);
+  diyRenderHomeFields(); diyUpdateSubs();
 }
 
 /* ---------- 卡片显隐与排序（E3 / E4） ---------- */
@@ -9134,7 +9102,7 @@ function diyImportSchemes(){
   if(!obj || typeof obj !== 'object' || Array.isArray(obj)){ toast('格式不正确'); return; }
   const all = diySchemes();
   // 只接受本页面会写的键，避免导入对象往 localStorage 塞任意内容
-  const allowed = {};
+  const allowed = {ht_skin:1, ht_theme:1, ht_liquid_glass:1, ht_wp_preset:1, ht_wp_on:1, ht_wp_blur:1};
   getAllBackupKeys().forEach(function(k){ allowed[k] = 1; });
   let n = 0;
   Object.keys(obj).forEach(function(name){
@@ -9178,8 +9146,8 @@ function diyClearCss(){
 function diyUpdateSubs(){
   const bg = document.getElementById('diyBgSub');
   if(bg){
-    const n = diyLS('ht_diy_blob_n', '3');
-    bg.textContent = (n === '0' ? '光斑关闭' : '光斑 ' + n + ' 个') + ' · 噪点' + (diyFlag(DIY_SWITCHES.noise.key, false) ? '开启' : '关闭');
+    const n = diyLS('ht_diy_blob_n', String(DEF_SETTINGS.webui_defaults.blob_count));
+    bg.textContent = (n === '0' ? '光斑关闭' : '光斑 ' + n + ' 个') + ' · 噪点' + (diyFlag(DIY_SWITCHES.noise.key, DIY_SWITCHES.noise.def) ? '开启' : '关闭');
   }
   const g = document.getElementById('diyGaugeSub');
   if(g){
@@ -9225,7 +9193,7 @@ function initDIY(){
   diyRenderHome();
   diyRenderCardVis();
 
-  document.body.setAttribute('data-blob-n', diyLS('ht_diy_blob_n', '3'));
+  document.body.setAttribute('data-blob-n', diyLS('ht_diy_blob_n', String(DEF_SETTINGS.webui_defaults.blob_count)));
   diyApplyAll();
   diyApplyHiddenCards();
 
@@ -9249,11 +9217,10 @@ function safeInit(name, fn){
     if(r && typeof r.catch === 'function') r.catch(e => console.warn('[init] ' + name, e));
   } catch(e){ console.warn('[init] ' + name, e); }
 }
-safeInit('initAppearance', initAppearance);
+safeInit('migrateAppearance', migrateAppearance);
 safeInit('initSkin', initSkin);
 safeInit('initScales', initScales);
 safeInit('initSwipeEasing', initSwipeEasing);
-safeInit('initSwitchGlass', initSwitchGlass);
 safeInit('cardAlpha', () => { applyCardAlpha(getCardAlpha()); refreshCardAlphaUI(getCardAlpha()); });
 safeInit('initBarAlpha', initBarAlpha);
 safeInit('initBarSolid', initBarSolid);
@@ -9262,14 +9229,10 @@ safeInit('initBarFollowCard', initBarFollowCard);
 safeInit('initBarDistort', initBarDistort);
 safeInit('initFontColors', initFontColors);
 safeInit('initAppFont', initAppFont);
-safeInit('initTempColors', initTempColors);
-safeInit('initIndicator', initIndicator);
 safeInit('initDivider', initDivider);
 safeInit('initShowCategory', initShowCategory);
 safeInit('initShowDesc', initShowDesc);
 safeInit('initShowTopNote', initShowTopNote);
-safeInit('initGlow', initGlow);
-safeInit('initIndGlow', initIndGlow);
 safeInit('initGlass', initGlass);
 safeInit('initFrost', initFrost);
 safeInit('initFloating', initFloating);
@@ -9283,6 +9246,10 @@ safeInit('initProfileSub', initProfileSub);
 safeInit('initDIY', initDIY);
 safeInit('initHiTemp', initHiTemp);
 safeInit('initPanelState', initPanelState);
+safeInit('initRenderPerformance', initRenderPerformance);
+safeInit('initCurve', initCurve);
+safeInit('renderChargeRecords', renderChargeRecords);
+safeInit('enableWebUIEdgeToEdge', () => { setTimeout(enableWebUIEdgeToEdge, 800); setTimeout(enableWebUIEdgeToEdge, 2500); });
 safeInit('initBackup', initBackup);
 safeInit('load', load);
 safeInit('refreshStatus', refreshStatus);
@@ -9303,6 +9270,7 @@ window.addEventListener('orientationchange', () => {
   setTimeout(() => { updateTabIndicator(); startIconBoostTracking(400); }, 100);
 });
 
+document.addEventListener('pointermove', liquidLightMove, { passive: true });
 document.addEventListener('touchstart', onSwipeStart, { passive: true });
 document.addEventListener('touchmove', onSwipeMove, { passive: false });
 document.addEventListener('touchend', onSwipeEnd, { passive: true });

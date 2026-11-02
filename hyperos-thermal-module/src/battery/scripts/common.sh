@@ -429,7 +429,26 @@ POWER_MECH=$(cfg_get power_mech curr)
 
 slot_letter() {
   _s=$(getprop ro.boot.slot_suffix)
-  echo "${_s#_}"
+  [ -n "$_s" ] || _s=$(getprop ro.boot.slot)
+  _s=${_s#_}
+  case "$_s" in a|b) echo "$_s" ;; *) return 1 ;; esac
+}
+
+dtbo_local_image() {
+  [ "$IS_UNSUPPORTED" = "0" ] || return 1
+  if [ -f "$XBT/dtbo/$DEV_CODE.img" ]; then
+    echo "$XBT/dtbo/$DEV_CODE.img"
+  elif [ -f "$XBT/dtbo/local.img" ]; then
+    echo "$XBT/dtbo/local.img"
+  else
+    return 1
+  fi
+}
+
+dtbo_os_supported() {
+  case "$(getprop ro.mi.os.version.name)$(getprop ro.mi.os.version.incremental)" in
+    *OS4*) return 0 ;; *) return 1 ;;
+  esac
 }
 
 baa_state() {
