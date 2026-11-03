@@ -1,6 +1,6 @@
 id=MiWKJR
 name=温控解容工具箱
-version=2.1.0-unified
-versionCode=140
+version=2.1.0
+versionCode=141
 author=小米热炸了（二改）｜ 动态温控 K3（AxiaojiuY）｜ 解容工具箱 听夜风1337
-description=统一测试版 · 控制 App + Root 模块 + LSPosed 背屏卡片：首次开机完成后自动就绪
+description=控制 App + Root 模块 + LSPosed 背屏卡片：首次开机完成后自动就绪
