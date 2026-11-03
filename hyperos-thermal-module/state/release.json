@@ -23,7 +23,7 @@
     "branch": "main",
     "base_branch": "test/main",
     "status": "local_test_package_sent",
-    "delivery_status": "2026-11-03已通过sendFile发送统一测试包至聊天，待真机安装、LSPosed 作用域与充电验证；未发布、未推送",
+    "delivery_status": "2026-11-03 改名与包名迁移后的统一测试包已通过 sendFile 发聊天，待真机安装、LSPosed 作用域与充电验证。代码已提交 144e967 并推送 origin/main（用户当次授权）；**发布未做**：latest.json 与 CDN 未动，旧线上版仍 v2.0.0/v2.0.1。",
     "resume_path": "统一版已进入 main 工作树（/root/workspace/hyperos-thermal-module + app/）；work/unified-app、/root/unified、/root/rs_beta 已于 2026-11-03 删除（备份 /root/repository-backups/2026-11-03/cleanup-2026-11-03/）。后续直接在 main 工作树开发，改完 python3 tools/build_app.py && python3 tools/pack.py 后把 dist 包发聊天。下一步仍是真机安装、Root 授权、LSPosed 作用域 com.xiaomi.subscreencenter 与背屏验证。不得 push、publish、改远端或更新线上清单，除非另获用户明确授权。",
     "artifact": {
       "path": "dist/温控解容工具箱_统一测试版_v2.1.0-unified.zip",
@@ -57,7 +57,7 @@
         "未验证实际充电行为。"
       ]
     },
-    "authorization": "仅允许本地完成、打包和发送模块；未授权 push/publish。UI 本次可不等用户点头直接打包。",
+    "authorization": "本地打包与发送无需另行授权；git commit/push 需用户当次同意（2026-11-03 已授权 —— 提交 144e967 并推送 main）；发布（release.py publish、改 latest.json、CDN）仍未授权。UI 本次可不等用户点头直接打包。",
     "worktree_note": "2026-11-03 仓库整理与清理：统一版代码已在 /root/workspace 的 main 工作树；/root/unified与/root/rs_beta 已删除，未提交改动、rearcard 源码、beta16 包与旧 dist 包归档在 /root/repository-backups/2026-11-03/cleanup-2026-11-03/。test/rearscreen 与 work/unified-app 本地分支已删，远端 test/rearscreen 已于 2026-11-03 删除完成。",
     "naming": {
       "module_id": "MiWKJR",
