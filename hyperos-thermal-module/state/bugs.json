@@ -1,6 +1,54 @@
 {
-  "note": "用户反馈问题的收集区：先攒，攒够一次性修；修完把条目移到 fixed 并把改动写进 release.json 版本历史",
-  "collecting": [],
+  "note": "用户反馈问题的收集区（强制规则见仓库 AGENTS.md「Bug 反馈处理」）：新反馈只往 collecting 追加条目，允许只读排查但不改源码、不打包；等用户明确说「修复」/「统一修复」才按 fix_plan 一次性处理全部 collecting，修完移到 fixed 并补 fixed_in，同时把改动写进 release.json 版本历史",
+  "collecting": [
+    {
+      "id": "bug-009",
+      "type": "bug",
+      "title": "背屏显示的卡片不是模块里设计的四角卡片，仍是第三方 ETA 卡片旧样式",
+      "reported": "2026-11-03",
+      "evidence": "用户截图 13:09（背屏：左侧「充电中 / 0.0℃ / 0.000V / 0.00A」+ 右侧绿色圆环 0%、环下 +0.00W）与外观页预览卡的「四角温度/电量/电压/电流 + 中心功率光环」完全不同；诊断包 ~/workspace/.aicode/attachments/诊断包_11-03-01-34.tar-1.gz（解包在 ~/workspace/.aicode/tmp/diag_beta14/xj_diag_20261103_013414，模块 2.1.0-beta code138）",
+      "root_cause": "投到副屏的卡片 UI 完全由第三方载体 src/rearscreen/rs.apk 绘制，该 APK 与 thirdparty/背屏电池卡片_v1/apk/rs.apk 逐字节相同（sha256 eea58d63e8950ec45138870b76589471b40672ad8be22c87216ce07d5e3c0123，20937 字节，classes.dex 12.6KB，含 Card/DaView/Ui 绘制类），rearscreen.sh 只做两件事：写 /storage/emulated/0/Android/data/com.eta.rearscreen/files/batt.txt、把 com.eta.rearscreen 投到 Display #1；模块里设计的四角卡片只存在于 hyperosui 外观页预览区与 src/rearscreen/card_preview.html，是纯 CSS 预览，从来没有投屏实现（state/index.json pending 早有一条「背屏版投屏未实现」）。",
+      "fix_plan": "两条路径，需用户确认后做：A（推荐）自建载体——为一个最小 WebView 壳 APK 或模块内 Canvas 页面，用与现在相同的 am --display 1 / service call activity_task 50 方式投到副屏，页面直接复用 card_preview.html 的样式（976×596、左侧 296px 挖孔避让），数据仍走 batt.txt 或 LocalSocket，这样设计稿改样式即生效；B 改 rs.apk 的 dex 绘制（无源码，只能改字符串/常量，重排布局不可行，风险高、不推荐）。方案 A 需先验证 Android 17 上第三方壳 App 投 Display #1 会不会被 subscreencenter 顶掉。",
+      "affected": [
+        "src/rearscreen/rs.apk（第三方原版 APK，卡片 UI 写死）",
+        "src/rearscreen/rearscreen.sh:daemon / push_display（只喂数据+投放，不决定 UI）",
+        "src/rearscreen/card_preview.html（设计稿预览，未接入投屏）",
+        "src/hyperosui/index.html:2693-2760（外观页预览区）"
+      ],
+      "status": "待修（缺用户对路径 A/B 的选择）"
+    },
+    {
+      "id": "bug-010",
+      "type": "bug",
+      "title": "外观页背屏电池卡片开关打不开／点了被拨回",
+      "reported": "2026-11-03",
+      "evidence": "用户反馈「模块里打不开背屏开关」+ 截图 13:09（外观页开关为关、thumb 未激活）；诊断包（同上，01:34 采集）00-总览.txt rearscreen=0、40-系统/模块文件.txt 显示 /data/adb/modules/HyperOS_XJ/rearscreen 有 state 子目录（01:32，说明 rearscreen.sh start 确实被执行过）；该诊断包由 2.1.0-beta(138) 生成，早于 beta14(139) 打包时间 02:10，且不含 beta14 新增的 40-系统/背屏.txt，看不到 last_fail / probe 现场",
+      "root_cause": "待取证。按代码有三条会直接导致开关弹回或 start 无输出的路径：1）index.html 的 bkSh 用 __kexec(..., 12000) 12 秒超时，而 rearscreen.sh start 串了 pm install -r、ensure_data_dir（am start + 最多 6 秒等待）、push_display（3+2 秒）与 service call，正常路径就可能超 12 秒被中断，超时后 bkSh 返回空串；2）看门狗 guard 把「dumpsys window 取不到 mCurrentFocus」直接判成 focus_lost、把 batt 超过 12 秒未刷新判成 batt_stale，任一命中即 restore 并写 guard_fail，界面 12 秒后复查 last_fail 就把开关拨回；3）batt_write 写 /storage/emulated/0/Android/data/com.eta.rearscreen/files 在 Android 17 FUSE 下可能失败（属主/权限），start 会输出 ERR: 卡片数据目录不可写。诊断包里没有背屏采集与日志，三者尚未区分。",
+      "fix_plan": "先取现场再改：装 beta14(139) 后从控制台「关于 → 诊断」重新出包（beta14 的 diagnose.sh 已加 40-系统/背屏.txt），并附 /data/local/tmp/xj_rearscreen.log 与 sh /data/adb/modules/HyperOS_XJ/rearscreen/rearscreen.sh probe 的输出。按结果分头修：a）超时——把 start 拆成「装包/准备目录」与「投放」两次调用，或 bkSh 对背屏命令单独放宽到 30 秒；b）guard——focus 读不到时记 unknown 不判失败（与 main_state 的 UNKNOWN 处理对齐），batt_stale 阈值放宽到 20 秒；c）写入——失败时改用 App 侧目录 + 属主对齐重试，仍失败则明确提示需要先手动打开一次卡片 App。",
+      "affected": [
+        "src/hyperosui/index.html:4297-4301（bkSh 12 秒超时）、4879-4918（bkRearToggle 回退逻辑）",
+        "src/rearscreen/rearscreen.sh:start / guard / push_display / batt_write"
+      ],
+      "status": "待修（缺 beta14 现场：probe + 背屏诊断 + xj_rearscreen.log）"
+    },
+    {
+      "id": "bug-011",
+      "type": "feature",
+      "title": "背屏卡片改用模块自己的 App 实现，替换第三方 ETA 卡片 APK",
+      "reported": "2026-11-03",
+      "evidence": "用户指令「重新设计app背屏的功能用app实现」（承接 bug-009：背屏现在显示的是第三方 ETA 卡片旧样式，模块设计稿只是 hyperosui 预览）",
+      "root_cause": "替换对象是 src/rearscreen/rs.apk —— 第三方 21KB Xposed hook APK（com.eta.rearscreen，hook com.xiaomi.subscreencenter），卡片 UI 写死在其 dex（Card/DaView/Ui），模块只能喂 batt.txt、无法改版式，也看不到 14 项四角自选、光环液面、状态胶囊这些设计稿能力。",
+      "fix_plan": "自建载体 APK：包名 com.hyperosxj.rearcard，纯 framework API（不用 AndroidX），MainActivity 全屏黑底 + WebView 加载 assets/card.html（把 src/rearscreen/card_preview.html 的样式搬到背屏页，去掉预览工具条，按 976×596 真机尺寸排版，支持 14 项四角自选 + 光环 + 状态胶囊 + accent 主题色）；数据走 App 私有目录 rear.json（App 首次启动自建目录保证属主，rearscreen.sh 的 root 侧写入后 chown 对齐，1 秒轮询，避免 beta14 那种「root 写 FUSE 后 App 读不到」）；rearscreen.sh 改为装 rearcard.apk、每 2 秒写实时字段 + 每 30 秒合入 status_kv 慢字段、am start --display 1 投放并每 4 秒重投、看门狗与 probe 同步改；构建链 ecj（编译 java）+ d8 + aapt2 + zipalign + apksigner（JDK21 无 javac，用 ~/android-toolchain/ecj.jar）。风险：Android 17 上第三方 Activity 投 Display #1 能否常驻需要真机验证，不稳就靠重投兜底。",
+      "affected": [
+        "新增 src/rearcard/（AndroidManifest.xml、java/、res/、assets/card.html）",
+        "新增 tools/build_rearcard.py（编译+签名）",
+        "src/rearscreen/rearscreen.sh（换载体、JSON 数据、投放与 probe）",
+        "src/hyperosui/index.html（外观页背屏卡片说明与字段自选、使用说明）",
+        "src/rearscreen/rs.apk 后续不再使用"
+      ],
+      "status": "开发中（先出预览图给用户确认外观，再打包）"
+    }
+  ],
   "fixed": [
     {
       "id": "bug-001",
@@ -44,6 +92,68 @@
       "key_note": "口径必须分开：电压格显示单串，但 battery_power_w 必须用总压（单串×串数）算。电流串联不变，用单串电压算会把双串机功率少算一半（MIX 4 现在显示的 8.3W 本身是对的，错的是把它当成了单串电压）。同理右侧曲线的功率轴沿用总压。",
       "status": "已修（本地包 v2.0.1 已构建，待真机复测）；未发布",
       "fixed_in": "2.0.1 (125)"
+    },
+    {
+      "id": "bug-006",
+      "type": "feature",
+      "title": "背屏测试版：验证开启背屏卡片后系统会不会卡/主屏黑屏，并先把风险降下来",
+      "reported": "2026-11-03",
+      "evidence": "用户原话「现在开始背屏测试版 / 测试如果开启背屏系统会不会卡黑屏」；代码位于 test/rearscreen 分支（2.1.0-beta，versionCode 138）",
+      "root_cause": "只读审查 test/rearscreen 的 rearscreen.sh 后列出的风险点：(1) start 里先 pm disable --user 0 com.xiaomi.subscreencenter，而卡片 APK（com.eta.rearscreen，Xposed 模块，assets/xposed_init=com.eta.rearscreen.HookEntry）正是 hook 这个包的 SubScreenLauncher，禁用它等于把背屏宿主和卡片宿主一起停掉 → 背屏黑； (2) push_display 用硬编码 service call activity_task 50 i32 task i32 1 强制投屏，transaction 号跨系统版本不稳定，投错可能移走主屏任务或让 system_server 抛异常 → 卡死； (3) daemon 每 2 秒采样、每 4 秒两次 dumpsys（package/activity/display）持续 fork，背屏场景下有可感知卡顿风险； (4) service.sh 开机直接按 rearscreen=1 拉起，一旦上面任一路径出问题，重启后依然黑屏，只能 adb/救援； (5) batt.txt 目录在 APK 未创建时写入失败无提示，表现为卡片一直空数据。",
+      "fix_plan": "出带自动回滚的背屏安全测试包（beta 续线）：rearscreen.sh 新增 probe 只读体检（副屏/subscreencenter 状态/APK/LSPosed/batt.txt 可写/主屏 focus）；start 拆成分步（装 APK → 起 daemon 并校验 batt.txt 在刷新 → 校验才禁用原生时钟）；30 秒看门狗检测主屏 focus/subscreencenter 存活/数据 mtime，任一异常立即 enable 原生、杀 daemon、清标记并写 AUTO_ROLLBACK 日志；settings.conf 加开机不自动拉起的默认项，开机拉起前先看上次是否留下未完成的自检标记。",
+      "affected": [
+        "src/rearscreen/rearscreen.sh",
+        "src/service.sh:144-149（开机自动拉起）",
+        "src/battery/config/settings.conf:117-120（rearscreen 默认值）",
+        "src/hyperosui/index.html:4873-4895（bkRearToggle 与提示文案）"
+      ],
+      "status": "已修（本地包 beta14 已构建并发送，待真机复测）；未发布",
+      "device": "测试机 小米 17 Pro Max（popsicle / 2509FPN0BC / OS4.0.5 / Android 17 / KernelSU）",
+      "version_seen": "2.1.0-beta (code 138)",
+      "line": "rearscreen",
+      "fixed_in": "2.1.0-beta14 (139)",
+      "fixed_note": "启动不碰系统包；30 秒看门狗（主屏状态/焦点/数据刷新）；probe 只读体检；hideclock 手动实验入口；开机默认不自启（rearscreen_boot=0），guard_fail 存在时跳过并复位；mock 自测通过"
+    },
+    {
+      "id": "bug-007",
+      "title": "正式版 2.0.0 有线充电完全无反应，只有无线能充（pandora 小米 17 Pro）",
+      "reported": "2026-11-03",
+      "evidence": "用户原话「正式版2.0插上充电器没有反应不充电」，补充「现在只能无线充，有线冲不了」，之后又反馈「关pps试了，禁模块试了都不行」。诊断包 A：~/workspace/.aicode/attachments/诊断包_11-03-01-27.tar.gz（01:27:16，解包到 ~/workspace/.aicode/tmp/diag_1103/xj_diag_20261103_012710）——pandora / 25098PN5AC / Xiaomi 17 Pro / canoe SM8850 / OS4.0.5 Android17 / 内核 6.12.69 / Magisk，模块 2.0.0 code124，解容 v3.12.6，同时启用 battery_tune、scene_thermal_remover、CZero 等 12 个模块。对比诊断包 B：~/workspace/.aicode/attachments/诊断包_11-03-01-34.tar.gz（01:34:14，解包到 ~/workspace/.aicode/tmp/diag_1103b/xj_diag_20261103_013414）——popsicle / 小米 17 Pro Max / 同 OS4.0.5 / KernelSU，模块 2.1.0-beta code138，有线充电正常（usb/online=1、type=USB_PD、real_type=PD_PPS、quick_charge_type=3、power_max=45W）。用户自测：关闭公版 PPS 无效、禁用模块（含重启）无效。",
+      "root_cause": "结论（第二版，已被用户实测与对比诊断包修正）：pandora 上有线充电在【系统/USB 端口层就没识别到对端】，与 2.0.0 模块的充电参数无关。\n【证据1：pandora 端口无对端】诊断包 A 的 20-解容/diag.txt【G】usb/online=0、usb/current_now=0、usb/type=Unknown、port0/power_operation_mode=default；typec 段只有 data_role / power_role / vconn_source 三行，缺 partner/*（popsicle 有 partner/supports_usb_power_delivery 等），说明 Type-C 口没有识别出任何 USB 对端；charger_common 相应为 real_type=Unknown、quick_charge_type=0、power_max=0，dmesg 每约 1.5 秒一条 mca_charger_thermal_handle_limit:204「charger is not online」。\n【证据2：同平台另一台机器有线正常】诊断包 B（popsicle，同 canoe 平台、同 OS4.0.5）port0/power_operation_mode=usb_power_delivery、有 partner/* 段、usb/online=1、real_type=PD_PPS、power_max=45，充电正常。同模块族只有 pandora 断链 → 不是模块的通用行为。\n【证据3：用户两次实验】关公版 PPS（freepps）无效、禁用模块无效 → 排除 freepps 伪造 pd_verifed 与模块脚本写入两个假说。\n【排除项】stop_handle_charge=1 在正常工作的 popsicle 上同样是 1，不是「停充开关」；pandora 的 usb/voltage_now=5.97V 不是 VBUS——它与 dmesg「wireless loop: vout:5999」一致，是无线充电时被无线前端电压污染，故不能再据此推断「有线插着」；DT 侧 mca_strategy_quick_charge / mca_buckchg_jeita 读数齐全且 status=ok。\n【唯一未排除的模块痕迹】禁用模块不会回滚的是 2026-11-03 01:03:40 把模块内置 pandora.img 刷进 dtbo_a 这件事（诊断包 A 有 auto_before_flash 备份 dtbo_a_before_20261103-010340.img，sha 18d76a2a…）。有线检测发生在 USB/typec 驱动层，理论上不该受充电 DT 参数影响，但这是软件侧最后一个变量，需刷回备份实测。\n【次要异常（不解释有线，但要记）】无线侧每 30~40 秒断一次（50-停充.txt 01:22:05 / 01:22:41；dmesg uuid_value is 0x00000000 + strategy_wireless_power_good_off），电池长期 1~2% / 3.19V / 46~52℃；mi_thermald 反复 cannot execv / Exec format error / exited 127，而模块每 40 秒「已重启温控进程 mi_thermald」都在白做，且每次停充都还原一次原厂温控配置。",
+      "fix_plan": "按成本从低到高做真机排查：\n1) 关机（长按关机，不是重启）后插有线：出现关机充电动画/充电图标 → 硬件与线材正常，问题在系统；关机也不充 → 优先按硬件查。\n2) 换线换头各一次（原装 100W 头 + 另一根 5A 线），并换一个充电器/插座，观察是否出现任何反应。\n3) 数据线连电脑：能被识别成 MTP/adb → 数据通路正常，仅充电协商失败；完全不识别 → 端口/CC 通路问题。\n4) 清理尾插（吹尘/无水酒精棉签），排除接触不良。\n5) 刷回原厂 DTBO 后重启再试有线：设备上已有备份 /sdcard/Download/dtbo_backup/dtbo_a_before_20261103-010340.img（sha 18d76a2a…），执行 dtbo.sh flash <该文件> a → 重启 → 只插有线测试。这一步能一次性确认「是不是模块刷的 DTBO 造成的」。\n6) 以上都无效 → 按硬件处理（尾插 / PMIC USB 通路，必要时售后检测）。\n模块侧待办（等用户确认与说「修复」后再动代码）：a) 诊断包发现 port0 无 partner/* 时，「充电链路线」①层直接判定「端口未识别到 USB 对端」，别只显示 online=0；b) usb/voltage_now 在无线充电时会被无线 vout 污染，诊断与状态要标注来源，避免误判 VBUS；c) common.sh:683-716 写入路径加「充电器在线」门控，无充电器时不必要地刷 wired_chg_curr；d) 停充自愈去抖（同一原因 5 分钟内只还原一次原厂配置），mi_thermald 执行失败（127/Exec format error）单独上报；e) 若最终证实 pandora.img 有问题，核对镜像来源与 OS4.0.5 的匹配性。",
+      "affected": [
+        "src/battery/scripts/common.sh:683-716（direct_set_current_ma 无在线门控、三节点无差别写）",
+        "src/battery/scripts/common.sh:594-599（DIRECT_* 节点常量，仅 xm_power 一路）",
+        "src/battery/scripts/freepps.sh:51-94（pd_verifed 强制 1 / 还原）",
+        "src/battery/config/settings.conf:freepps（默认 1）与 power_limit=slow",
+        "src/thermal_core.sh:820-845（停充取证与检测）、thermal_core.sh:780-800（hitemp_guard）",
+        "src/diagnose.sh:228-245（充电节点与 charger_common 采集）",
+        "src/battery/scripts/status_kv.sh:194-201（real_type/power_max 取数）"
+      ],
+      "needs": "用户按 fix_plan 1~5 顺序各试一次并回报结果；第 5 步（刷回原厂 DTBO）最关键，决定问题是否与模块有关。",
+      "status": "已修（本地包 beta14 已构建并发送，待真机复测）；未发布",
+      "device": "pandora / 25098PN5AC / Xiaomi 17 Pro / OS4.0.5.0.XBLCNXM / Android 17 / Magisk",
+      "version_seen": "2.0.0 (code 124)",
+      "line": "main",
+      "fixed_in": "2.1.0-beta14 (139)",
+      "fixed_note": "数据目录优先由卡片 App 自建；写前按 App uid 对齐属主；写入回读校验；连续 3 次失败回滚并留 batt_write_fail；字段空值兜底防止切分错位；控制台 12 秒复查 last_fail 并回拨开关；诊断包新增 40-系统/背屏.txt；mock 自测：batt.txt 写入 4376000 152000 433 94 Charging，不可写直接 ERR"
+    },
+    {
+      "id": "bug-008",
+      "type": "feature",
+      "title": "bug 记录与修复要区分机型/系统/模块版本，避免把旧版本的问题当成新版本的问题",
+      "reported": "2026-11-03",
+      "evidence": "用户原话「手机bug是不是要区分版本以免读取错误」",
+      "root_cause": "现收集区条目只有 reported 与文本描述，同一现象在 1.0.x / 2.0.x / 2.1.0-beta 上表现和根因可能不同，容易把旧版问题套到新版修复上",
+      "fix_plan": "每条 bug 增加 device（机型/代号/系统版本/Root）与 version_seen（首次出现的模块版本+code）字段；同一现象若在新版本复现，补版本行而不是新建条目；修完写 fixed_in（版本+code）。控制台诊断包也带上模块版本与机型，方便对齐。",
+      "affected": [
+        "state/bugs.json（数据结构）",
+        "src/diagnose.sh（总览已带版本，补机型/代号即可）"
+      ],
+      "status": "已完成（收集区按线分版）",
+      "line": "all",
+      "fixed_in": "2.1.0-beta14 (139)",
+      "fixed_note": "bugs.json 增加 lines 与每条 line（main=原版线 / rearscreen=背屏版线 / all=流程）；按功能归属自动分线；fixed_in 写该线版本+code"
     }
   ],
   "cancelled": [
@@ -81,5 +191,10 @@
       "fix_plan": "可选（待用户定）：A 模块「检查更新」加「下载并校验」（设备端换源下载到 /sdcard/Download，用 latest.json 里已有的 size + sha256 校验，不通过自动换源重试并明确提示包不完整）；B 仅在界面显示包大小/sha256 与「134 = 包不完整」的排查提示；C 下载入口改走 QQ 群/网盘等更稳通道。",
       "status": "用户决定不做（2026-11-02）"
     }
-  ]
+  ],
+  "lines": {
+    "main": "原版线：main 分支，包名「动态温控·解容工具箱_vX.Y.Z.zip」",
+    "rearscreen": "背屏版线：test/rearscreen 分支，包名带「背屏版」",
+    "rule": "新反馈按功能归属自动分线：涉及背屏卡片/副屏投屏 → rearscreen；其余 → main。修复只在对应分支改，fixed_in 写该线版本+code；一条现象若两条线都复现，各线各记一条并互相标注 relate。"
+  }
 }

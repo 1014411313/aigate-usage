@@ -17,14 +17,14 @@ SRC = os.path.join(ROOT, 'src')
 DIST = os.path.join(ROOT, 'dist')
 
 EXEC = {'thermal_core.sh', 'service.sh', 'action.sh', 'uninstall.sh', 'customize.sh',
-        'post-fs-data.sh', 'diagnose.sh', 'config_backup.sh',
+        'post-fs-data.sh', 'diagnose.sh', 'config_backup.sh', 'api/app_api.sh', 'api/snapshotd.sh',
         'battery/post-fs-data.sh', 'battery/service.sh', 'battery/uninstall.sh',
         'battery/bin/freepps'}
 EXEC_DIR_PREFIX = ('battery/scripts/',)
 
 
 def perms(rel):
-    if rel in EXEC or rel.startswith(EXEC_DIR_PREFIX):
+    if rel.endswith('.sh') or rel in EXEC or rel.startswith(EXEC_DIR_PREFIX):
         return 0o100755
     return 0o100644
 
@@ -37,18 +37,24 @@ def read_prop(path, key):
 
 
 def main():
+    from build_app import OUT as APP_APK, verify_apk
+
     vc = read_prop(os.path.join(SRC, 'module.prop'), 'versionCode')
     vn = read_prop(os.path.join(SRC, 'module.prop'), 'version')
     out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(
         DIST, 'HyperOS_XJ_K2_battery-pps-dtbo_v%s.zip' % vc)
-    os.makedirs(os.path.dirname(out), exist_ok=True)
+    apk_data = verify_apk(APP_APK)
+    if not os.path.isfile(os.path.join(SRC, 'webroot', 'index.html')):
+        sys.exit('缺少独立模块 WebUI: src/webroot/index.html')
+    os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
 
     files = []
     for root, dirs, fs in os.walk(SRC):
+        if root == SRC:
+            dirs[:] = [name for name in dirs if name != 'hyperosui']
         dirs.sort(); fs.sort()
         for f in fs:
             rel = os.path.relpath(os.path.join(root, f), SRC)
-            # 控制台 APK 不再随包分发（界面已改为模块 WebUI）；仓库里保留一份方便回退
             if rel == 'HyperOSxj.apk':
                 continue
             # 开发期的旧版备份（*.bak / *.glass-bak 等）不进包
@@ -61,28 +67,12 @@ def main():
             [f for f in files if f != 'module.prop' and not f.startswith('META-INF/')]
     order = [f for f in order if f in files]
 
-    # 控制台 APK 的内容哈希已不再需要（界面改走模块 WebUI）
-    extra = {}
-    web = os.path.join(SRC, 'hyperosui', 'index.html')
-    if os.path.exists(web):
-        # KernelSU 内置 WebUI：同一份界面复制到 webroot/，更新模块即更新界面，不用装 APK
-        extra['webroot/index.html'] = stamp_build_date(open(web, 'rb').read())
-        assets = os.path.join(SRC, 'hyperosui', 'assets')
-        for root, dirs, fs in os.walk(assets):
-            dirs.sort(); fs.sort()
-            for f in fs:
-                p = os.path.join(root, f)
-                rel = os.path.relpath(p, os.path.dirname(web))
-                extra['webroot/' + rel] = open(p, 'rb').read()
-        default_wallpaper = os.path.join(SRC, 'hyperosui', '.file', '默认壁纸.jpg')
-        extra['webroot/.file/默认壁纸.jpg'] = open(default_wallpaper, 'rb').read()
+    extra = {'HyperOSxj.apk': apk_data}
 
     with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as z:
         for rel in order:
             p = os.path.join(SRC, rel)
             data = open(p, 'rb').read()
-            if rel == 'hyperosui/index.html':
-                data = stamp_build_date(data)
             zi = zipfile.ZipInfo(rel, date_time=time.localtime(os.path.getmtime(p))[:6])
             zi.external_attr = perms(rel) << 16
             zi.compress_type = zipfile.ZIP_DEFLATED
@@ -97,7 +87,7 @@ def main():
     sha = hashlib.sha256(open(out, 'rb').read()).hexdigest()
     print('version %s (%s)' % (vn, vc))
     print('output  %s' % out)
-    print('entries %d  size %d' % (len(order), size))
+    print('entries %d  size %d' % (len(order) + len(extra), size))
     print('sha256  %s' % sha)
 
 

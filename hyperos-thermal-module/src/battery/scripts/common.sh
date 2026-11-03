@@ -268,40 +268,7 @@ cfg_get() {
 #   这个文件里的 cfg_get 调用点单次只有十几处，grep|tail|cut 的成本远小于错误配置。
 
 cfg_set() {
-  _k="$1"; _v="$2"
-  mkdir -p "$(dirname "$CONF")"
-  # v2.7：同时确保 state 目录存在 —— 全新安装时安装脚本只在"有旧版本可迁移"的分支里
-  #   才创建 state（customize.sh:91/123），纯净首装不会建。而多个脚本会直接写
-  #   $XBT/state/*（thermal_prev / last_real_cycle.txt / fv_default …），
-  #   目录不存在时写入静默失败 → 温控保护前的档位丢失、真实循环值无法记录。
-  #   cfg_set 是所有配置/状态写入的必经入口，在这里兜底最可靠。
-  mkdir -p "$XBT/state" 2>/dev/null
-  touch "$CONF"
-  # v2.6.23 修复：末行无换行时直接 >> 会与末行粘连（实测产生 `dev_code=slow_w=2`，
-  # 导致 dev_code 变成 "slow_w=2" → 静默回退 xuanyuan → BAA 指向错误机型、解容挂载失败）
-  if [ -s "$CONF" ] && [ -n "$(tail -c 1 "$CONF" 2>/dev/null)" ]; then
-    echo "" >> "$CONF"
-  fi
-  if grep -qE "^${_k}=" "$CONF" 2>/dev/null; then
-    # v2.7（发布前审计 🟡-1）：sed 加 /g —— 旧写法只替换【首个】匹配行，
-    #   而 cfg_get 用 `tail -n 1` 读【最后一行】。若因并发追加产生了重复键，
-    #   就会出现「写首行、读末行」→ 写入被旧值遮蔽（如 stop 动作的 slow_w=2 不生效）。
-    #   加 /g 保证所有同名行同步更新，与 cfg_get 语义对齐（且顺带自愈历史重复键）。
-    #
-    # v3.0.0：把 sed 分隔符从 `|` 换成 `@`。
-    #   同 L1117 那个 bug 是同一类隐患：`|` 既是分隔符又可能出现在数据里
-    #   （配置值是用户可改的字符串，如 backup_dir 路径）。一旦值里带 `|`，
-    #   sed 表达式会被截断 → **静默写坏配置**（写失败但没有任何报错）。
-    #   路径里不可能出现 `@`，更安全。
-    sed -i "s@^${_k}=.*@${_k}=${_v}@g" "$CONF"
-  else
-    echo "${_k}=${_v}" >> "$CONF"
-  fi
-  # 同步一份到模块目录外：模块更新会整体替换目录，靠这份备份在安装时恢复。
-  # 放在 cfg_set 里而不是定时任务，保证用户改完立刻就有备份（不等 60 秒）。
-  _xj_bak=/data/adb/HyperOS_XJ_data/battery/config
-  [ -d "$_xj_bak" ] || mkdir -p "$_xj_bak" 2>/dev/null
-  cp -f "$CONF" "$_xj_bak/settings.conf" 2>/dev/null
+  sh "$XBT/../api/battery_cfg_write.sh" "$CONF" "$XBT" "$1" "$2"
 }
 
 # 机型参数取用（必须在 cfg_get/cfg_set 定义之后解析，否则函数尚未定义会取到空值）

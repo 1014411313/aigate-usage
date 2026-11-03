@@ -1,0 +1,129 @@
+:root {
+  --bg: #101216;
+  --surface: #1a1e24;
+  --surface-active: #23303c;
+  --border: #2b323b;
+  --text: #e6e9ee;
+  --muted: #8b949f;
+  --accent: #4c9aff;
+  --danger: #ef6b62;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 16px;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.5 -apple-system, "Segoe UI", Roboto, "Noto Sans CJK SC", sans-serif;
+}
+
+h1 {
+  margin: 0;
+  font-size: 20px;
+}
+
+h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.subtitle {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.subtitle span {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.notice {
+  margin: 16px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.profiles {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.card {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.card.active {
+  border-color: var(--accent);
+  background: var(--surface-active);
+}
+
+.card p {
+  margin: 6px 0 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+button {
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+button.ghost {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+}
+
+button.danger {
+  color: var(--danger);
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.output {
+  margin-top: 20px;
+}
+
+.output h2 {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+pre {
+  margin: 8px 0 0;
+  padding: 12px;
+  max-height: 240px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #0b0d10;
+  color: #c8d0da;
+  font: 12px/1.5 ui-monospace, "SFMono-Regular", Menlo, monospace;
+  white-space: pre-wrap;
+  word-break: break-all;
+}

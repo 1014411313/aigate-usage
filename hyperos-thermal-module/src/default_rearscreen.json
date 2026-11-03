@@ -1,0 +1,7 @@
+{
+  "enabled": false,
+  "fields": ["temp", "soc", "volt", "cur"],
+  "accent": "78,161,255",
+  "theme": "aurora",
+  "font_scale": 1
+}

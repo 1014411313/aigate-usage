@@ -1,15 +1,27 @@
-# 构建产物（各项目通用）
+# 构建产物
 build/
 node_modules/
+__pycache__/
+*.pyc
 
-# aigate-usage：由 index.html / tools/MakeIcon.java 生成
-/aigate-usage/app/assets/
-/aigate-usage/app/res/mipmap-*/
-/aigate-usage/app/icon-1024.png
-
-# 以下项目尚未纳入仓库，补齐各自的忽略规则后再加入
+# 工具与临时目录
 .aicode/
-charger/
-mcp-client/
-orig/
-perf-tuner/
+
+# 归档项目（archive/，仅供查阅，不参与当前构建；生成物不入库）
+/archive/aigate-usage/app/assets/
+/archive/aigate-usage/app/res/mipmap-*/
+/archive/aigate-usage/app/icon-1024.png
+
+# 控制端 App：assets/control 除 bridge.js 外均为构建期从模块 src/hyperosui/ 拷入的产物或副本，构建不读 App 侧，不入库
+/app/src/main/assets/control/*
+!/app/src/main/assets/control/bridge.js
+
+# 控制端 App：仅入库编译必需的 Xposed API，其余 jar 为 dex/smali 分析工具，构建不用（文件保留在磁盘）
+/app/libs/*
+!/app/libs/xposed-api-82.jar
+
+# 个人文档，不入库
+/health/
+
+# 嵌套独立 Git 仓库，自管版本，不入库
+/xiaomi-8Elite-charge-boost/

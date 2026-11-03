@@ -19,7 +19,7 @@ if [ -f "$CONFDIR/core.pid" ]; then
 fi
 pkill -f 'thermal_core.sh' 2>/dev/null && STOPPED=1
 pkill -f "$MODDIR/service.sh" 2>/dev/null && STOPPED=1
-pkill -f "$MODDIR" 2>/dev/null
+pkill -f "$MODDIR/api/snapshotd.sh" 2>/dev/null
 sleep 1
 [ "$STOPPED" = "1" ] && say "- 温控核心进程与服务已全部停止" || say "- 未发现运行中的核心进程"
 say " "
@@ -121,17 +121,7 @@ case "$ORIG" in
 esac
 say " "
 
-if pm list packages 2>/dev/null | grep -q 'com.hyperos.xj'; then
-    if pm uninstall --user 0 com.hyperos.xj >/dev/null 2>&1; then
-        say "[OK] 已卸载控制台 APK（com.hyperos.xj）"
-    elif pm uninstall com.hyperos.xj >/dev/null 2>&1; then
-        say "[OK] 已卸载控制台 APK（全局）"
-    else
-        say "[!] APK 卸载失败，请手动卸载 com.hyperos.xj"
-    fi
-else
-    say "- 未安装 com.hyperos.xj，跳过"
-fi
+say "- 保留统一控制端 com.hyperos.xj 及其 App 数据，可在系统设置中自行管理"
 say " "
 
 if [ -f "$MODDIR/battery/uninstall.sh" ]; then
@@ -144,7 +134,7 @@ if [ -d /data/adb/modules/battery_tune ] && [ ! -f /data/adb/modules/battery_tun
     rm -rf /data/adb/modules/battery_tune 2>/dev/null
 fi
 
-rm -rf /data/adb/HyperOS_XJ_backup 2>/dev/null && say "- 已清理镜像备份 /data/adb/HyperOS_XJ_backup"
+say "- 保留模块外用户设置与备份：/data/adb/HyperOS_XJ_data、/data/adb/HyperOS_XJ_backup"
 rm -rf /data/local/tmp/xj_diag_* 2>/dev/null
 rm -f /data/local/tmp/HyperOS_XJ_uninstall.log 2>/dev/null
 rm -f /data/local/tmp/HyperOS_XJ_action.log 2>/dev/null

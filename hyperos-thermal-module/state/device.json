@@ -4,6 +4,7 @@
   "root": "KernelSU（另有 susfs/maphide/LSPosed 等）",
   "slot": "_b",
   "current_state": {
+    "unified_test_pending": "2026-11-03：2.1.0-unified(code140/APK2001)本地测试包已构建、校验并发到聊天，待真机安装；需为控制App授权Root，在LSPosed启用并勾选com.xiaomi.subscreencenter，重启后验证背屏显示/关闭恢复原生/过期移除和主屏稳定性。容器API208次RPC（含轮询）、Firefox240页、只读采样/双串数据和签名ZIP通过；尚未验证手机安装、Hook和实际充电。",
     "installed_version": "v1.0.59 真机反馈仍卡；v1.0.60 合并快照命令；v1.0.61 status_kv.sh 零 fork；v1.0.62 命令通道切 ksu.spawn 异步（脚本执行不再冻结界面）；v1.0.63 主页扩展（实时曲线/电池详情/充电协议/温区）+ 沉浸全屏，等待安装复测：真机看四卡数据与系统栏取色",
     "webui_test_pending": "v1.0.75(122)本地测试包已构建并发送：四款液态水滴壁纸可选、移除独立温控守护、修复DTBO跳过安装刷写后的识别误报；Firefox壁纸与七种DTBO状态/18组响应式、十五机型和模拟刷写安全门/升级清理通过。待用户安装验证壁纸观感与本机DTBO识别，未发布，未操作真实分区。",
     "dtbo_test_pending": "源码与v1.0.74包确实内置popsicle等十五种镜像；旧安装跳过后未生成local.img且机型未独立写入，页面只查local.img误报资源缺失。v1.0.75独立识别与准备本机镜像，手动/状态/诊断共用读取；升级后电池→DTBO应显示对应镜像可刷入，刷写须用户确认并重启才生效。",

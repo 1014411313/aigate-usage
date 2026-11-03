@@ -1,0 +1,40 @@
+#!/sbin/sh
+# GPU 智能升频 · 安装器（自包含，不依赖 Magisk 的 util_functions.sh）
+umask 022
+
+OUTFD=$2
+ZIPFILE=$3
+
+ui_print() { echo "ui_print $1" 1>&$OUTFD 2>/dev/null || echo "$1"; }
+
+ui_print "- GPU 智能升频 V1.0"
+
+TMP=/data/local/tmp/gpu_autoboost_install
+rm -rf "$TMP" 2>/dev/null
+mkdir -p "$TMP" 2>/dev/null
+
+unzip -o "$ZIPFILE" -d "$TMP" >/dev/null 2>&1 || {
+    ui_print "! 解压失败，请确认 zip 完整"
+    exit 1
+}
+
+TARGET=/data/adb/modules/gpu_autoboost
+mkdir -p "$TARGET" 2>/dev/null
+cp -af "$TMP"/. "$TARGET"/ 2>/dev/null
+rm -rf "$TARGET/META-INF" 2>/dev/null
+
+chmod 0755 "$TARGET/gpud" "$TARGET/service.sh" "$TARGET/uninstall.sh" "$TARGET/action.sh" 2>/dev/null
+chmod 0755 "$TARGET/webroot/api.sh" 2>/dev/null
+chmod 0644 "$TARGET/webroot/index.html" "$TARGET/module.prop" "$TARGET/default.conf" 2>/dev/null
+
+DATA=/data/adb/gpu_autoboost
+mkdir -p "$DATA/run" 2>/dev/null
+if [ ! -f "$DATA/config.conf" ]; then
+    cp "$TARGET/default.conf" "$DATA/config.conf" 2>/dev/null
+    chmod 0644 "$DATA/config.conf" 2>/dev/null
+fi
+
+rm -rf "$TMP" 2>/dev/null
+
+ui_print "- 安装完成，重启后生效"
+exit 0

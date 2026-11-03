@@ -1,0 +1,441 @@
+#!/system/bin/sh
+# GPU 智能升频守护
+#
+# 为什么需要它：msm-adreno-tz 依据 devfreq/gpu_load 决策，而该值在本机被严重
+# 低估（只有 gpu_busy_percentage 的 1/3~1/5），于是真实负载到 70% 时它仍把
+# GPU 留在 222~342MHz。本守护绕开它：直接读真实繁忙度，动态抬升 min_pwrlevel
+# 下限把 GPU 推到够用的档位；负载回落再逐档放回。
+
+MODDIR=${0%/*}
+DATA=/data/adb/gpu_autoboost
+CONF=$DATA/config.conf
+RUN=$DATA/run
+STATUS=$RUN/status
+LEARN_FILE=$DATA/learn.tsv
+LEARN_AGG=$DATA/learn_agg.tsv
+MODES=$DATA/app_modes.conf
+GAMES=$DATA/games.conf
+LOCK=$DATA/gpud.lock
+LOCKD=$DATA/gpud.lockd
+LOG=$DATA/gpud.log
+PAUSE=$DATA/pause
+ORIG=$RUN/orig_min
+
+GPU=/sys/class/kgsl/kgsl-3d0
+BUSY=
+CURF=
+MINP=
+NUM=
+AVAIL=
+TEMPF=
+
+log() {
+    printf '%s %s\n' "$(date '+%m-%d %H:%M:%S')" "$1" >> "$LOG" 2>/dev/null
+}
+
+log_trim() {
+    [ -f "$LOG" ] || return 0
+    n=$(wc -c < "$LOG" 2>/dev/null)
+    case "$n" in ''|*[!0-9]*) return 0 ;; esac
+    [ "$n" -gt 262144 ] || return 0
+    tail -n 800 "$LOG" > "$LOG.tmp" 2>/dev/null && mv "$LOG.tmp" "$LOG"
+}
+
+detect() {
+    for base in /sys/class/kgsl/kgsl-3d0 /sys/class/kgsl/kgsl-3d1; do
+        [ -r "$base/gpu_busy_percentage" ] && [ -w "$base/min_pwrlevel" ] || continue
+        GPU=$base
+        BUSY=$GPU/gpu_busy_percentage
+        CURF=$GPU/devfreq/cur_freq
+        [ -r "$CURF" ] || CURF=$GPU/gpuclk
+        MINP=$GPU/min_pwrlevel
+        NUM=$GPU/num_pwrlevels
+        AVAIL=$GPU/gpu_available_frequencies
+        TEMPF=$GPU/temp
+        return 0
+    done
+    return 1
+}
+
+load_cfg() {
+    INTERVAL_MS=300
+    BUSY_HIGH=65
+    BUSY_LOW=35
+    HOLD_UP=4
+    HOLD_DOWN=10
+    LEVEL_MIN=1
+    LEVEL_MAX=12
+    LEVEL_START=12
+    TH_CAP=1
+    TH_HIGH=75
+    TH_LOW=68
+    LEVEL_THERMAL=8
+    SCREEN_IDLE=1
+    LEARN=1
+    LEARN_FLUSH_S=300
+    GAME_BOOST=1
+    GAME_LEVEL=1
+
+    [ -r "$CONF" ] || return 0
+    while IFS='=' read -r k v; do
+        case "$k" in
+            ''|'#'*) continue ;;
+        esac
+        v=${v% }
+        case "$k" in
+            INTERVAL_MS) INTERVAL_MS=$v ;;
+            BUSY_HIGH)   BUSY_HIGH=$v ;;
+            BUSY_LOW)    BUSY_LOW=$v ;;
+            HOLD_UP)     HOLD_UP=$v ;;
+            HOLD_DOWN)   HOLD_DOWN=$v ;;
+            LEVEL_MIN)   LEVEL_MIN=$v ;;
+            LEVEL_MAX)   LEVEL_MAX=$v ;;
+            LEVEL_START) LEVEL_START=$v ;;
+            TH_CAP)      TH_CAP=$v ;;
+            TH_HIGH)     TH_HIGH=$v ;;
+            TH_LOW)      TH_LOW=$v ;;
+            LEVEL_THERMAL) LEVEL_THERMAL=$v ;;
+            SCREEN_IDLE) SCREEN_IDLE=$v ;;
+            GAME_BOOST)  GAME_BOOST=$v ;;
+            GAME_LEVEL)  GAME_LEVEL=$v ;;
+            LEARN)       LEARN=$v ;;
+            LEARN_FLUSH_S) LEARN_FLUSH_S=$v ;;
+        esac
+    done < "$CONF"
+
+    # 夹回合法范围，坏值绝不生效
+    case "$INTERVAL_MS" in ''|*[!0-9]*) INTERVAL_MS=300 ;; esac
+    [ "$INTERVAL_MS" -lt 50 ] && INTERVAL_MS=50
+    [ "$INTERVAL_MS" -gt 2000 ] && INTERVAL_MS=2000
+    case "$BUSY_HIGH" in ''|*[!0-9]*) BUSY_HIGH=65 ;; esac
+    case "$BUSY_LOW" in ''|*[!0-9]*) BUSY_LOW=35 ;; esac
+    case "$HOLD_UP" in ''|*[!0-9]*) HOLD_UP=4 ;; esac
+    case "$HOLD_DOWN" in ''|*[!0-9]*) HOLD_DOWN=10 ;; esac
+    case "$LEVEL_MIN" in ''|*[!0-9]*) LEVEL_MIN=1 ;; esac
+    case "$LEVEL_MAX" in ''|*[!0-9]*) LEVEL_MAX=12 ;; esac
+    case "$LEVEL_START" in ''|*[!0-9]*) LEVEL_START=12 ;; esac
+    [ "$BUSY_HIGH" -gt 100 ] && BUSY_HIGH=100
+    [ "$BUSY_LOW" -ge "$BUSY_HIGH" ] && BUSY_LOW=$((BUSY_HIGH - 10))
+    [ "$BUSY_LOW" -lt 1 ] && BUSY_LOW=1
+    [ "$HOLD_UP" -lt 1 ] && HOLD_UP=1
+    [ "$HOLD_DOWN" -lt 1 ] && HOLD_DOWN=1
+
+    np=$(cat "$NUM" 2>/dev/null)
+    case "$np" in ''|*[!0-9]*) np=14 ;; esac
+    [ "$LEVEL_MAX" -gt $((np - 1)) ] && LEVEL_MAX=$((np - 1))
+    [ "$LEVEL_MAX" -lt 0 ] && LEVEL_MAX=0
+    [ "$LEVEL_MIN" -lt 0 ] && LEVEL_MIN=0
+    [ "$LEVEL_MIN" -gt "$LEVEL_MAX" ] && LEVEL_MIN=0
+    [ "$LEVEL_START" -lt "$LEVEL_MIN" ] && LEVEL_START=$LEVEL_MIN
+    [ "$LEVEL_START" -gt "$LEVEL_MAX" ] && LEVEL_START=$LEVEL_MAX
+
+    case "$TH_HIGH" in ''|*[!0-9]*) TH_HIGH=75 ;; esac
+    case "$TH_LOW" in ''|*[!0-9]*) TH_LOW=68 ;; esac
+    [ "$TH_HIGH" -gt 110 ] && TH_HIGH=110
+    [ "$TH_HIGH" -lt 35 ] && TH_HIGH=35
+    [ "$TH_LOW" -ge "$TH_HIGH" ] && TH_LOW=$((TH_HIGH - 5))
+    [ "$TH_LOW" -lt 30 ] && TH_LOW=30
+    case "$LEVEL_THERMAL" in ''|*[!0-9]*) LEVEL_THERMAL=$LEVEL_MAX ;; esac
+    [ "$LEVEL_THERMAL" -lt "$LEVEL_MIN" ] && LEVEL_THERMAL=$LEVEL_MIN
+    [ "$LEVEL_THERMAL" -gt "$LEVEL_MAX" ] && LEVEL_THERMAL=$LEVEL_MAX
+
+    case "$LEARN_FLUSH_S" in ''|*[!0-9]*) LEARN_FLUSH_S=300 ;; esac
+    [ "$LEARN_FLUSH_S" -lt 60 ] && LEARN_FLUSH_S=60
+
+    case "$GAME_LEVEL" in ''|*[!0-9]*) GAME_LEVEL=1 ;; esac
+    [ "$GAME_LEVEL" -lt "$LEVEL_MIN" ] && GAME_LEVEL=$LEVEL_MIN
+    [ "$GAME_LEVEL" -gt "$LEVEL_MAX" ] && GAME_LEVEL=$LEVEL_MAX
+    case "$GAME_BOOST" in ''|*[!0-9]*) GAME_BOOST=1 ;; esac
+    [ "$GAME_BOOST" -gt 1 ] && GAME_BOOST=1
+
+    # sleep 参数
+    if [ "$INTERVAL_MS" -ge 1000 ]; then
+        SLEEP_ARG=$((INTERVAL_MS / 1000))
+    else
+        ms3=$INTERVAL_MS
+        case ${#ms3} in
+            1) SLEEP_ARG=0.00$ms3 ;;
+            2) SLEEP_ARG=0.0$ms3 ;;
+            *) SLEEP_ARG=0.$ms3 ;;
+        esac
+    fi
+}
+
+freq_mhz_of() {
+    # pwrlevel -> MHz，读不到就返回 "-"
+    [ -r "$AVAIL" ] || { echo "-"; return; }
+    i=$1
+    set -- $(cat "$AVAIL" 2>/dev/null)
+    n=$#
+    [ "$i" -ge "$n" ] && { echo "-"; return; }
+    eval "v=\${$((i + 1))}"
+    case "$v" in ''|*[!0-9]*) echo "-" ;; *) echo $((v / 1000000)) ;; esac
+}
+
+cleanup() {
+    if [ -n "$MINP" ] && [ -f "$ORIG" ]; then
+        o=$(cat "$ORIG" 2>/dev/null)
+        case "$o" in
+            ''|*[!0-9]*) : ;;
+            *) printf '%s\n' "$o" > "$MINP" 2>/dev/null ;;
+        esac
+    fi
+    rm -f "$LOCK" 2>/dev/null
+    rm -rf "$LOCKD" 2>/dev/null
+    exit 0
+}
+
+# ── 启动 ──────────────────────────────────────────────────────
+
+mkdir -p "$RUN" 2>/dev/null
+
+# 单实例：mkdir 是原子的，两个同时启动的守护只有一个能抢到。
+# 只靠“检查文件再写”会有竞态窗，看门狗与手动启动相撞时会跑出两个进程。
+if ! mkdir "$LOCKD" 2>/dev/null; then
+    old=$(cat "$LOCKD/pid" 2>/dev/null)
+    case "$old" in
+        ''|*[!0-9]*) : ;;
+        *) [ -d "/proc/$old" ] && exit 0 ;;
+    esac
+    rm -rf "$LOCKD" 2>/dev/null
+    mkdir "$LOCKD" 2>/dev/null || exit 0
+fi
+echo $$ > "$LOCKD/pid" 2>/dev/null
+echo $$ > "$LOCK"
+
+detect || { log "未找到可写的 KGSL 节点，退出"; rm -f "$LOCK"; rm -rf "$LOCKD"; exit 1; }
+load_cfg
+
+# 上次异常退出可能没还原，先按记录恢复再取新基准
+if [ -f "$ORIG" ]; then
+    o=$(cat "$ORIG" 2>/dev/null)
+    case "$o" in
+        ''|*[!0-9]*) : ;;
+        *) printf '%s\n' "$o" > "$MINP" 2>/dev/null ;;
+    esac
+fi
+orig_now=$(cat "$MINP" 2>/dev/null)
+case "$orig_now" in
+    ''|*[!0-9]*) orig_now=$LEVEL_MAX ;;
+esac
+printf '%s\n' "$orig_now" > "$ORIG"
+log "启动 pid=$$ 节点=$GPU 原始min_pwrlevel=$orig_now"
+
+LEVEL=$LEVEL_START
+UP=0
+DOWN=0
+cur=-1
+last_sec=0
+last_learn=0
+last_status=0
+last_cfg=0
+last_m=
+last_trim=0
+last_agg=0
+screen_off=0
+APP_LOCK=
+GAME_HIT=
+
+trap cleanup INT TERM EXIT
+
+while :; do
+    if [ -f "$PAUSE" ]; then
+        sleep 1
+        continue
+    fi
+
+    now=$(date +%s 2>/dev/null)
+    case "$now" in ''|*[!0-9]*) now=0 ;; esac
+
+    # 配置按 mtime 重载，最多 2 秒查一次
+    if [ "$now" -ne "$last_cfg" ]; then
+        last_cfg=$now
+        m=$(stat -c %Y "$CONF" 2>/dev/null)
+        case "$m" in ''|*[!0-9]*) m=0 ;; esac
+        if [ "$m" != "$last_m" ]; then
+            last_m=$m
+            load_cfg
+        fi
+    fi
+
+    # 真实繁忙度：读不到就跳过这一轮
+    read -r b < "$BUSY" 2>/dev/null
+    busy=${b%% *}
+    case "$busy" in
+        ''|*[!0-9]*)
+            sleep 1
+            continue
+            ;;
+    esac
+
+    read -r f < "$CURF" 2>/dev/null
+    case "$f" in ''|*[!0-9]*) f=0 ;; esac
+
+    # 外部可能改过下限，以实际值为准
+    read -r ac < "$MINP" 2>/dev/null
+    case "$ac" in ''|*[!0-9]*) ac=$cur ;; esac
+    if [ "$ac" != "$cur" ]; then
+        cur=$ac
+        LEVEL=$ac
+    fi
+
+    # 温度（毫摄氏度）
+    temp=0
+    if [ -r "$TEMPF" ]; then
+        read -r t < "$TEMPF" 2>/dev/null
+        case "$t" in
+            ''|*[!0-9]*) : ;;
+            *) [ "$t" -gt 0 ] && [ "$t" -lt 200000 ] && temp=$((t / 1000)) ;;
+        esac
+    fi
+
+    # 滞回计数
+    if [ "$busy" -ge "$BUSY_HIGH" ]; then
+        UP=$((UP + 1))
+        DOWN=0
+    elif [ "$busy" -le "$BUSY_LOW" ]; then
+        DOWN=$((DOWN + 1))
+        UP=0
+    else
+        UP=0
+        DOWN=0
+    fi
+
+    # 温控优先：过热直接压档，且这一轮不再接受其他调整
+    THERMAL_NOW=0
+    if [ "$TH_CAP" = 1 ] && [ "$temp" -gt 0 ] && [ "$temp" -ge "$TH_HIGH" ]; then
+        if [ "$LEVEL" -lt "$LEVEL_THERMAL" ]; then
+            LEVEL=$LEVEL_THERMAL
+        fi
+        THERMAL_NOW=1
+        UP=0
+        DOWN=0
+    fi
+
+    if [ "$THERMAL_NOW" = 1 ]; then
+        : # 温控生效中，跳过游戏/锁定/动态
+    elif [ -n "$GAME_HIT" ]; then
+        # 游戏在前台：不等负载爬升，直接拉到设定档位
+        LEVEL=$GAME_LEVEL
+        UP=0
+        DOWN=0
+    elif [ -n "$APP_LOCK" ]; then
+        # 该应用被锁定在固定档位，不做动态调整
+        LEVEL=$APP_LOCK
+        UP=0
+        DOWN=0
+    elif [ "$UP" -ge "$HOLD_UP" ] && [ "$LEVEL" -gt "$LEVEL_MIN" ]; then
+        LEVEL=$((LEVEL - 1))
+        UP=0
+    elif [ "$DOWN" -ge "$HOLD_DOWN" ] && [ "$LEVEL" -lt "$LEVEL_MAX" ]; then
+        LEVEL=$((LEVEL + 1))
+        DOWN=0
+    fi
+
+    # 熄屏直接回到最省电档
+    if [ "$SCREEN_IDLE" = 1 ] && [ "$now" -ne "$last_sec" ]; then
+        last_sec=$now
+        bl=/sys/class/backlight/panel0-backlight/brightness
+        [ -r "$bl" ] || bl=/sys/class/backlight/panel-backlight/brightness
+        if [ -r "$bl" ]; then
+            read -r bv < "$bl" 2>/dev/null
+            case "$bv" in
+                ''|*[!0-9]*) : ;;
+                *) if [ "$bv" -eq 0 ]; then screen_off=1; else screen_off=0; fi ;;
+            esac
+        fi
+        if [ "$screen_off" = 1 ] && [ "$LEVEL" -lt "$LEVEL_MAX" ]; then
+            LEVEL=$LEVEL_MAX
+            UP=0
+            DOWN=0
+        fi
+    fi
+
+    # 只在变化时写，避免无谓的 sysfs 写入
+    if [ "$LEVEL" != "$cur" ]; then
+        if printf '%s\n' "$LEVEL" > "$MINP" 2>/dev/null; then
+            cur=$LEVEL
+        fi
+    fi
+
+    # 每 5 秒更新状态、前台包名与学习样本
+    if [ "$now" -ne "$last_status" ] && [ $((now % 5)) = 0 ]; then
+        last_status=$now
+
+        fg=-
+        w=$(dumpsys window 2>/dev/null | grep -m1 mCurrentFocus)
+        case "$w" in
+            *" u0 "*)
+                fg=${w#* u0 }
+                fg=${fg%%/*}
+                ;;
+        esac
+        case "$fg" in
+            ''|*[!A-Za-z0-9._]*) fg=- ;;
+        esac
+        printf '%s\n' "$fg" > "$RUN/fg.tmp" 2>/dev/null && mv "$RUN/fg.tmp" "$RUN/fg" 2>/dev/null
+
+        # 应用级档位锁定：该应用前台时固定在该档位，不做动态调整
+        APP_LOCK=
+        if [ -r "$MODES" ] && [ "$fg" != "-" ]; then
+            ln=$(grep -m1 "^$fg=" "$MODES" 2>/dev/null)
+            if [ -n "$ln" ]; then
+                v=${ln#*=}
+                case "$v" in
+                    ''|*[!0-9]*) : ;;
+                    *) if [ "$v" -ge 0 ] && [ "$v" -le "$LEVEL_MAX" ]; then APP_LOCK=$v; fi ;;
+                esac
+            fi
+        fi
+
+        # 游戏名单：命中则强制拉高档位
+        GAME_HIT=
+        if [ "$GAME_BOOST" = 1 ] && [ -r "$GAMES" ] && [ "$fg" != "-" ]; then
+            if grep -qx "$fg" "$GAMES" 2>/dev/null; then
+                GAME_HIT=1
+            fi
+        fi
+
+        printf 'busy=%s\nfreq=%s\nlevel=%s\nlevel_min=%s\nlevel_max=%s\ntemp=%s\nfg=%s\nlock=%s\ngame=%s\npid=%s\n' \
+            "$busy" "$f" "$LEVEL" "$LEVEL_MIN" "$LEVEL_MAX" "$temp" "$fg" "$APP_LOCK" "$GAME_HIT" "$$" > "$STATUS.tmp" 2>/dev/null \
+            && mv "$STATUS.tmp" "$STATUS" 2>/dev/null
+
+        if [ "$LEARN" = 1 ] && [ $((now - last_learn)) -ge 5 ]; then
+            last_learn=$now
+            printf '%s\t%s\t%s\t%s\n' "$fg" "$LEVEL" "$busy" "$f" >> "$LEARN_FILE" 2>/dev/null
+        fi
+    fi
+
+    # 每小时聚合一次学习样本，并防止原始文件无限增长
+    if [ "$now" -ne "$last_agg" ] && [ $((now - last_agg)) -ge "$LEARN_FLUSH_S" ]; then
+        last_agg=$now
+        if [ -s "$LEARN_FILE" ]; then
+            lines=$(wc -l < "$LEARN_FILE" 2>/dev/null)
+            case "$lines" in ''|*[!0-9]*) lines=0 ;; esac
+            if [ "$lines" -gt 20000 ]; then
+                tail -n 20000 "$LEARN_FILE" > "$LEARN_FILE.tmp" 2>/dev/null && mv "$LEARN_FILE.tmp" "$LEARN_FILE"
+            fi
+            awk -F'\t' '
+                NF >= 3 {
+                    k = $1 SUBSEP $2
+                    b[k] += $3
+                    n[k]++
+                    if (!(k in p) || $4 + 0 > p[k]) p[k] = $4 + 0
+                }
+                END {
+                    for (k in n) {
+                        split(k, a, SUBSEP)
+                        printf "%s\t%s\t%d\t%d\t%d\n", a[1], a[2], b[k] / n[k] + 0.5, n[k], p[k] / 1000000
+                    }
+                }
+            ' "$LEARN_FILE" > "$LEARN_AGG.tmp" 2>/dev/null && mv "$LEARN_AGG.tmp" "$LEARN_AGG"
+        fi
+    fi
+
+    if [ "$now" -ne "$last_trim" ] && [ $((now - last_trim)) -ge 300 ]; then
+        last_trim=$now
+        log_trim
+    fi
+
+    sleep "$SLEEP_ARG" 2>/dev/null || sleep 1
+done

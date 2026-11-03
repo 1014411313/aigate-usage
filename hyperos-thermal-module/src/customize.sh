@@ -85,6 +85,18 @@ else
     print " - 已选择：[1] 默认配置"
 fi
 
+APK="$MODPATH/HyperOSxj.apk"
+
+frame_mid
+[ -s "$APK" ] || abort " [X] 缺少统一控制端 HyperOSxj.apk，请重新下载完整模块包"
+_APK_RESULT=$(pm install -r "$APK" 2>&1)
+_APK_RC=$?
+if [ "$_APK_RC" != "0" ] || ! printf '%s\n' "$_APK_RESULT" | grep -q '^Success'; then
+    print " [X] 统一控制端覆盖安装失败：$_APK_RESULT"
+    abort " [X] 已中止安装并保留原 App 数据。请检查签名或版本冲突，勿卸载旧 App 后重试。"
+fi
+print " [OK] 已安装统一控制端 com.hyperos.xj，保留原 App 数据"
+
 frame_mid
 
 if [ -f "$MODPATH/config/core.pid" ]; then
@@ -165,24 +177,6 @@ else
     rm -f "$MODPATH/thermal_core.mtk.sh" 2>/dev/null
 fi
 
-APK="$MODPATH/HyperOSxj.apk"
-
-# 界面改为 KernelSU 内置 WebUI（模块页直接打开，不需要给应用授权），
-# 不再安装独立控制台 APK；旧版装过的顺手卸载，避免残留入口与授权弹窗。
-frame_mid
-if pm path com.hyperos.xj >/dev/null 2>&1; then
-    pm uninstall --user 0 com.hyperos.xj >/dev/null 2>&1
-    pm uninstall com.hyperos.xj >/dev/null 2>&1
-    if pm path com.hyperos.xj >/dev/null 2>&1; then
-        print " [!] 旧版独立控制台卸载失败，可在桌面手动卸载 com.hyperos.xj"
-    else
-        print " - 已卸载旧版独立控制台（界面改由管理器内置 WebUI 打开）"
-    fi
-else
-    print " - 使用管理器内置 WebUI，无需安装控制台 APP"
-fi
-rm -f "$APK" 2>/dev/null
-
 CONFDIR="$MODPATH/config"
 mkdir -p "$CONFDIR" 2>/dev/null
 
@@ -257,8 +251,7 @@ if [ -n "$_LEGACY_ID" ] && [ "$LEGACY_DIR" != "$MODPATH" ] && [ -d "$LEGACY_DIR"
         for _p in "$LEGACY_DIR"/profiles/*.conf; do
             [ -f "$_p" ] || continue
             _pn=$(basename "$_p")
-            [ "$_pn" = "default.conf" ] && continue
-            [ -s "$MODPATH/profiles/$_pn" ] || { cp -f "$_p" "$MODPATH/profiles/$_pn" 2>/dev/null && MIGRATED=$((MIGRATED+1)); }
+                [ -s "$MODPATH/profiles/$_pn" ] || { cp -f "$_p" "$MODPATH/profiles/$_pn" 2>/dev/null && MIGRATED=$((MIGRATED+1)); }
         done
     fi
     if [ "$MIGRATED" -gt 0 ]; then
@@ -278,7 +271,7 @@ if [ -d "$XJ_DATA" ]; then
             cp -f "$XJ_DATA/config/settings.json" "$CONFDIR/settings.json" 2>/dev/null && _REST=$((_REST+1))
         fi
     fi
-    for _f in bypass_manual current_mode; do
+    for _f in bypass_manual rearscreen.json; do
         if [ ! -s "$CONFDIR/$_f" ] && [ -s "$XJ_DATA/config/$_f" ]; then
             cp -f "$XJ_DATA/config/$_f" "$CONFDIR/$_f" 2>/dev/null && _REST=$((_REST+1))
         fi
@@ -291,7 +284,6 @@ if [ -d "$XJ_DATA" ]; then
     for _p in "$XJ_DATA"/profiles/*.conf; do
         [ -f "$_p" ] || continue
         _pn=$(basename "$_p")
-        [ "$_pn" = "default.conf" ] && continue
         mkdir -p "$MODPATH/profiles" 2>/dev/null
         cp -f "$_p" "$MODPATH/profiles/$_pn" 2>/dev/null
     done
@@ -299,6 +291,9 @@ if [ -d "$XJ_DATA" ]; then
         frame_mid
         print " - 已从备份恢复用户设置:${_REST} 项"
     fi
+fi
+if [ ! -s "$CONFDIR/rearscreen.json" ]; then
+    cp -f "$MODPATH/default_rearscreen.json" "$CONFDIR/rearscreen.json" || abort "无法初始化背屏设置"
 fi
 NEED_DEFAULT=0
 if [ -s "$CONFDIR/settings.json" ]; then
@@ -385,7 +380,7 @@ for s in thermal_core.sh service.sh action.sh uninstall.sh; do
     fi
 done
 
-if [ -s "$MODPATH/hyperosui/index.html" ]; then
+if [ -s "$MODPATH/webroot/index.html" ]; then
     print " [OK] WebUI"
 else
     print " [X] WebUI 缺失"
@@ -613,7 +608,6 @@ set_perm "$MODPATH/service.sh" 0 0 0755 2>/dev/null
 set_perm "$MODPATH/action.sh" 0 0 0755 2>/dev/null
 set_perm "$MODPATH/uninstall.sh" 0 0 0755 2>/dev/null
 set_perm "$MODPATH/customize.sh" 0 0 0755 2>/dev/null
-set_perm "$MODPATH/hyperosui/bin/applabel" 0 0 0755 2>/dev/null
 set_perm "$MODPATH/module.prop" 0 0 0644 2>/dev/null
 set_perm "$MODPATH/post-fs-data.sh" 0 0 0755 2>/dev/null
 set_perm "$MODPATH/battery/bin/freepps" 0 0 0755 2>/dev/null
@@ -622,3 +616,4 @@ for _s in "$MODPATH"/battery/scripts/*.sh "$MODPATH"/battery/post-fs-data.sh "$M
 done
 set_perm "$MODPATH/default_settings.json" 0 0 0644 2>/dev/null
 set_perm "$MODPATH/default_settings.mtk.json" 0 0 0644 2>/dev/null
+find "$MODPATH" -type f -name '*.sh' -exec chmod 0755 {} \; 2>/dev/null

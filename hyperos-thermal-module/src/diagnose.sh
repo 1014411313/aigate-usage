@@ -387,6 +387,23 @@ logcat -d -t 3000 2>/dev/null | grep -iE 'thermal|mi_thermald|hyperos|xj|charg|b
 for f in "$D_S/机型信息.txt" "$D_S/logcat.txt" "$D_S/dmesg.txt" "$D_S/dmesg关键.txt" "$D_S/模块文件.txt"; do scrub "$f"; done
 echo " - 机型信息 / 模块文件 / 进程 / dmesg / logcat"
 
+{
+    echo "== 统一快照与发布健康 =="
+    for f in "$MODDIR/run/snapshot.json" "$MODDIR/run/provider_health.json" "$CONFDIR/rearscreen.json"; do
+        echo "== ${f##*/} =="
+        [ -r "$f" ] && cat "$f"
+        echo
+    done
+    echo "== 控制端安装状态 =="
+    cmd package list packages --user 0 -U com.hyperos.xj 2>/dev/null
+    echo "== 背屏中心安装状态 =="
+    cmd package list packages --user 0 -U com.xiaomi.subscreencenter 2>/dev/null
+    echo "== 快照与 Hook 日志 =="
+    tail -n 80 "$MODDIR/log/snapshot.log" 2>/dev/null
+    logcat -d -t 1000 2>/dev/null | grep -F HyperOS_XJ | tail -n 80
+} > "$D_S/背屏与快照.txt" 2>/dev/null
+scrub "$D_S/背屏与快照.txt"
+
 # ---------- 9 停充现场 + README + 打包 ----------
 step 9 "停充现场与打包"
 if [ -s "$CONFDIR/stop_charge.log" ]; then

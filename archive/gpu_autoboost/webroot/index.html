@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>GPU 智能升频</title>
+<style>
+:root{
+  --bg:#e9edf2;--card:#e9edf2;--lt:#fff;--sh:#c0c7d2;--line:#cfd6e0;
+  --fg:#3c4453;--mut:#7f8a9b;
+  --acc:#4d6fa4;--ok:#2f8f6d;--warn:#a5762c;--err:#b3524d;
+  --r:16px;
+  --up:-5px -5px 11px #fff,5px 5px 12px #c0c7d2;
+  --up-sm:-3px -3px 7px #fff,3px 3px 8px #c0c7d2;
+  --in:inset -4px -4px 8px #fff,inset 4px 4px 9px #c0c7d2;
+  --in-sm:inset -2px -2px 5px #fff,inset 2px 2px 6px #c0c7d2;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--bg);color:var(--fg);
+  font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  -webkit-font-smoothing:antialiased;
+  padding:0 0 92px;
+}
+.wrap{max-width:680px;margin:0 auto;padding:16px}
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--up);padding:16px;margin-bottom:18px}
+.card-title{font-size:14px;color:var(--mut);letter-spacing:.02em;margin:0 0 12px}
+.hide{display:none!important}
+
+/* hero */
+.hero{background:var(--card);border-radius:var(--r);box-shadow:var(--up);padding:18px 16px;margin-bottom:18px}
+.hero-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.hero-title{font-size:20px;font-weight:600;letter-spacing:.01em}
+.hero-sub{font-size:13px;color:var(--mut);margin-top:4px}
+.badge{
+  font-size:12px;padding:5px 11px;border-radius:20px;
+  box-shadow:var(--in-sm);color:var(--mut);white-space:nowrap;
+}
+.badge.on{color:var(--ok)}
+.badge.warn{color:var(--warn)}
+.badge.err{color:var(--err)}
+
+/* 状态格 */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.kv{background:var(--card);border-radius:12px;box-shadow:var(--in-sm);padding:11px 12px}
+.kv .k{font-size:12px;color:var(--mut)}
+.kv .v{font-size:19px;font-weight:600;margin-top:3px;font-variant-numeric:tabular-nums}
+.kv .v small{font-size:12px;font-weight:400;color:var(--mut);margin-left:2px}
+
+.bar{height:10px;border-radius:8px;box-shadow:var(--in-sm);margin-top:14px;overflow:hidden}
+.bar-in{height:100%;width:0;border-radius:8px;background:linear-gradient(90deg,#6f9bd4,#4d6fa4);transition:width .3s}
+.lvt{margin-top:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:8px}
+.lvt .lv{background:var(--card);border-radius:9px;box-shadow:var(--in-sm);padding:7px 6px;text-align:center;font-size:12px;color:var(--mut)}
+.lvt .lv b{display:block;font-size:14px;color:var(--fg)}
+.lvt .lv.cur{box-shadow:var(--up-sm);color:var(--acc)}
+.lvt .lv.cur b{color:var(--acc)}
+.hint{font-size:12px;color:var(--mut);margin-top:12px}
+
+pre.log{
+  margin:0;background:var(--card);border-radius:13px;box-shadow:var(--in);
+  padding:12px;font:12px/1.6 ui-monospace,Menlo,Consolas,monospace;
+  color:var(--mut);max-height:230px;overflow:auto;white-space:pre-wrap;word-break:break-all;
+}
+
+/* 控件 */
+.row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:11px 0}
+.row+.row{border-top:1px dashed var(--line)}
+.row .lab{font-size:14px}
+.row .sub{font-size:12px;color:var(--mut);margin-top:2px}
+.row .val{font-size:15px;font-weight:600;color:var(--acc);font-variant-numeric:tabular-nums;min-width:56px;text-align:right}
+input[type=range]{
+  -webkit-appearance:none;width:100%;height:26px;background:transparent;margin:2px 0 10px;
+}
+input[type=range]::-webkit-slider-runnable-track{height:9px;border-radius:8px;box-shadow:var(--in-sm);background:var(--card)}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:24px;height:24px;border-radius:50%;margin-top:-7.5px;
+  background:var(--card);box-shadow:var(--up-sm);border:0;
+}
+input[type=range]:active::-webkit-slider-thumb{box-shadow:var(--in-sm)}
+
+.sw{width:46px;height:26px;border-radius:16px;box-shadow:var(--in-sm);position:relative;flex:0 0 auto;transition:.2s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--card);box-shadow:var(--up-sm);transition:.2s}
+.sw.on{box-shadow:var(--in-sm)}
+.sw.on::after{left:23px;background:var(--acc);box-shadow:0 0 6px rgba(77,111,164,.5)}
+
+.btn{
+  border:0;background:var(--card);color:var(--fg);border-radius:13px;box-shadow:var(--up-sm);
+  padding:10px 16px;font-size:14px;font-family:inherit;cursor:pointer;
+}
+.btn:active{box-shadow:var(--in-sm)}
+.btn.primary{color:#fff;background:var(--acc);box-shadow:-3px -3px 7px #fff,3px 3px 8px #b9c2d0}
+.btn.wide{width:100%;margin-top:12px}
+.txt{
+  flex:1;min-width:130px;border:0;background:var(--card);border-radius:13px;
+  box-shadow:var(--in-sm);padding:10px 14px;font:14px/1.4 inherit;color:var(--fg);outline:none;
+}
+.btnbar{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+.btnbar .btn{flex:1;min-width:96px}
+
+/* 学习表 */
+.rec{background:var(--card);border-radius:13px;box-shadow:var(--in-sm);padding:12px;margin-bottom:10px}
+.rec .top{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.rec .pkg{font-size:14px;font-weight:600;word-break:break-all}
+.rec .tag{font-size:12px;padding:3px 9px;border-radius:12px;box-shadow:var(--up-sm);color:var(--mut);white-space:nowrap}
+.rec .tag.up{color:var(--ok)}
+.rec .tag.down{color:var(--warn)}
+.rec .meta{font-size:12px;color:var(--mut);margin-top:6px}
+.empty{font-size:13px;color:var(--mut);text-align:center;padding:22px 0}
+
+/* tabbar */
+.tabbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:9;
+  display:flex;justify-content:space-around;align-items:center;
+  background:var(--bg);box-shadow:0 -6px 16px rgba(192,199,210,.7);
+  padding:9px max(10px,env(safe-area-inset-left)) calc(9px + env(safe-area-inset-bottom));
+}
+.tabbar button{
+  border:0;background:transparent;color:var(--mut);font:13px/1.2 inherit;
+  padding:8px 14px;border-radius:12px;cursor:pointer;
+}
+.tabbar button.on{color:var(--acc);box-shadow:var(--in-sm)}
+.toast{
+  position:fixed;left:50%;bottom:96px;transform:translateX(-50%);
+  background:#3c4453;color:#fff;font-size:13px;padding:9px 16px;border-radius:12px;
+  opacity:0;pointer-events:none;transition:.25s;z-index:20;max-width:80vw;
+}
+.toast.show{opacity:.95}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="hero">
+    <div class="hero-top">
+      <div class="hero-title">GPU 智能升频</div>
+      <div class="badge" id="badge">连接中…</div>
+    </div>
+    <div class="hero-sub" id="heroSub">按真实 GPU 繁忙度动态调整显式下限</div>
+  </div>
+
+  <!-- 首页 -->
+  <div id="p-home">
+    <div class="card">
+      <div class="card-title">实时状态</div>
+      <div class="grid2">
+        <div class="kv"><div class="k">GPU 繁忙度</div><div class="v" id="vBusy">-<small>%</small></div></div>
+        <div class="kv"><div class="k">当前频率</div><div class="v" id="vFreq">-<small>MHz</small></div></div>
+        <div class="kv"><div class="k">下限档位</div><div class="v" id="vLevel">-</div></div>
+        <div class="kv"><div class="k">GPU 温度</div><div class="v" id="vTemp">-<small>℃</small></div></div>
+      </div>
+      <div class="bar"><div class="bar-in" id="busyBar"></div></div>
+      <div class="hint" id="fgHint">前台：-</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">档位表（pwrlevel → 频率）</div>
+      <div id="lvTable" class="lvt"></div>
+      <div class="hint">数值越小、频率越高。高亮的是当前生效的下限。</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">运行日志</div>
+      <pre class="log" id="logBox">加载中…</pre>
+      <button class="btn wide" onclick="loadLog()">刷新日志</button>
+    </div>
+  </div>
+
+  <!-- 配置 -->
+  <div id="p-conf" class="hide">
+    <div class="card">
+      <div class="card-title">采样与阈值</div>
+      <div class="row"><div><div class="lab">采样间隔</div><div class="sub">毫秒，越小响应越快也越费电</div></div><div class="val" id="vINTERVAL_MS">-</div></div>
+      <input type="range" id="INTERVAL_MS" min="50" max="2000" step="50" oninput="onRange(this)">
+      <div class="row"><div><div class="lab">升频阈值</div><div class="sub">繁忙度高于此值并持续若干次就升档</div></div><div class="val" id="vBUSY_HIGH">-</div></div>
+      <input type="range" id="BUSY_HIGH" min="20" max="100" step="1" oninput="onRange(this)">
+      <div class="row"><div><div class="lab">降频阈值</div><div class="sub">低于此值并持续若干次就降档</div></div><div class="val" id="vBUSY_LOW">-</div></div>
+      <input type="range" id="BUSY_LOW" min="1" max="95" step="1" oninput="onRange(this)">
+      <div class="row"><div><div class="lab">升档观察次数</div><div class="sub">连续满足才动作，防止抖动</div></div><div class="val" id="vHOLD_UP">-</div></div>
+      <input type="range" id="HOLD_UP" min="1" max="30" step="1" oninput="onRange(this)">
+      <div class="row"><div><div class="lab">降档观察次数</div><div class="sub">一般比升档更保守</div></div><div class="val" id="vHOLD_DOWN">-</div></div>
+      <input type="range" id="HOLD_DOWN" min="1" max="60" step="1" oninput="onRange(this)">
+    </div>
+
+    <div class="card">
+      <div class="card-title">档位范围</div>
+      <div class="row"><div><div class="lab">最高档位（最激进）</div><div class="sub">pwrlevel 最小值</div></div><div class="val" id="vLEVEL_MIN">-</div></div>
+      <input type="range" id="LEVEL_MIN" min="0" max="13" step="1" oninput="onRange(this)">
+      <div class="row"><div><div class="lab">最低档位（最省电）</div><div class="sub">pwrlevel 最大值</div></div><div class="val" id="vLEVEL_MAX">-</div></div>
+      <input type="range" id="LEVEL_MAX" min="0" max="13" step="1" oninput="onRange(this)">
+      <div class="row"><div><div class="lab">启动初始档位</div><div class="sub">守护启动时先落到这一档</div></div><div class="val" id="vLEVEL_START">-</div></div>
+      <input type="range" id="LEVEL_START" min="0" max="13" step="1" oninput="onRange(this)">
+    </div>
+
+    <div class="card">
+      <div class="card-title">温度保护</div>
+      <div class="row"><div><div class="lab">启用温控</div><div class="sub">超过阈值强制压档</div></div><div class="sw" id="swTH_CAP" onclick="toggleSw(this)"></div></div>
+      <div class="row"><div><div class="lab">触发温度</div><div class="sub">℃</div></div><div class="val" id="vTH_HIGH">-</div></div>
+      <input type="range" id="TH_HIGH" min="35" max="110" step="1" oninput="onRange(this)">
+      <div class="row"><div><div class="lab">放开温度</div><div class="sub">℃</div></div><div class="val" id="vTH_LOW">-</div></div>
+      <input type="range" id="TH_LOW" min="30" max="105" step="1" oninput="onRange(this)">
+      <div class="row"><div><div class="lab">过热压到档位</div><div class="sub">pwrlevel</div></div><div class="val" id="vLEVEL_THERMAL">-</div></div>
+      <input type="range" id="LEVEL_THERMAL" min="0" max="13" step="1" oninput="onRange(this)">
+    </div>
+
+    <div class="card">
+      <div class="card-title">游戏名单</div>
+      <div class="row"><div><div class="lab">启用游戏名单</div><div class="sub">命中名单的应用直接拉到设定档位</div></div><div class="sw" id="swGAME_BOOST" onclick="toggleSw(this)"></div></div>
+      <div class="row"><div><div class="lab">游戏档位</div><div class="sub">名单内的应用锁到这一档，越小频率越高</div></div><div class="val" id="vGAME_LEVEL">-</div></div>
+      <input type="range" id="GAME_LEVEL" min="0" max="13" step="1" oninput="onRange(this)">
+    </div>
+
+    <div class="card">
+      <div class="card-title">其它</div>
+      <div class="row"><div><div class="lab">熄屏回落</div><div class="sub">熄屏时回到最低档省电</div></div><div class="sw" id="swSCREEN_IDLE" onclick="toggleSw(this)"></div></div>
+      <div class="row"><div><div class="lab">学习采样</div><div class="sub">记录每个应用稳定后的档位</div></div><div class="sw" id="swLEARN" onclick="toggleSw(this)"></div></div>
+      <div class="btnbar"><button class="btn primary" onclick="saveAll()">保存配置</button></div>
+    </div>
+  </div>
+
+  <!-- 学习 -->
+  <div id="p-learn" class="hide">
+    <div class="card">
+      <div class="card-title">学习建议</div>
+      <div id="learnList"><div class="empty">暂无样本</div></div>
+      <div class="btnbar">
+        <button class="btn" onclick="loadAdvice()">重新读取</button>
+        <button class="btn" onclick="learnReset()">清空重学</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">游戏名单</div>
+      <div class="hint" style="margin-top:0;margin-bottom:10px">名单里的应用在前台时直接把 GPU 拉到高档位，不等负载爬升。温控仍然优先。</div>
+      <div id="gameList"><div class="empty">名单为空</div></div>
+      <div class="btnbar">
+        <input type="text" id="gameInput" class="txt" placeholder="输入包名，如 com.tencent.tmgp.sgame">
+        <button class="btn primary" onclick="gameAdd()">添加</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 关于 -->
+  <div id="p-about" class="hide">
+    <div class="card">
+      <div class="card-title">模块信息</div>
+      <pre class="log" id="aboutBox">加载中…</pre>
+      <div class="btnbar">
+        <button class="btn primary" onclick="ctl('restart')">重启守护</button>
+        <button class="btn" onclick="ctl('stop')">停止守护</button>
+        <button class="btn" onclick="ctl('pause')">暂停</button>
+        <button class="btn" onclick="ctl('resume')">恢复</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">更新日志</div>
+      <pre class="log" id="changelogBox">加载中…</pre>
+    </div>
+
+    <div class="card">
+      <div class="card-title">检查更新</div>
+      <pre class="log" id="updateBox">未检查</pre>
+      <div class="btnbar">
+        <input type="text" id="updateUrl" class="txt" placeholder="更新源地址（留空则不检查）">
+        <button class="btn" onclick="saveUpdateUrl()">保存</button>
+      </div>
+      <div class="btnbar">
+        <button class="btn primary" onclick="checkUpdate()">检查更新</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tabbar">
+  <button data-tab="home" class="on">首页</button>
+  <button data-tab="conf">配置</button>
+  <button data-tab="learn">学习</button>
+  <button data-tab="about">关于</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+const MODID = "gpu_autoboost";
+let BRIDGE = null, API = null, DEAD = false;
+let LEVELS = [];
+
+/* ── 桥 ───────────────────────────────────────────── */
+function detectBridge() {
+  if (window.kernelsu && typeof window.kernelsu.exec === "function") return "kernelsu";
+  if (window.ksu && typeof window.ksu.exec === "function") return "ksu";
+  if (window.mm && typeof window.mm.exec === "function") return "mm";
+  if (window.magisk && typeof window.magisk.exec === "function") return "magisk";
+  return null;
+}
+
+function norm(r) {
+  if (typeof r === "string") return { errno: 0, stdout: r, stderr: "" };
+  if (!r) return { errno: 0, stdout: "", stderr: "" };
+  return { errno: r.errno || 0, stdout: r.stdout || "", stderr: r.stderr || "" };
+}
+
+function exec(cmd) {
+  return new Promise((resolve, reject) => {
+    if (!BRIDGE) return reject(new Error("no bridge"));
+    try {
+      if (BRIDGE === "kernelsu") {
+        window.kernelsu.exec(cmd).then(r => resolve(norm(r))).catch(reject);
+      } else if (BRIDGE === "ksu") {
+        const cb = "ksucb" + Date.now() + Math.floor(Math.random() * 1e6);
+        window[cb] = (errno, stdout, stderr) => {
+          delete window[cb];
+          resolve({ errno: errno || 0, stdout: stdout || "", stderr: stderr || "" });
+        };
+        window.ksu.exec(cmd, JSON.stringify({ cwd: "/" }), cb);
+      } else {
+        const fn = window[BRIDGE].exec(cmd);
+        if (fn && fn.then) fn.then(s => resolve(norm(s))).catch(reject);
+        else resolve(norm(fn));
+      }
+    } catch (e) { reject(e); }
+  });
+}
+
+function q(s) { return "'" + String(s).replace(/'/g, "'\\''") + "'"; }
+
+async function findApi() {
+  for (const base of ["/data/adb/modules/" + MODID, "/data/adb/ap/modules/" + MODID]) {
+    try {
+      const r = await exec("sh " + q(base + "/webroot/api.sh") + " ping");
+      if (r.errno === 0 && r.stdout.trim() === "PONG") return base + "/webroot/api.sh";
+    } catch (e) {}
+  }
+  return null;
+}
+
+async function api(...args) {
+  if (!API) throw new Error("no api");
+  const cmd = "sh " + q(API) + " " + args.map(q).join(" ");
+  const r = await exec(cmd);
+  if (r.errno !== 0) throw new Error((r.stderr || "").replace(/^E\//, "").trim() || "调用失败");
+  return r.stdout;
+}
+
+function parseKV(s) {
+  const o = {};
+  (s || "").split("\n").forEach(line => {
+    const i = line.indexOf("=");
+    if (i > 0) o[line.slice(0, i)] = line.slice(i + 1);
+  });
+  return o;
+}
+
+function toast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.classList.remove("show"), 1800);
+}
+
+function setBadge(text, kind) {
+  const b = document.getElementById("badge");
+  b.textContent = text;
+  b.className = "badge" + (kind ? " " + kind : "");
+}
+
+/* ── 首页 ─────────────────────────────────────────── */
+async function loadStatus() {
+  try {
+    const st = parseKV(await api("status"));
+    const busy = parseInt(st.busy || "0", 10) || 0;
+    const freq = parseInt(st.freq || "0", 10) || 0;
+    const level = parseInt(st.level || "-1", 10);
+    const temp = parseInt(st.temp || "0", 10) || 0;
+
+    document.getElementById("vBusy").innerHTML = busy + "<small>%</small>";
+    document.getElementById("vFreq").innerHTML = (freq ? (freq / 1e6).toFixed(0) : "-") + "<small>MHz</small>";
+    document.getElementById("vLevel").textContent = level >= 0 ? level : "-";
+    document.getElementById("vTemp").innerHTML = (temp || "-") + "<small>℃</small>";
+    document.getElementById("busyBar").style.width = Math.min(100, busy) + "%";
+    document.getElementById("fgHint").textContent = "前台：" + (st.fg && st.fg !== "-" ? st.fg : "未知");
+
+    paintLevels(level);
+
+    if (st.paused === "1") setBadge("已暂停", "warn");
+    else if (st.alive === "1") setBadge("运行中", "on");
+    else setBadge("未运行", "err");
+  } catch (e) {
+    setBadge("连接失败", "err");
+  }
+}
+
+function paintLevels(cur) {
+  const box = document.getElementById("lvTable");
+  if (!LEVELS.length) return;
+  box.innerHTML = LEVELS.map(l =>
+    '<div class="lv' + (l.i === cur ? " cur" : "") + '"><b>' + l.mhz + '</b>L' + l.i + "</div>"
+  ).join("");
+}
+
+async function loadLevels() {
+  try {
+    const txt = await api("levels");
+    LEVELS = txt.split("\n").filter(Boolean).map(line => {
+      const i = line.indexOf("=");
+      if (i < 0) return null;
+      const k = line.slice(0, i), v = line.slice(i + 1);
+      if (!/^L\d+$/.test(k)) return null;
+      return { i: parseInt(k.slice(1), 10), mhz: parseInt(v, 10) };
+    }).filter(Boolean);
+    paintLevels(-1);
+  } catch (e) {}
+}
+
+async function loadLog() {
+  try {
+    const t = await api("log", "60");
+    const box = document.getElementById("logBox");
+    box.textContent = t.trim() || "（暂无日志）";
+    box.scrollTop = box.scrollHeight;
+  } catch (e) {
+    document.getElementById("logBox").textContent = "读取失败：" + e.message;
+  }
+}
+
+/* ── 配置 ─────────────────────────────────────────── */
+const RANGE_KEYS = ["INTERVAL_MS","BUSY_HIGH","BUSY_LOW","HOLD_UP","HOLD_DOWN",
+  "LEVEL_MIN","LEVEL_MAX","LEVEL_START","TH_HIGH","TH_LOW","LEVEL_THERMAL","GAME_LEVEL"];
+const SW_KEYS = ["TH_CAP","SCREEN_IDLE","LEARN","GAME_BOOST"];
+let CONF = {};
+
+function onRange(el) {
+  const label = document.getElementById("v" + el.id);
+  if (label) label.textContent = el.value;
+}
+
+function toggleSw(el) {
+  el.classList.toggle("on");
+}
+
+async function loadConf() {
+  try {
+    CONF = parseKV(await api("conf_get"));
+    RANGE_KEYS.forEach(k => {
+      const el = document.getElementById(k);
+      if (!el) return;
+      if (CONF[k] !== undefined) el.value = CONF[k];
+      const label = document.getElementById("v" + k);
+      if (label) label.textContent = el.value;
+    });
+    SW_KEYS.forEach(k => {
+      const el = document.getElementById("sw" + k);
+      if (!el) return;
+      el.classList.toggle("on", String(CONF[k]) === "1");
+    });
+  } catch (e) {
+    toast("读取配置失败：" + e.message);
+  }
+}
+
+async function saveAll() {
+  const jobs = [];
+  RANGE_KEYS.forEach(k => {
+    const el = document.getElementById(k);
+    if (el) jobs.push(api("conf_set", k, el.value).catch(e => ({ err: k })));
+  });
+  SW_KEYS.forEach(k => {
+    const el = document.getElementById("sw" + k);
+    if (el) jobs.push(api("conf_set", k, el.classList.contains("on") ? "1" : "0").catch(e => ({ err: k })));
+  });
+  const res = await Promise.all(jobs);
+  const bad = res.filter(r => r && r.err);
+  if (bad.length) toast("有 " + bad.length + " 项写入失败");
+  else toast("已保存，守护会自动重载");
+  setTimeout(loadConf, 400);
+}
+
+/* ── 学习 ─────────────────────────────────────────── */
+async function loadAdvice() {
+  const box = document.getElementById("learnList");
+  try {
+    const res = await Promise.all([
+      api("advice"),
+      api("modes_list").catch(() => "")
+    ]);
+    const txt = res[0];
+    const locked = {};
+    (res[1] || "").split("\n").forEach(l => {
+      const i = l.indexOf("=");
+      if (i > 0) locked[l.slice(0, i)] = l.slice(i + 1);
+    });
+
+    const lines = txt.split("\n").filter(Boolean);
+    const meta = {};
+    const recs = [];
+    lines.forEach(l => {
+      if (l.indexOf("=") > 0) {
+        const i = l.indexOf("=");
+        meta[l.slice(0, i)] = l.slice(i + 1);
+      } else {
+        const p = l.split("\t");
+        if (p.length >= 7) recs.push({
+          pkg: p[0], level: p[1], busy: p[2], cnt: p[3], mhz: p[4], adv: p[5], why: p[6]
+        });
+      }
+    });
+
+    if (!recs.length) {
+      box.innerHTML = '<div class="empty">' +
+        (meta.learn === "1" ? "样本还不够，继续用一段时间再来" : "学习采样已关闭") + "</div>";
+      return;
+    }
+
+    box.innerHTML = recs.map(r => {
+      const cls = r.adv === "up" ? "up" : (r.adv === "down" ? "down" : "");
+      const txt2 = r.adv === "up" ? "建议放宽" : (r.adv === "down" ? "建议收紧" : "维持");
+      const lk = locked[r.pkg];
+      let btns = "";
+      if (lk !== undefined) {
+        btns = '<div class="btnbar"><button class="btn" onclick="unlockPkg(\'' +
+          esc(r.pkg) + '\')">取消锁定（当前 L' + esc(lk) + '）</button></div>';
+      } else if (r.adv === "down" || r.adv === "up") {
+        btns = '<div class="btnbar"><button class="btn primary" onclick="adopt(\'' +
+          esc(r.pkg) + '\',' + parseInt(r.level, 10) + ',\'' + esc(r.adv) +
+          '\')">采纳建议</button>';
+        if (r.adv === "up") {
+          btns += '<button class="btn" onclick="gameAddPkg(\'' + esc(r.pkg) +
+            '\')">加入游戏名单</button>';
+        }
+        btns += "</div>";
+      }
+      return '<div class="rec"><div class="top"><div class="pkg">' + esc(r.pkg) +
+        '</div><div class="tag ' + cls + '">' + txt2 + "</div></div>" +
+        '<div class="meta">档位 L' + esc(r.level) + " · " + esc(r.mhz) + "MHz · 平均繁忙 " + esc(r.busy) +
+        "% · 样本 " + esc(r.cnt) + "</div>" +
+        '<div class="meta">' + esc(r.why) + "</div>" + btns + "</div>";
+    }).join("");
+  } catch (e) {
+    box.innerHTML = '<div class="empty">读取失败：' + esc(e.message) + "</div>";
+  }
+}
+
+async function adopt(pkg, level, adv) {
+  let target;
+  if (adv === "down") {
+    const gmax = CONF && CONF.LEVEL_MAX !== undefined ? parseInt(CONF.LEVEL_MAX, 10) : 12;
+    target = isNaN(gmax) ? 12 : gmax;
+  } else {
+    target = Math.max(0, level - 2);
+  }
+  try {
+    await api("mode_set", pkg, String(target));
+    toast("已锁定 " + pkg + " 到 L" + target);
+    loadAdvice();
+  } catch (e) {
+    toast("失败：" + e.message);
+  }
+}
+
+async function unlockPkg(pkg) {
+  try {
+    await api("mode_del", pkg);
+    toast("已取消 " + pkg + " 的锁定");
+    loadAdvice();
+  } catch (e) {
+    toast("失败：" + e.message);
+  }
+}
+
+async function loadGames() {
+  const box = document.getElementById("gameList");
+  try {
+    const t = await api("games_list");
+    const pkgs = (t || "").split("\n").filter(Boolean);
+    if (!pkgs.length) {
+      box.innerHTML = '<div class="empty">名单为空</div>';
+      return;
+    }
+    box.innerHTML = pkgs.map(p =>
+      '<div class="rec"><div class="top"><div class="pkg">' + esc(p) +
+      '</div><button class="btn" onclick="gameDel(\'' + esc(p) +
+      '\')">移除</button></div></div>'
+    ).join("");
+  } catch (e) {
+    box.innerHTML = '<div class="empty">读取失败：' + esc(e.message) + "</div>";
+  }
+}
+
+async function gameAdd() {
+  const el = document.getElementById("gameInput");
+  const pkg = (el.value || "").trim();
+  if (!pkg) { toast("请输入包名"); return; }
+  try {
+    const r = await api("game_add", pkg);
+    toast(r.indexOf("DUP") === 0 ? "已在名单中" : "已添加 " + pkg);
+    el.value = "";
+    loadGames();
+  } catch (e) {
+    toast("失败：" + e.message);
+  }
+}
+
+async function gameAddPkg(pkg) {
+  try {
+    const r = await api("game_add", pkg);
+    toast(r.indexOf("DUP") === 0 ? "已在名单中" : "已加入游戏名单：" + pkg);
+    loadGames();
+  } catch (e) {
+    toast("失败：" + e.message);
+  }
+}
+
+async function gameDel(pkg) {
+  try {
+    await api("game_del", pkg);
+    toast("已移除 " + pkg);
+    loadGames();
+  } catch (e) {
+    toast("失败：" + e.message);
+  }
+}
+
+function esc(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+async function learnReset() {
+  if (!confirm("清空所有学习样本？")) return;
+  try {
+    await api("learn_reset");
+    toast("已清空");
+    loadAdvice();
+  } catch (e) { toast("失败：" + e.message); }
+}
+
+/* ── 关于 ─────────────────────────────────────────── */
+async function loadAbout() {
+  try {
+    const t = await api("about");
+    document.getElementById("aboutBox").textContent = t.replace("---PROP---\n", "");
+  } catch (e) {
+    document.getElementById("aboutBox").textContent = "读取失败：" + e.message;
+  }
+}
+
+async function loadChangelog() {
+  try {
+    const t = await api("changelog");
+    document.getElementById("changelogBox").textContent = (t || "").trim() || "（暂无）";
+  } catch (e) {
+    document.getElementById("changelogBox").textContent = "读取失败：" + e.message;
+  }
+}
+
+async function loadUpdateUrl() {
+  try {
+    const o = parseKV(await api("conf_get"));
+    document.getElementById("updateUrl").value = o.UPDATE_URL || "";
+  } catch (e) {}
+}
+
+async function saveUpdateUrl() {
+  const url = (document.getElementById("updateUrl").value || "").trim();
+  if (!url) { toast("请填写地址"); return; }
+  try {
+    await api("set_update_url", url);
+    toast("已保存");
+  } catch (e) {
+    toast("失败：" + e.message);
+  }
+}
+
+async function checkUpdate() {
+  const box = document.getElementById("updateBox");
+  box.textContent = "检查中…";
+  try {
+    const t = await api("check_update");
+    const o = parseKV(t);
+    const st = o.status;
+    if (st === "no_url") {
+      box.textContent = "未配置更新源地址。";
+    } else if (st === "fetch_failed") {
+      box.textContent = "拉取失败：地址不可达，或被网络限制。";
+    } else if (st === "bad_manifest") {
+      box.textContent = "清单格式不对（缺 versionCode）。";
+    } else if (st === "update_available") {
+      box.textContent = "发现新版本 " + o.new + "（当前 " + o.cur + "）\n\n" +
+        (o.note && o.note !== "-" ? o.note + "\n\n" : "") +
+        (o.url && o.url !== "-" ? "下载：" + o.url : "清单未提供下载地址");
+    } else if (st === "up_to_date") {
+      box.textContent = "已是最新（" + o.cur + "）。";
+    } else {
+      box.textContent = t.trim() || "未知结果";
+    }
+  } catch (e) {
+    box.textContent = "检查失败：" + e.message;
+  }
+}
+
+async function ctl(cmd) {
+  try {
+    await api(cmd);
+    toast("已执行：" + cmd);
+    setTimeout(loadStatus, 800);
+  } catch (e) { toast("失败：" + e.message); }
+}
+
+/* ── 导航与启动 ───────────────────────────────────── */
+function switchTab(name) {
+  ["home", "conf", "learn", "about"].forEach(k => {
+    document.getElementById("p-" + k).classList.toggle("hide", k !== name);
+  });
+  document.querySelectorAll(".tabbar button").forEach(b => {
+    b.classList.toggle("on", b.dataset.tab === name);
+  });
+  if (name === "home") { loadStatus(); loadLog(); }
+  if (name === "conf") loadConf();
+  if (name === "learn") { loadAdvice(); loadGames(); }
+  if (name === "about") { loadAbout(); loadChangelog(); loadUpdateUrl(); }
+}
+
+(async function init() {
+  document.querySelectorAll(".tabbar button").forEach(b => {
+    b.addEventListener("click", () => switchTab(b.dataset.tab));
+  });
+
+  BRIDGE = detectBridge();
+  if (!BRIDGE) {
+    setBadge("管理器不支持", "err");
+    document.getElementById("heroSub").textContent =
+      "未检测到 root 桥（需要 KernelSU / APatch 的 WebUI）";
+    return;
+  }
+
+  API = await findApi();
+  if (!API) {
+    setBadge("模块未找到", "err");
+    document.getElementById("heroSub").textContent = "找不到 webroot/api.sh";
+    return;
+  }
+
+  await loadLevels();
+  await loadStatus();
+  await loadConf();
+  await loadLog();
+  setInterval(loadStatus, 3000);
+})();
+</script>
+</body>
+</html>

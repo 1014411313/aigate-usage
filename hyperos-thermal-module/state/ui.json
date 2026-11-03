@@ -1,4 +1,10 @@
 {
+  "unified_architecture": {
+    "app": "完整原生五页 App 保留；Root 独立采样以 JSON + kv 输出，模块 webroot 只读消费。",
+    "legacy_hook": "LSPosed legacy82 与同一 APK 作用域 com.xiaomi.subscreencenter，精确 launcher；不创建独立副屏 Activity。",
+    "rear_screen_provider": "Provider 由 UID 0 发布、宿主自身读取；私有 AtomicFile，Fresh 窗口 5 秒；后台 Binder 同时最多单个在途请求；暂停或失败时移除覆盖层并恢复宿主。",
+    "validation_status": "2026-11-03最终Firefox五页×8主题×3宽度×2字号共240页通过，无pageerror；PPS/APL/背屏/电压失败回滚、快照过期、Hook状态及模块只读页320/412宽度通过。sampler三场景、Provider字段/类型和只读节点哈希测试通过，未真机安装、Hook或实际充电验证。"
+  },
   "pages": [
     "主页 console（实时面板+充电功率+设备信息）：原来的模块总开关已删（模块装上即运行）",
     "温控 thermal（温控档位/充电场景/游戏场景/游戏加速/旁路供电）",
@@ -185,5 +191,6 @@
     "filename_1_0_56": "诊断包文件名：诊断包_<月-日-时-分>.tar.gz（内部临时目录仍是 /data/local/tmp/xj_diag_<YYYYmmdd_HHMMSS>，uninstall.sh 清理的就是它）",
     "perf_1_0_57": "主页渲染减负（浏览器实测基线：常驻动画 12、backdrop-filter 元素 152）——① 背景滤镜链从 .amb-blobs 容器下移到 .amb-blobs i（原来容器挂 blur+saturate+hue-rotate，3 个光斑动画每帧都重走滤镜链）；② 背景自动变色从 CSS keyframes hueSpin 改为 JS 每 2 秒更新 --bg-hue；③ 波浪默认层数 def 3→2；④ 去掉开关轨道与 .mini 的 backdrop-filter；⑤ .gauge-wave-inner 加 will-change。改后实测：动画 12→8、backdrop-filter 元素 152→64。切后台（visibilitychange）暂停 _diyBkTimer / _diyStTimer / _bgHueTimer",
     "perf_1_0_59": "用户录屏证明 v1.0.57 的低频色相方案仍会每2秒触发一次大面积滤镜重算；改为保持光斑 blur/saturate 不变，只用第二组 CSS 动画平滑交替三个合成光斑的 opacity。删除 _bgHueTimer、_bgHueDeg、--bg-hue 写入和 hue-rotate；自动变色周期滑块仍控制 --bg-hue-dur。"
-  }
+  },
+  "preview_rule": "UI 改动强制先预览：改完 WebUI/APK 界面后先出预览图发用户，点头才打包（规则见仓库 AGENTS.md「UI 修改预览」）。做法：/root/.aicode/venvs/skills/bin/python + Playwright Firefox（headless、security.sandbox.content.level=0），file:// 打开 src/hyperosui/index.html，add_init_script 在页面脚本前注入 window.ksu.exec 假通道（__kexec 是页面内部函数，注它无效；没 mock 到位页面会提示「未检测到 root 命令通道」），MAP 按命令关键字返回 status_kv.sh/detail_kv.sh 假输出；要预置皮肤就复制 HTML 把 data-skin/--p 写进首屏；图存 ~/workspace/.aicode/tmp/ui_preview/<日期>/ 后用 sendFile 发送，注明未打包。已验证样例：~/.aicode/tmp/ui_preview/selftest/home_mock.png（384×900 dpr2）"
 }

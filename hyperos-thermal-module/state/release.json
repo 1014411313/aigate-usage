@@ -8,9 +8,56 @@
       "tools/release.py": "build（版本号 patch+1 / build x.y.z 指定版本、打包到 dist/）/ publish（清单+清旧+推送+CDN 校验）/ publish --no-push；1.0.0 起用语义化版本，包名 _vx.y.z.zip，versionCode 仍递增",
       "dist/": "只留最近 3 个版本，命名「动态温控·解容工具箱_vN.zip」",
       "latest.json": "版本清单，versions 按 dist 实际文件重建",
-      "webroot/": "打包时由 tools/pack.py 从 src/hyperosui/index.html 生成，供 KernelSU 管理器打开（不落盘到 src）"
+      "webroot/": "打包时由 tools/pack.py 从 src/hyperosui/index.html 生成，供 KernelSU 管理器打开（不落盘到 src）",
+      "app/": "Android 控制端源码（com.hyperos.xj，WebView + NativeShell 白名单 Root API + LSPosed Hook）",
+      "archive/": "已存档的独立项目（不再参与当前 App 构建）",
+      "docs/": "架构与构建维护文档"
     },
-    "git_size_note": ".git 约 499MB（历史含早期大包），彻底瘦身需 filter-repo 改写历史，用户尚未决定"
+    "git_size_note": ".git 约 499MB（历史含早期大包），彻底瘦身需 filter-repo 改写历史，用户尚未决定",
+    "current_development": "统一开发目标 v2.1.0-unified（module code140 / APK2001），分支 work/unified-app 基于 test/main；统一测试包已发送至聊天（local_test_package_sent），待真机验证；未授权 push/publish。"
+  },
+  "unified_work": {
+    "version": "2.1.0-unified",
+    "module_code": 140,
+    "apk_version_code": 2001,
+    "branch": "work/unified-app",
+    "base_branch": "test/main",
+    "status": "local_test_package_sent",
+    "delivery_status": "2026-11-03已通过sendFile发送统一测试包至聊天，待真机安装、LSPosed 作用域与充电验证；未发布、未推送",
+    "resume_path": "在 /root/unified/hyperos-thermal-module、work/unified-app 继续；本地回归、打包与文件发送已完成：dist/动态温控·解容工具箱_统一测试版_v2.1.0-unified.zip；安装流程子代理确认无阻断，协议子代理未返回完整报告已停止，该部分由主代理源码核对与实际脚本回归验收。下一步是真机安装、Root 授权、LSPosed 作用域 com.xiaomi.subscreencenter 与背屏验证。不得 push、publish、改远端或更新线上清单，除非另获用户明确授权。",
+    "artifact": {
+      "path": "dist/动态温控·解容工具箱_统一测试版_v2.1.0-unified.zip",
+      "bytes": 5764632,
+      "entries": 194,
+      "sha256": "1efea9e640b63383b5870f570eb4bdde35ef6ab0e5129f5132aa04ea9408f7d3"
+    },
+    "architecture": {
+      "app": "保留原生完整五页 App；Root 独立采样输出 JSON + kv，模块 webroot 只读消费。",
+      "legacy_hook": "LSPosed legacy82 与同一 APK 作用域 com.xiaomi.subscreencenter，精确 launcher；不创建独立副屏 Activity。",
+      "rear_screen_provider": "Provider 由 UID 0 发布、宿主自身读取；私有 AtomicFile、5 秒 Fresh；后台 Binder 同时最多单个在途请求；暂停或失败时移除覆盖层并恢复宿主。",
+      "root_api": "固定结构化 JSON；POSIX awk/schema 校验；设置原子写入并做外部备份；共享 cfg 使用写锁。",
+      "background_jobs": "diagnose、DTBO、卸载、完整备份/恢复为后台 job；任务持久化，BAK 保留，卸载后仍可查询。",
+      "install_failure": "pm -r 安装失败立即 abort；保留 App 数据，不停止旧守护。",
+      "build_and_pack": "tools/build_app.py 使用 ECJ + d8 + aapt2，原证书签名；APK 输出 build/HyperOSxj.apk。pack 校验 APK 完整性、HTML/bridge/signature 与只读 webroot，并排除旧 hyperosui；全部 .sh 有执行权限。"
+    },
+    "validation": {
+      "completed": [
+        "最终 APK 已构建，ECJ 六个 Java 文件编译通过；当前完整 HTML/bridge/card 与 APK 一致，包名、版本及原签名校验通过。",
+        "主线 API RPC 统一回归通过（次数随 job 轮询浮动，不写固定数）及失主锁回收、无 PID/僵尸任务、旁路备份恢复、JSON 解析和 tar 白名单模拟通过。历史审查扩展计数不作为本次最终复跑结果。",
+        "Firefox 五页 × 8主题 × 3宽度 × 2字号，共240页矩阵通过，无 pageerror；模块只读页320/412宽度与过期/失败提示通过。",
+        "PPS/APL/背屏/电压强制开关失败回滚、stale 与 hook.health 模拟通过。",
+        "实际 snapshotd.sh 充电/放电/缺失读数三场景通过，Provider字段白名单与严格类型通过；snapshot_ro.sh隔离节点测试前后哈希一致，APL限额与status_fast双串节点→JSON通过。",
+        "全量 Shell/Python语法与git diff --check通过；ZIP194项、CRC、APK一致性、脚本权限及只读页命令范围通过；禁用与占锁早退的采样临时目录清理回归通过。"
+      ],
+      "in_progress": [],
+      "not_verified": [
+        "未真机安装验证。",
+        "未真机 Hook 验证。",
+        "未验证实际充电行为。"
+      ]
+    },
+    "authorization": "仅允许本地完成、打包和发送模块；未授权 push/publish。UI 本次可不等用户点头直接打包。",
+    "worktree_note": "2026-11-03 仓库整理：统一版代码已从 /root/unified（work/unified-app）迁入 /root/workspace 的 main 工作树；/root/unified 与 /root/rs_beta 仍保留原状（未提交改动未动）"
   },
   "release_flow": {
     "build": "改完直接执行，不需征得同意，把 zip 发给用户；v1.0.74 液态玻璃按用户当轮特殊要求先预览，确认后已构建。",
@@ -21,6 +68,11 @@
     "cache_note": "同名覆盖发布后 jsDelivr 缓存需 purge；testingcf 节点滞后明显，raw 与 cdn.jsdelivr.net 更及时"
   },
   "version_history": [
+    {
+      "v": "2.1.0-unified",
+      "line": "unified",
+      "note": "统一测试版 code140 / APK2001 本地测试包已发送至聊天，待真机复测；完整五页App + 同APK LSPosed背屏Hook、结构化Root API、独立JSON采样与管理器只读页。RPC统一回归通过（次数随job轮询浮动）、Firefox240页矩阵、失败回滚、采样三场景/快照转义与共享配置写锁/只读节点哈希/双串功率、APK原签名与ZIP194项核验通过。未进行真机安装、Hook和实际充电验证；未发布、未推送。"
+    },
     {
       "v": 9,
       "note": "首个发布包，误打包 decrypted/ 分析产物"
@@ -276,6 +328,11 @@
     {
       "v": "2.0.1",
       "note": "本地测试包 2.0.1(125) 已构建并发送，未发布。修复：①涓流/满电时主页光环功率显示 0.0W（诊断包实证该机充电全程 current_now 为负，满电维持把负号当放电并归零，已删该逻辑）；②双电芯机型电压格显示整包总压（MIX 4 8.560V），新增 cell_voltage_ctx 自动识别串数，电压显单串、功率仍按总压；③满电电压上限 4600→4700（UI 校验、说明、volt_guard 同步）。验证：sh -n 四脚本通过；假 sysfs 三场景（单芯/双串带 cell1_volt/双串无单串节点）取数全部符合预期；包内 190 条目、坏条目 0、13 项内容断言通过、构建日期已自动写入。"
+    },
+    {
+      "v": "2.1.0-beta14",
+      "line": "rearscreen",
+      "note": "背屏版测试包 2.1.0-beta14(139) 本地构建并发送，未发布。修复背屏有画面数据全 0：数据目录由卡片 App 自建、写前按 App uid 对齐属主、写入回读校验、连续失败回滚、空字段兜底；控制台 12 秒复查 last_fail 并回拨开关、start 清旧失败标记；rearscreen.sh 新增 probe 与 hideclock 实验入口、30 秒看门狗、开机默认不自启（rearscreen_boot=0）并在 guard_fail 时跳过；诊断包新增 40-系统/背屏.txt；说明/欢迎页/更新日志/settings.conf 同步。验证：sh -n 通过；mock 自建环境验证 batt.txt 写入格式、不可写 ERR、看门狗回滚、hideclock 开关；包内 194 条目、testzip 无坏条目、rearscreen.sh/diagnose.sh 0755。"
     }
   ],
   "audit_20261101": {
@@ -502,6 +559,17 @@
       "sha256": "88b7753ba0f79556ac89a4ac198360e4ff2ee310469602099372d97560d868ad",
       "status": "本地测试包已构建并发送，未发布",
       "note": "机型档案隐藏温度守护/守护温度两项（后端仍按 60℃ 兜底），副标题改轮询/旁路/配置锁定，并清掉 temp_protect 旧键读取；JS 语法、浏览器弹窗渲染与 ZIP 内容核验通过。"
+    },
+    {
+      "version": "2.1.0-unified",
+      "module_code": 140,
+      "apk_version_code": 2001,
+      "branch": "work/unified-app",
+      "base_branch": "test/main",
+      "status": "local_test_package_sent",
+      "size": 5764632,
+      "sha256": "1efea9e640b63383b5870f570eb4bdde35ef6ab0e5129f5132aa04ea9408f7d3",
+      "note": "统一测试包已最终构建（ZIP194项）并于2026-11-03通过sendFile发送至聊天，verify_unified_package.py 核验通过；RPC统一回归通过（次数随job轮询浮动）、Firefox240页矩阵、快照转义与共享配置写锁、只读节点哈希、双串功率、APK原签名核验通过。未真机安装/Hook/实际充电验证；未发布、未推送。"
     }
   ],
   "published": [

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>动态温控·解容 · 运行状态</title>
+<style>
+:root{color-scheme:dark;--bg:#090c12;--panel:#111722;--line:#273244;--text:#edf2fa;--muted:#98a5b8;--amber:#f5a524;--green:#4fd18b;--red:#ff707a;--blue:#7fc4ff;font-family:system-ui,-apple-system,"Noto Sans SC",sans-serif}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);min-height:100vh;padding:20px 16px 36px}.wrap{max-width:980px;margin:auto}header{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:8px 0 22px;border-bottom:1px solid var(--line)}h1{font-size:20px;margin:0;font-weight:650}.sub{color:var(--muted);font-size:12px;margin-top:5px}.state{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px}.dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 10px #4fd18b66}.dot.bad{background:var(--red);box-shadow:0 0 10px #ff707a66}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:18px}.metric{background:var(--panel);border:1px solid var(--line);padding:13px 14px;min-height:88px}.label{font-size:11px;color:var(--muted)}.value{font-variant-numeric:tabular-nums;font-size:23px;margin-top:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.value small{font-size:12px;color:var(--muted);padding-left:4px}.section{margin-top:18px;border-top:1px solid var(--line);padding-top:15px}.section h2{font-size:13px;color:#cad4e2;font-weight:600;margin:0 0 10px}.rows{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px 22px}.row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #1d2634;font-size:12px}.row span:first-child{color:var(--muted)}.row span:last-child{text-align:right;overflow-wrap:anywhere}.tone{color:var(--amber)!important}.error{display:none;margin-top:16px;padding:12px;border:1px solid #64353c;color:#ffadb2;background:#241317;font-size:12px}.error.show{display:block}.foot{color:var(--muted);font-size:11px;margin-top:18px}.refresh{color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}@media(max-width:680px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.rows{grid-template-columns:1fr}body{padding:15px 12px 28px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><div><h1>动态温控·解容</h1><div class="sub">模块运行状态 · 只读</div></div><div class="state"><i class="dot" id="dot"></i><span id="fresh">连接中</span></div></header>
+<section class="grid">
+<div class="metric"><div class="label">电量</div><div class="value" id="soc">--<small>%</small></div></div>
+<div class="metric"><div class="label">充电状态</div><div class="value" id="status">--</div></div>
+<div class="metric"><div class="label">电池温度</div><div class="value" id="temp">--<small>℃</small></div></div>
+<div class="metric"><div class="label">电芯电压</div><div class="value" id="volt">--<small>V</small></div></div>
+<div class="metric"><div class="label">电流</div><div class="value" id="cur">--<small>A</small></div></div>
+<div class="metric"><div class="label">电池功率</div><div class="value" id="power">--<small>W</small></div></div>
+<div class="metric"><div class="label">满充容量</div><div class="value" id="full">--<small>mAh</small></div></div>
+<div class="metric"><div class="label">健康度</div><div class="value" id="health">--</div></div>
+</section>
+<section class="section"><h2>实际运行</h2><div class="rows">
+<div class="row"><span>当前温控档位</span><span id="mode">--</span></div><div class="row"><span>充电功率档</span><span id="power_mode">--</span></div>
+<div class="row"><span>解容</span><span id="unlock">--</span></div><div class="row"><span>公版 PPS</span><span id="pps">--</span></div>
+<div class="row"><span>APL</span><span id="apl">--</span></div><div class="row"><span>背屏 Hook</span><span id="hook">等待状态</span></div>
+<div class="row"><span>最近采样</span><span id="timestamp">--</span></div><div class="row"><span>模块版本</span><span id="version">读取中</span></div>
+</div></section>
+<div class="error" id="error"></div><div class="foot">此页面仅展示 Root 模块状态。设置和操作请使用 HyperOS 控制 App。</div>
+</div>
+<script>
+(function(){
+  const fields=['soc','status','temp','volt','cur','power','full','health','mode','power_mode','unlock','pps','apl','timestamp'];
+  const labels={default:'系统默认',unlimited:'无限制',level_1:'一档',level_2:'二档',level_3:'三档',level_4:'四档',level_5:'五档',bypass:'旁路',off:'关闭',inf:'全速',fast:'40W',mid:'25W',slow:'10W',Charging:'充电中',Discharging:'放电中',Full:'已充满','Not charging':'未充电',true:'开启',false:'关闭','1':'开启','0':'关闭'};
+  function set(id,text,unit){const e=document.getElementById(id);if(!e)return;e.replaceChildren(document.createTextNode(text==null||text===''?'--':String(text)));if(unit){const s=document.createElement('small');s.textContent=unit;e.appendChild(s)}}
+  function apply(d){if(!d)return;set('soc',d.soc,'%');set('status',labels[d.status]||d.status);set('temp',d.temp,'℃');set('volt',d.volt,'V');set('cur',d.cur,'A');set('power',d.power,'W');set('full',d.full,'mAh');set('health',d.health);for(const k of ['mode','power_mode','unlock','pps','apl'])set(k,labels[d[k]]||d[k]);const age=Date.now()-Number(d.timestamp||0)*1000;const ok=d.fresh===true&&age>=0&&age<5000;document.getElementById('dot').classList.toggle('bad',!ok);set('fresh',ok?'数据实时':'数据过期');const t=new Date(Number(d.timestamp||0)*1000);set('timestamp',isNaN(t.getTime())?'--':t.toLocaleTimeString());document.getElementById('error').classList.remove('show')}
+  let busy=false;
+  function readStatus(){return new Promise((resolve,reject)=>{
+    if(!window.ksu||typeof ksu.exec!=='function')return reject(new Error('管理器未提供 Root 读取通道'));
+    const cb='status_'+Date.now(), timer=setTimeout(()=>{delete window[cb];reject(new Error('读取超时，请检查管理器授权'))},8000);
+    window[cb]=(code,out,err)=>{clearTimeout(timer);delete window[cb];code===0?resolve(out):reject(new Error(err||'读取失败'))};
+    ksu.exec('cat /data/adb/modules/HyperOS_XJ/run/snapshot.json','{}',cb);
+  })}
+  async function poll(){if(busy||document.hidden)return;busy=true;try{apply(JSON.parse(await readStatus()))}catch(e){const box=document.getElementById('error');box.textContent='运行状态暂不可读：'+e.message;box.classList.add('show');document.getElementById('dot').classList.add('bad');set('fresh','读取失败')}finally{busy=false}}
+  set('version','2.1.0-unified');set('hook','请在控制 App 查看心跳');poll();setInterval(poll,1500);
+})();
+</script>
+</body>
+</html>

@@ -2,15 +2,26 @@
   "meta": {
     "module_id": "HyperOS_XJ",
     "name": "HyperOS - 动态温控·解容",
-    "current_version": "2.0.0",
+    "current_version": "2.1.0-unified (module code 140, APK 2001; 已迁入 main，待真机验证，未发布)",
     "updated": "2026-11-03",
     "maintainer": "小米热炸了（酷安 517965）",
     "upstream": {
       "dynamic_thermal": "Axiaojiux（动态温控 K2）",
       "battery_toolbox": "听夜风1337（电池解容工具箱 v3.12.6）"
     },
-    "how_to_resume": "先读 index.json；再按任务读对应分片；任务结束更新相关分片 + meta.current_version",
-    "version_scheme": "二改版保持自己的 1.0.x 序列；上游内核版本写在 module.prop 的 author 行与控制台「设备信息 → 上游内核」，不占用版本号"
+    "how_to_resume": "先读 index.json；统一开发续作先读 release.json 的 unified_work.resume_path 与 status，再按任务读对应分片；任务结束更新相关分片 + meta.current_version",
+    "version_scheme": "统一开发目标为 v2.1.0-unified（module code 140，APK versionCode 2001）；当前开发分支 work/unified-app，基于 test/main；旧历史版本记录保留",
+    "current_unified_work": {
+      "version": "2.1.0-unified",
+      "module_code": 140,
+      "apk_version_code": 2001,
+      "branch": "work/unified-app",
+      "base_branch": "test/main",
+      "status": "local_test_package_sent",
+      "delivery": "统一测试包已于2026-11-03通过sendFile发送至聊天，待真机安装/LSPosed/充电验证；未发布，未授权 push/publish",
+      "resume_path": "release.json → unified_work",
+      "worktree": "main（/root/workspace/hyperos-thermal-module）；代码已从 work/unified-app 迁入 main 工作树"
+    }
   },
   "shards": {
     "thermal.json": "温控：档位温度阈值、四场景、旁路供电、配置文件加密格式",
@@ -23,8 +34,6 @@
     "device.json": "本机信息与当前运行状态"
   },
   "pending": [
-    "三线并行：原版正式版 v2.0.0（latest.json 已指向，提交 cf41fa2）、原版测试版 v2.0.1（手动发）、背屏测试版 2.1.0-beta（test/rearscreen 分支，12 提交 da44062），背屏版待做 WebView 投屏载体",
-    "背屏版投屏未实现：当前 rearscreen.sh 仍投原 ETA Canvas 卡片，模块内只是样式预览",
     ".git 499MB 瘦身（filter-repo，需用户确认后 force push）",
     "三项审计遗留：PPS 与旧模块共存、MiThermald 对 SIC-BAT max==min 的行为、inf 安顿/APL 状态机",
     "v1.0.59 已修复录屏中每约 2 秒一次的背景变色卡顿并本地打包，等待真机复测；未发布",
@@ -47,7 +56,15 @@
     "v2.0.0（124）正式版已发布（2026-11-02）：1.0.52 以来首次大版本，含实时面板/曲线/充电记录/八套主题与液态玻璃/取数去 fork/诊断包重构，并隐藏机型档案温度守护（后端仍 60℃ 兜底）。testingcf 与 cdn.jsdelivr.net 均 200/6240025 字节，raw 容器内超时未验。酷安图文已完成：首图（功能总览，1080×1440）+ 5 个页面操作 GIF（主页/温控/电池/外观/八大主题），素材在 .aicode/tmp/kuan_v2/，录制脚本 /tmp/rec_scenes.py（Playwright+Firefox）与合成脚本 /tmp/make_gifs.py。",
     "演示版 WebUI（可脱 root 展示）：.aicode/tmp/HyperOS_XJ_WebUI_demo.html（708KB 单文件，内联四款壁纸 base64 + 模拟命令通道，交互可见但不读写真实节点），生成脚本 /tmp/gen_demo.py；已复制到 /sdcard/Download/。酷安操作 GIF 用 Playwright+Firefox 逐帧录制（/tmp/rec_hq.py，dpr3 → 600x1258、256 色、每帧均有可见变化），素材在 .aicode/tmp/kuan_v2/。",
     "注意：用户测试机换机了——诊断包 popsicle（Xiaomi 17 Pro Max / SM8850 canoe / OS4.0.5 Android17 SDK37），此前按 haotian（小米 15 Pro）适配的节点路径需在新机上重验",
-    "v2.0.1（125）已本地打包并发送，待真机复测：修复涓流/满电功率显示 0.0W、双电芯机型电压格显示总压（改为显单串、功率仍用总压）、满电电压上限 4600→4700；已修条目见 state/bugs.json 的 fixed"
+    "v2.0.1（125）已本地打包并发送，待真机复测：修复涓流/满电功率显示 0.0W、双电芯机型电压格显示总压（改为显单串、功率仍用总压）、满电电压上限 4600→4700；已修条目见 state/bugs.json 的 fixed",
+    "第三方存档：ETA 背屏电池卡片 v1 已解包到 thirdparty/背屏电池卡片_v1/（含原始 zip）。机制：装 com.eta.rearscreen APK + 禁用 com.xiaomi.subscreencenter（原生背屏时钟）+ service.sh 每 2 秒把 battery 的电压/电流/温度/电量/状态写入 /storage/emulated/0/Android/data/com.eta.rearscreen/files/batt.txt，再把 APK 的 Activity 投到 Display #1（service call activity_task 50）。后期集成时可直接用我们 status_kv/status_fast 的取数，改成控制台开关",
+    "当前统一任务 v2.1.0-unified（module code140 / APK2001）：位于 /root/unified/hyperos-thermal-module、work/unified-app（基 test/main）。最终APK与本地模块包已完成，ZIP194项/5764632字节，SHA256 1efea9e640b63383b5870f570eb4bdde35ef6ab0e5129f5132aa04ea9408f7d3；RPC 统一回归通过（次数随 job 轮询浮动，不写固定数）、Firefox240页矩阵及失败回滚、只读页、采样三场景/Provider协议/只读节点哈希/双串功率通过。已于2026-11-03发送至聊天，待真机安装/Hook/实际充电验证，未授权push/publish。详情见release.json→unified_work；保留旧pending，不改/root/workspace/state用户未提交内容。",
+    "三线并行：原版正式版 v2.0.0（latest.json 已指向，提交 cf41fa2）、原版测试版 v2.0.1（手动发）、背屏测试版 2.1.0-beta（test/rearscreen 分支，12 提交 da44062），背屏版待做 WebView 投屏载体",
+    "背屏版投屏未实现：当前 rearscreen.sh 仍投原 ETA Canvas 卡片，模块内只是样式预览",
+    "bug-007（2026-11-03，待验证，模块侧已基本排除）：2.0.0 code124 在 pandora（小米 17 Pro / OS4.0.5）上有线充电完全不被识别——usb/online=0、type=Unknown、real_type=Unknown、power_max=0、port0/power_operation_mode=default 且缺 partner/*；同平台 popsicle（2.1.0-beta）有线正常（USB_PD / PD_PPS / 45W）。用户已自测关公版 PPS、禁用模块均无效。结论：断在 USB/typec 端口层，不是模块充电参数；唯一未排除的模块痕迹是 01:03:40 刷入的 pandora DTBO（禁模块不回滚），需按 bugs.json 的 fix_plan 第 5 步刷回备份 dtbo_a_before_20261103-010340.img 实测。排查顺序见 state/bugs.json",
+    "背屏版 2.1.0-beta14(139)：修复背屏有画面数据全 0（目录自建/属主对齐/回读校验/字段兜底）+ 30 秒看门狗与 probe；本地包已发送，待真机复测；未发布，未推送",
+    "背屏反馈已记入 bugs.json：bug-009（背屏显示的是第三方 ETA 卡片旧样式，rs.apk 与原包逐字节相同，四角卡片只是 hyperosui 预览，无投屏实现）、bug-010（外观页背屏开关打不开/被拨回，待 beta14 现场：probe + 40-系统/背屏.txt + /data/local/tmp/xj_rearscreen.log）；两条均未改代码，等用户说「修复」统一处理",
+    "2026-11-03 仓库整理完成：统一版 app/ 与模块已进入 main 工作树，5 个独立项目（aigate-usage、github-hosts-app、gpu_autoboost、perf-tuner、mcp-client）归档到 archive/，旧解包/历史包/素材已移出工作区；外部备份在 /root/repository-backups/2026-11-03/（main-current、unrelated-main、workspace-module-before-swap、workspace-state）。构建与打包已复验（build_app.py --check 通过、pack 194 项，仅 APK 时间戳差异）。未提交、未推送。后续按老板拍板收尾：根 dist/latest.json 旧更新入口已下线（目录已删）；release.py 的 stage 已扩到 app/ 并排除测试版/背屏版/快照版包；AGENTS.md 新增「main 的 dist 只放正式包」约定；architecture.md 按代码修正 3 处；app/src/main/assets/control 除 bridge.js 外一律不入库"
   ],
   "audit": {
     "date": "2026-11-01",

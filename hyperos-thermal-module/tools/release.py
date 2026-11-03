@@ -198,7 +198,10 @@ def do_publish(no_push):
     if no_push:
         print('（--no-push：未提交、未推送）')
         return
-    ok, out = git(['add', 'hyperos-thermal-module'])
+    ok, out = git(['add', 'app', 'hyperos-thermal-module',
+                   ':(exclude)hyperos-thermal-module/dist/*测试版*',
+                   ':(exclude)hyperos-thermal-module/dist/*背屏版*',
+                   ':(exclude)hyperos-thermal-module/dist/*快照版*'])
     ok2, out2 = git(['commit', '-m', 'chore(release): %s v%s' % (NAME, vn)])
     ok3, out3 = git(['push', 'origin', BRANCH])
     if not ok3:

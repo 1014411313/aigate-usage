@@ -1,0 +1,6 @@
+id=perf_tuner
+name=Perf Tuner
+version=1.0.0
+versionCode=1
+author=ai
+description=性能调优模块：省电/均衡/性能三档方案，支持音量键切换、action.sh 一键切换与 WebUI 面板。

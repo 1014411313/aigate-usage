@@ -1398,6 +1398,20 @@ body.hide-tab-text .tab-ico svg { width: 24px; height: 24px; }
   background: var(--text-tertiary);
   color: var(--bg);
 }
+.notice-mask { z-index:100001 !important; }
+.notice-mask .notice-card { background:rgba(255,255,255,.97) !important; color:var(--text); }
+html[data-theme="dark"] .notice-mask .notice-card { background:rgba(28,28,30,.96) !important; }
+.notice-mask .notice-body, .notice-mask .notice-title { color:var(--text) !important; opacity:1; }
+.dialog-actions { display:flex; gap:10px; margin-top:20px; flex-shrink:0; }
+.dialog-actions .btn { flex:1; }
+.dialog-input { display:block; width:100%; box-sizing:border-box; margin-top:12px; color:var(--text); background:var(--input-bg); font:inherit; }
+textarea.dialog-input { min-height:140px; }
+.rear-fields { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin:12px 0; }
+.rear-fields label { display:flex; flex-direction:column; gap:6px; min-width:0; }
+.rear-fields select, #rearTheme { max-width:100%; min-width:0; font-size:calc(13px * var(--fs)); }
+body.snapshot-stale .gauge * { animation-play-state:paused !important; }
+#snapshotState:not([hidden]) { position:fixed; top:12px; left:16px; right:16px; z-index:100000; padding:12px; color:var(--text); background:var(--bg); font-size:calc(13px * var(--fs)); border:1px solid var(--divider); pointer-events:none; }
+.rear-preview { width:100%; aspect-ratio:976/596; border:0; border-radius:var(--radius-mini-user,12px); margin-top:14px; background:#000; }
 /* ===== 液态玻璃皮肤（参考 1.html / 2.html）===== */
 /* 背景层：渐变流动 + 彩色光斑 + 噪点 */
 .ambient{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;background:var(--ambient-base,#000)}
@@ -2070,6 +2084,7 @@ body.ui-hidden .tabbar::after,
 </div>
 
 
+<div id="snapshotState" class="card" role="status" hidden></div>
 <div class="page active" id="page-console">
   <div class="topbar">
     <h1>HyperOS - 动态温控·解容</h1>
@@ -2411,6 +2426,13 @@ body.ui-hidden .tabbar::after,
     <div class="subtitle">解容 / 循环 / 电压</div>
   </div>
 
+  <div class="card" data-diy-id="battery-rear">
+    <div class="pref">
+      <div class="pref-body"><div class="pref-title">背屏电池卡片</div><div class="pref-desc">在支持背屏的机型显示实时电池信息，外观页可设置字段与样式</div><div class="pref-desc" id="rearHookState" role="status">等待 Hook 状态</div></div>
+      <div class="pref-right"><label class="hyper-switch"><input type="checkbox" id="rearEnabled" onchange="rearToggle(this.checked)" disabled><span class="track"></span><span class="thumb"></span></label></div>
+    </div>
+  </div>
+
   <div class="small-title">电池解容</div>
   <div class="card" data-diy-id="battery-1">
     <div class="pref">
@@ -2528,6 +2550,18 @@ body.ui-hidden .tabbar::after,
   <div class="topbar">
     <h1>显示外观</h1>
     <div class="subtitle">主题 / 玻璃材质 / 缩放 / 背景 / DIY</div>
+  </div>
+
+  <div class="small-title">背屏卡片</div>
+  <div class="card" data-diy-id="appearance-rear">
+    <div class="pref"><div class="pref-body"><div class="pref-title">背屏显示设置</div><div class="pref-desc">四个位置分别选择数据，保存后同步生效</div></div></div>
+    <div class="mini-grid rear-fields" id="rearFieldControls"></div>
+    <div class="pref"><div class="pref-body"><label class="pref-title" for="rearTheme">主题</label></div><div class="pref-right"><select id="rearTheme" onchange="rearPreviewUpdate()" disabled></select></div></div>
+    <div class="pref"><div class="pref-body"><label class="pref-title" for="rearAccent">色调</label><div class="pref-desc">卡片强调色</div></div><div class="pref-right"><input id="rearAccent" type="color" value="#4ea1ff" oninput="rearPreviewUpdate()" disabled></div></div>
+    <div class="slider-item"><div class="slider-head"><label class="slider-name" for="rearFontScale">字号</label><span class="slider-val" id="rearFontLabel">1.00×</span></div><input id="rearFontScale" type="range" min="0.7" max="1.5" step="0.05" value="1" oninput="rearPreviewUpdate()" disabled></div>
+    <iframe id="rearPreview" class="rear-preview" title="背屏卡片实时预览" sandbox="allow-scripts allow-same-origin"></iframe>
+    <div class="field-label" id="rearPreviewState">正在载入背屏预览…</div>
+    <button class="btn" id="rearSave" onclick="rearSave()" disabled>保存背屏设置</button>
   </div>
 
   <div class="small-title">主题</div>
@@ -3507,8 +3541,8 @@ body.ui-hidden .tabbar::after,
         <div class="field-label" style="margin-top:18px">说明</div>
         <div class="doc-text" style="font-size:12px;line-height:1.7">
           普通备份仅包含 UI 外观设置（主题、缩放、质感、颜色等），不含模块运行参数。<br>
-          「完整备份（全部数据）」会把 UI 设置、config/（不含 log）与 profiles/ 打包为 tar.gz，可完整迁移。<br>
-          「完整恢复（全部数据）」会覆盖模块的 config/ 与 profiles/ 并还原 UI 设置，恢复后会自动刷新页面，请先做好备份。
+          「完整备份（全部数据）」会把 UI 设置、温控设置、背屏设置、电池配置与 profiles/ 打包为 tar.gz，可完整迁移。<br>
+          「完整恢复（全部数据）」会覆盖模块的温控设置、背屏设置、电池配置与 profiles/ 并还原 UI 设置，恢复后会自动刷新页面，请先做好备份。
         </div>
       </div>
     </div>
@@ -3593,8 +3627,10 @@ body.ui-hidden .tabbar::after,
   <div class="notice-card" id="noticeCard">
     <div class="notice-title">欢迎使用 动态温控·解容</div>
     <div class="notice-body">使用说明（按页面看）
+· 背屏卡片：在电池页开启，在外观页选择四项数据、主题、色调与字号，预览后保存。
 
-【本版】修复涓流/满电时功率显示 0.0W、双电芯电压格显示成总压、满电电压上限提到 4700mV
+【本版】统一 APK 控制台与模块安全 API，保留完整五页功能；新增背屏卡片、四字段样式预览与实际 Hook 状态。
+【安装前提】控制功能需要 Root 授权；背屏显示还需要 LSPosed 启用配套模块、按安装说明设置作用域并重启相关进程或设备。仅支持已适配的背屏机型，开启开关后请查看实际 Hook 状态。
 
 【主页】
 · 顶部光环：中间是实时充电功率（W），液面高度 = 电量，充电时光晕亮起
@@ -3638,7 +3674,7 @@ body.ui-hidden .tabbar::after,
 【关于】
 · 检查更新、更新日志、作者与 QQ 群
 · 工具：日志 / 机型档案 / 诊断包（反馈问题前请先导一份诊断包）
-· 备份与恢复：普通备份只含界面设置，完整备份包含 config 与 profiles
+· 备份与恢复：普通备份只含界面设置，完整备份包含温控设置、背屏设置、电池配置、profiles 与界面设置
 · 恢复默认配置：与主题预设的「全局恢复默认」相同，只还原外观
 
 常见提示
@@ -3654,27 +3690,191 @@ body.ui-hidden .tabbar::after,
 </div>
 
 <script>
-/* 命令入口：KernelSU/SukiSU 内置 WebUI 注入 ksu.exec(cmd, opts, 回调函数名)，
-   回调只按「全局函数名」被 Java 侧调用，所以必须先挂 window[cb] 再把名字传进去；
-   只传 cmd 不传回调名不会有任何结果回来。探测结果存在 __kexecProbe，取数失败时直接显示。 */
-var __kexecProbe = '';
-var __kexecMode = 'none';
-try {
-  var _keys = (typeof ksu !== 'undefined' && ksu) ? Object.keys(ksu).join(',') : '-';
-  var _sp = (typeof ksu !== 'undefined' && ksu) ? (typeof ksu.spawn) : '-';
-  __kexecProbe = 'exec=' + (typeof exec) + ' spawn=' + _sp + ' ksu=' + (typeof ksu) + ' keys=' + _keys;
-} catch(e) { __kexecProbe = 'probe-err'; }
-/* spawn 通道优先：native 异步排队执行，JS 线程不再等脚本跑完；exec 作回退 */
-if (typeof ksu !== 'undefined' && ksu && typeof ksu.spawn === 'function') __kexecMode = 'ksu.spawn';
-else if (typeof ksu !== 'undefined' && ksu && typeof ksu.exec === 'function') __kexecMode = 'ksu.exec';
+var __kexecMode = typeof window.xjApi === 'function' ? 'NativeShell.request' : 'none';
+var __kexecProbe = __kexecMode === 'none' ? '安全桥未连接' : '固定 API 安全桥';
 
-const MODDIR='/data/adb/modules/HyperOS_XJ', CONF=MODDIR+'/config/settings.json';
+const MODDIR='/data/adb/modules/HyperOS_XJ';
 
 function logOp(action){
   try{
-    const a=String(action==null?'':action).replace(/'/g,'’').replace(/[\r\n]+/g,' ').slice(0,200);
-    __kexec(`mkdir -p '${MODDIR}/log' 2>/dev/null; printf '%s [UI] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" '${a}' >> '${MODDIR}/log/core.log' 2>/dev/null; true`);
+    window.xjApi('logs.append', {text:String(action == null ? '' : action).replace(/[\r\n]+/g,' ').slice(0,200)}).catch(function(){});
   }catch(e){}
+}
+async function apiJson(action, payload){
+  return JSON.parse(await window.xjApi(action, payload || {}));
+}
+async function apiOutput(action, payload){
+  const raw = await window.xjApi(action, payload || {});
+  let result;
+  try { result = JSON.parse(raw); } catch(e){ return raw; }
+  if (result && typeof result === 'object') {
+    if (result.exitCode !== undefined && Number(result.exitCode) !== 0) throw new Error(result.output || '操作失败');
+    if (result.output !== undefined) return String(result.output);
+    if (result.content !== undefined) return String(result.content);
+  }
+  return raw;
+}
+async function moduleInfoText(){
+  const raw = await window.xjApi('module.info', {});
+  if (raw.trim().charAt(0) !== '{') return raw;
+  const info = JSON.parse(raw);
+  return Object.keys(info).map(key => key + '=' + info[key]).join('\n');
+}
+const SNAPSHOT_MAX_AGE_MS = 5000;
+function validateSnapshot(snapshot){
+  const timestamp = Number(snapshot && snapshot.timestamp) * 1000;
+  const age = Date.now() - timestamp;
+  if (!snapshot || snapshot.fresh !== true || !Number.isFinite(timestamp) || timestamp <= 0 || age > SNAPSHOT_MAX_AGE_MS || age < 0) {
+    throw new Error('快照已过期，等待后台采样恢复');
+  }
+  return timestamp;
+}
+function showSnapshotError(error){
+  window.__bkFresh = 0;
+  window.__snapshotError = error.message || String(error);
+  document.body.classList.add('snapshot-stale');
+  bkTxt('snapshotState', '实时数据不可用：' + window.__snapshotError);
+  const banner = document.getElementById('snapshotState');
+  if (banner) banner.hidden = false;
+  bkTxt('sStatus', '数据过期'); bkPair('St', '数据过期');
+  const ring = document.getElementById('gaugeRing');
+  if (ring) ring.classList.remove('charg', 'dischg');
+  rearPreviewUpdate();
+}
+function snapshotKV(snapshot){
+  validateSnapshot(snapshot);
+  const kv = Object.assign({}, snapshot.kv || {});
+  Object.keys(snapshot).forEach(function(key){
+    if (snapshot[key] !== null && typeof snapshot[key] !== 'object') kv[key] = String(snapshot[key]);
+  });
+  function put(key, value){ if (value !== undefined && value !== null) kv[key] = String(value); }
+  put('soc', snapshot.soc);
+  put('temp_c', snapshot.temp == null ? undefined : snapshot.temp * 10);
+  put('voltage_uv', snapshot.volt == null ? undefined : snapshot.volt * 1000000);
+  put('battery_current_ma', snapshot.cur == null ? undefined : snapshot.cur * 1000);
+  put('battery_power_w', snapshot.power == null ? undefined : Math.abs(snapshot.power));
+  put('charge_design_mah', snapshot.des); put('charge_full_mah', snapshot.full);
+  put('cycle_real', snapshot.cycle); put('cycle_fake', snapshot.fake);
+  put('charge_proto', snapshot.proto); put('rm_uah', snapshot.rm == null ? undefined : snapshot.rm * 1000); put('soh', snapshot.soh);
+  put('apl_enable', snapshot.apl); put('freepps', snapshot.pps); put('cloud_guard', snapshot.cloud);
+  put('power_limit', snapshot.power_mode);
+  if (!kv.status) kv.status = snapshot.charging ? 'Charging' : 'Discharging';
+  return kv;
+}
+const REAR_FIELDS = [
+  ['temp','温度'],['soc','电量'],['volt','电压'],['cur','电流'],['power','功率'],
+  ['des','设计容量'],['full','满充容量'],['health','健康度'],['cycle','循环次数'],
+  ['fake','伪装次数'],['proto','充电协议'],['rm','剩余容量'],['soh','电池寿命'],['status','状态']
+];
+let rearSettings = null;
+let rearWriteChain = Promise.resolve();
+let rearHealthBusy = false;
+async function refreshRearHealth(){
+  if (document.hidden || rearHealthBusy) return;
+  rearHealthBusy = true;
+  try {
+    const health = await apiJson('hook.health');
+    const age = Date.now() - Number(health.timestamp);
+    let state = health.state;
+    if (!rearSettings || !rearSettings.enabled) state = rearSettings ? 'disabled' : 'waiting';
+    else if (['visible','paused'].includes(state) && (health.fresh !== true || !Number.isFinite(age) || age > SNAPSHOT_MAX_AGE_MS || age < 0)) state = 'stale';
+    const labels = {waiting:'等待 Hook 心跳',unknown:'等待 Hook 心跳',disabled:'未启用',visible:'卡片显示中',paused:'显示已暂停',stale:'Hook 心跳已过期',error:'Hook 运行异常'};
+    bkTxt('rearHookState', labels[state] || '等待 Hook 心跳');
+  } catch(e){ bkTxt('rearHookState', 'Hook 状态读取失败：' + e.message); }
+  finally { rearHealthBusy = false; }
+}
+function rearReadControls(){
+  return {
+    enabled:document.getElementById('rearEnabled').checked,
+    fields:[0,1,2,3].map(i => document.getElementById('rearField' + i).value),
+    accent:hexToRgb(document.getElementById('rearAccent').value),
+    theme:document.getElementById('rearTheme').value,
+    font_scale:Number(document.getElementById('rearFontScale').value)
+  };
+}
+function rearPreviewUpdate(){
+  if (!rearSettings) return;
+  const config = rearReadControls();
+  document.getElementById('rearFontLabel').textContent = config.font_scale.toFixed(2) + '×';
+  const frame = document.getElementById('rearPreview');
+  const data = Object.assign({}, window.__xjSnapshot || {}, config);
+  if (window.__snapshotError) { data.charging = false; data.status = '数据过期'; data.power = null; }
+  else data.status = data.status || (data.charging ? 'Charging' : 'Discharging');
+  try {
+    if (frame.contentWindow && typeof frame.contentWindow.__rear === 'function') frame.contentWindow.__rear(data);
+  } catch(e){ document.getElementById('rearPreviewState').textContent = '预览加载失败：' + e.message; }
+}
+function rearCommit(config){
+  const job = async () => {
+    const saved = await apiJson('rear.settings.save', config);
+    rearSettings = saved;
+    return saved;
+  };
+  rearWriteChain = rearWriteChain.then(job, job);
+  return rearWriteChain;
+}
+async function rearSave(){
+  if (!rearSettings) return;
+  const button = document.getElementById('rearSave');
+  const config = rearReadControls();
+  button.disabled = true;
+  try { await rearCommit(config); toast('背屏设置已保存'); await refreshRearHealth(); }
+  catch(e){ toast('背屏设置保存失败：' + e.message); }
+  finally { button.disabled = false; }
+}
+async function rearToggle(enabled){
+  if (!rearSettings) return;
+  const input = document.getElementById('rearEnabled');
+  input.disabled = true;
+  try {
+    await rearCommit(Object.assign({}, rearSettings, {enabled:!!enabled,fields:rearSettings.fields.slice()}));
+    toast(enabled ? '背屏卡片已开启' : '背屏卡片已关闭');
+    await refreshRearHealth();
+  } catch(e){ input.checked = rearSettings.enabled; toast('背屏开关保存失败：' + e.message); }
+  finally { input.disabled = false; }
+}
+async function rearLoad(){
+  const config = await apiJson('rear.settings.get');
+  const controls = document.getElementById('rearFieldControls');
+  controls.textContent = '';
+  ['左上','右上','左下','右下'].forEach((position,i) => {
+    const label = document.createElement('label');
+    label.className = 'pref-title';
+    label.textContent = position;
+    const select = document.createElement('select');
+    select.id = 'rearField' + i;
+    REAR_FIELDS.forEach(([key,name]) => select.add(new Option(name,key)));
+    select.value = config.fields[i];
+    select.onchange = rearPreviewUpdate;
+    label.appendChild(select); controls.appendChild(label);
+  });
+  const theme = document.getElementById('rearTheme');
+  theme.textContent = '';
+  SKINS.forEach(skin => theme.add(new Option(skin.l,skin.id)));
+  theme.value = config.theme;
+  document.getElementById('rearAccent').value = '#' + config.accent.split(',').map(channel => Number(channel.trim()).toString(16).padStart(2,'0')).join('');
+  document.getElementById('rearFontScale').value = config.font_scale;
+  document.getElementById('rearEnabled').checked = config.enabled;
+  rearSettings = config;
+  await refreshRearHealth();
+  ['rearTheme','rearAccent','rearFontScale','rearEnabled','rearSave'].forEach(id => document.getElementById(id).disabled = false);
+  rearPreviewUpdate();
+  try {
+    const frame = document.getElementById('rearPreview');
+    frame.onload = () => { rearPreviewUpdate(); document.getElementById('rearPreviewState').textContent = '实时预览 · 样式调整后点击保存生效'; };
+    frame.srcdoc = await window.xjApi('card.resource', {});
+  } catch(e){ document.getElementById('rearPreviewState').textContent = '预览加载失败：' + e.message; }
+}
+function applyNativeSnapshot(snapshot){
+  window.__bkFresh = validateSnapshot(snapshot);
+  window.__snapshotError = '';
+  document.body.classList.remove('snapshot-stale');
+  const banner = document.getElementById('snapshotState');
+  if (banner) banner.hidden = true;
+  window.__xjSnapshot = snapshot;
+  const thermal = snapshot.thermal && snapshot.thermal.current || {};
+  applyStatusSnapshot(JSON.stringify({temp:snapshot.temp == null ? (thermal.temp == null ? NaN : thermal.temp * 10) : snapshot.temp * 10,capacity:snapshot.soc,status:snapshot.status || (snapshot.charging ? 'Charging' : 'Discharging'),mode:thermal.mode || snapshot.mode}));
+  rearPreviewUpdate();
 }
 let settings={}, gameApps=[];
 
@@ -3690,55 +3890,51 @@ const MODES=[{id:'default',l:'系统默认'},...LEVELS];
 const MODE_NAMES={default:'默认',unlimited:'无限制',level_1:'一档',level_2:'二档',level_3:'三档',level_4:'四档',level_5:'五档',bypass:'旁路',off:'关闭'};
 
 
-/* spawn 通道：native 侧 enqueue 异步执行，脚本跑多久都不再阻塞 JS/渲染线程；
-   回调协议为 cb.stdout.emit('data',段) / cb.stderr.emit('data',段) / cb.emit('exit',code)，
-   每段 stdout 都是一次 loadUrl 注入，因此把输出压成单行（tr 换行→\x01，JS 还原），
-   退出码用 @@RC@@ 附加在尾部回传，避免被管道换成 tr 的退出码。 */
-function __kexec(cmd, timeoutMs){
-  const TO = timeoutMs || 20000;
-  return new Promise(r=>{
-    const cb='cb_'+Date.now()+'_'+Math.random().toString(36).slice(2);
-    let done=false;
-    let tm=null;
-    let sOut='', sErr='';
-    const fin=(e,o,s)=>{
-      if(done) return;
-      done=true;
-      try{ delete window[cb]; }catch(x){}
-      if(tm){ clearTimeout(tm); tm=null; }
-      r({errno:e,stdout:o||'',stderr:s||''});
-    };
-    const finSpawn=()=>{
-      let e=0, out=sOut;
-      const i=out.lastIndexOf('@@RC@@');
-      if(i>=0){
-        const p=parseInt(out.slice(i+6).trim(),10);
-        if(isFinite(p)) e=p;
-        out=out.slice(0,i);
-        if(out.slice(-1)==='\n') out=out.slice(0,-1);
-      }
-      fin(e,out,sErr);
-    };
-    if(__kexecMode === 'ksu.spawn'){
-      window[cb]={
-        stdout:{emit:function(_t,s){ if(sOut) sOut += '\n'; sOut += String(s).split('\x01').join('\n'); }},
-        stderr:{emit:function(_t,s){ sErr += String(s); }},
-        emit:function(t,v){ if(t==='exit') finSpawn(); }
-      };
-    } else {
-      window[cb]=(e,o,s)=>{ fin(e,o,s); };
+function uiDialog(message, value){
+  return new Promise(resolve => {
+    const mask = document.createElement('div');
+    mask.className = 'notice-mask show';
+    mask.style.zIndex = '100001';
+    const card = document.createElement('div');
+    card.className = 'notice-card';
+    const title = document.createElement('div');
+    title.className = 'notice-title';
+    title.textContent = value === undefined ? '确认操作' : '输入设置';
+    const body = document.createElement('div');
+    body.className = 'notice-body';
+    body.textContent = message;
+    let input;
+    if (value !== undefined) {
+      input = document.createElement(message.indexOf('JSON') >= 0 ? 'textarea' : 'input');
+      input.className = 'dialog-input';
+      input.value = String(value == null ? '' : value);
+      body.appendChild(input);
     }
-    tm=setTimeout(()=>{ fin(-2,'','执行超时（'+TO+'ms 无回调），可能是 root 授权未响应，请重试或检查 KernelSU 授权'); }, TO);
-    try{
-      if(__kexecMode === 'ksu.spawn') ksu.spawn('{ ' + cmd + ' 2>&1; echo "@@RC@@$?"; } | tr \'\\n\' \'\\001\'', '[]', '{}', cb);
-      else if(__kexecMode === 'ksu.exec') ksu.exec(cmd,'{}',cb);
-      else fin(-1,'','未找到可用的命令通道（' + __kexecProbe + '）');
-    }catch(x){ fin(-1,'',String(x)); }
+    const row = document.createElement('div');
+    row.className = 'dialog-actions';
+    const finish = result => { mask.remove(); unlockPageScroll(); resolve(result); };
+    const cancel = document.createElement('button');
+    cancel.className = 'btn secondary'; cancel.textContent = '取消';
+    cancel.onclick = () => finish(input ? null : false);
+    const ok = document.createElement('button');
+    ok.className = 'btn'; ok.textContent = '确定';
+    ok.onclick = () => finish(input ? input.value : true);
+    row.appendChild(cancel); row.appendChild(ok);
+    card.appendChild(title); card.appendChild(body); card.appendChild(row);
+    mask.appendChild(card); document.body.appendChild(mask); lockPageScroll();
+    mask.addEventListener('keydown', e => { if (e.key === 'Escape') cancel.click(); });
+    if (input) input.focus(); else ok.focus();
   });
 }
+function uiPrompt(message, value){ return uiDialog(message, value == null ? '' : value); }
+function uiConfirm(message){ return uiDialog(message); }
 function toast(m){const s=document.getElementById('snackbar');s.textContent=m;s.classList.add('show');clearTimeout(s._t);s._t=setTimeout(()=>s.classList.remove('show'),2500);}
 
 const USAGE_TEXT = `使用说明（按页面看）
+
+· 统一控制台安装前提
+  模块与配套 APK 需正常安装，并为 APK 授予 Root 权限。背屏显示还需在 LSPosed 启用配套模块、按安装说明设置作用域并重启相关进程或设备。
+  背屏仅支持已适配的机型；开启开关只保存设置，请以电池页「Hook 状态」和真机实际显示为准。
 
 ━━ 安装时 ━━
 
@@ -3812,6 +4008,10 @@ const USAGE_TEXT = `使用说明（按页面看）
 
 ━━ 电池 ━━
 
+· 背屏电池卡片
+  在支持背屏的机型上开启「背屏电池卡片」显示实时信息；需要配套 APK、Root 授权与背屏支持环境正常运行。
+  开关在电池页，四个位置的字段与样式在外观页设置。
+
 · 电池解容
   挂载 BAA 配置，防止低电量被系统锁容。开关即开即生效。
 · 公版 PPS 解锁
@@ -3842,6 +4042,10 @@ const USAGE_TEXT = `使用说明（按页面看）
   关机电压是模块软件检测：电量耗尽到该值以下执行关机，充电中不触发。
 
 ━━ 外观 ━━
+
+· 背屏显示设置
+  四个位置均可从温度、电量、电压、电流、功率、设计容量、满充容量、健康度、循环、伪装、协议、剩余容量、电池寿命和状态中选择。
+  可选八套主题、自定义色调与 0.7～1.5 倍字号；预览共用实际背屏卡片资源，点击「保存背屏设置」后生效。
 
 · 主题预设
   八套配色：极光浅色、全息流体、暗黑霓虹、幻彩极光、赛博霓虹、熔岩鎏金、冰川琉璃、月海流银。
@@ -3921,7 +4125,7 @@ const USAGE_TEXT = `使用说明（按页面看）
   20-解容含完整文本诊断与状态（功率档/电压/PPS/循环/APL）；30-节点含充电/电池/无线/BAA/DT 现场；
   40-系统含机型信息、关键脚本校验值、进程、dmesg、logcat。敏感信息自动脱敏，整个包直接发即可。
 · 备份与恢复
-  普通备份只含界面设置；完整备份包含 config/ 与 profiles/，可跨版本迁移。
+  普通备份只含界面设置；完整备份包含温控设置、背屏设置、电池配置、profiles/ 与界面设置，可跨版本迁移。
   「立即备份当前设置」：把功率档 / 满电电压 / PPS / 循环伪装 / APL / 温控配置同步到模块目录外，
   之后升级或重装模块会自动恢复；改设置时也会自动同步，这里是手动再补一次。
   也可以通过提示框粘贴 JSON 直接恢复界面设置。
@@ -3962,11 +4166,11 @@ function closeUsage(){
 }
 
 // ===== 酷安主页跳转 =====
-function openCoolapk(uid){
+async function openCoolapk(uid){
   const id = String(uid == null ? '' : uid).replace(/[^0-9]/g, '');
   if(!id){ toast('酷安主页地址无效'); return; }
   try{
-    __kexec('am start -a android.intent.action.VIEW -d "https://www.coolapk.com/u/' + id + '" >/dev/null 2>&1');
+    await window.xjApi('links.open', {url:'https://www.coolapk.com/u/' + id});
     toast('正在打开酷安主页');
   }catch(e){ toast('打开失败：' + String(e)); }
 }
@@ -3976,12 +4180,11 @@ const QQ_GROUPS={
   thermal:'https://qun.qq.com/universal-share/share?ac=1&authKey=RSvlWnjRWmhH7eZNWVFhcTk4KdsQZjKQf6P2z%2FmG7ouwroWWQmPb1R5N8eOtAnpu&busi_data=eyJncm91cENvZGUiOiIxMDk3ODcxODgwIiwidG9rZW4iOiIxSHp6TGhqZFRGMTFSRUE0RE03ZDZqdkdXb3h5Q3dhSUZqRjR3TXlDRFU4b1Z4Z2g1OE5ibUZDS3gxSS9sUkxVIiwidWluIjoiMTAxNDQxMTMxMyJ9&data=XcfpZ1j5ydljNceReGiyA0fMBYwge4F4e4wx9SWv_jwq8oIN7FG9YHuWLWnLnwjVMOS6YwBKJTbSh3g5bqkKBw&svctype=4&tempid=h5_group_info',
   battery:'https://qun.qq.com/universal-share/share?ac=1&authKey=JZlX9I0nTl0DsTmEiz9h7oUgecygedKyrhsY4vzaoROQOf2a8aeFx46difhBveOt&busi_data=eyJncm91cENvZGUiOiIxMDc1OTc1ODM2IiwidG9rZW4iOiJ6Z3pUcFR6V09yekFJbU9udVlsd3YwNWwvU3NCbVRQbnRyMjJRajEvNFZmMEpUUElWcExhbUJqRlZZYzdFcGZLIiwidWluIjoiMTAxNDQxMTMxMyJ9&data=dKFe6xgolY54H4qGys76HoRo3zuJxxSmHvDiq_QHuRgi05eW5PnAdep3O3aw-Kl6A5Q75dl6Ki5SiLj1csic_Q&svctype=4&tempid=h5_group_info'
 };
-function openQGroup(key){
+async function openQGroup(key){
   const url=QQ_GROUPS[key];
   if(!url){ toast('群链接缺失'); return; }
-  if(url.indexOf("'")>=0){ toast('群链接格式异常'); return; }
   try{
-    __kexec("am start -a android.intent.action.VIEW -d '" + url + "' >/dev/null 2>&1");
+    await window.xjApi('links.open', {url});
     toast('正在打开 QQ 群');
   }catch(e){ toast('打开失败：' + String(e)); }
 }
@@ -3994,26 +4197,13 @@ const UPDATE_URLS = [UPDATE_JSON, UPDATE_JSON_ALT, UPDATE_JSON_RAW];
 let _upd = null;
 
 async function fetchRemoteJson(url){
-  try{
-    const c=new AbortController(); const t=setTimeout(()=>c.abort(),8000);
-    const r=await fetch(url,{cache:'no-store',signal:c.signal}); clearTimeout(t);
-    if(r&&r.ok){ const j=await r.json(); if(j&&j.versionCode) return j; }
-  }catch(e){}
-  const cmd='(command -v curl >/dev/null 2>&1 && curl -s --max-time 8 "'+url+'") || '
-           +'(command -v wget >/dev/null 2>&1 && wget -q -O - "'+url+'") || '
-           +'toybox wget -q -O - "'+url+'" 2>/dev/null';
-  try{
-    const r=await __kexec(cmd,20000);
-    const out=(r&&r.stdout)?String(r.stdout).trim():'';
-    if(out&&out.charAt(0)==='{'){ const j=JSON.parse(out); if(j&&j.versionCode) return j; }
-  }catch(e){}
-  return null;
+  try { const result = await apiJson('updates.fetch', {url}); return result && result.versionCode ? result : null; }
+  catch(e){ return null; }
 }
 
 async function localVersion(){
   try{
-    const r=await __kexec('cat "'+MODDIR+'/module.prop" 2>/dev/null');
-    const t=(r&&r.stdout)||'';
+    const t=await moduleInfoText();
     const m1=t.match(/^versionCode=(.*)$/m), m2=t.match(/^version=(.*)$/m);
     return {versionCode:parseInt((m1&&m1[1])||'0',10)||0, versionName:((m2&&m2[1])||'').trim()};
   }catch(e){ return {versionCode:0,versionName:''}; }
@@ -4045,14 +4235,8 @@ async function checkUpdate(){
 }
 
 // ===== 电池解容（场景页）=====
-const BK_DIR = MODDIR + '/battery/scripts';
 let bkBusy = false;
 
-function bkSh(cmd){
-  return __kexec('sh ' + cmd + ' 2>&1', 12000)
-    .then(function(r){ return (r && r.stdout) ? r.stdout : ''; })
-    .catch(function(){ return ''; });
-}
 function bkKV(t){
   const o = {};
   String(t || '').split(/\r?\n/).forEach(function(l){
@@ -4373,11 +4557,11 @@ function fmtDiv(v, div, fix){
   return isFinite(n) ? (n / div).toFixed(fix) : '--';
 }
 function detailApply(kv){
-  if (!kv || kv.tzlist === undefined) return;
+  if (!kv) return;
   window.__bkDetail = kv;
   bkTxt('dRm', fmtDiv(kv.rm_uah, 1000, 0));
-  bkTxt('dSoh', kv.soh !== '' ? kv.soh : '--');
-  renderTz(kv.tzlist);
+  bkTxt('dSoh', kv.soh == null || kv.soh === '' ? '--' : kv.soh);
+  renderTz(kv.tzlist || '');
 }
 /* 温区节点名 → 中文（未收录的保留原始节点名） */
 var TZ_ZH = [
@@ -4434,13 +4618,6 @@ function enableWebUIEdgeToEdge(){
   } catch(e){}
 }
 
-/* 高频刷新只跑 status_fast.sh（一次 awk，几十毫秒），慢变字段交给定期完整刷新。
-   两把独立的锁：完整刷新慢（可能几百毫秒到数秒）时不能把高频采样一起冻住——
-   共用一把锁的旧写法在慢读期间会让界面停止更新，看起来像“刷新卡住”。 */
-/* status.json（温控守护快照：温度/档位/兜底电量）随每秒轮询一并读取。
-   KernelSU 每次 exec 都要新建 root shell 并用 loadUrl 注入回调，
-   每次都是一次可感知的渲染打断，能合就合在同一个命令里。 */
-const BK_STATUS_SEP = '__XJ_STATUS__';
 async function bkRefreshFast(){
   if (document.hidden || bkBusy) return;
   if (Date.now() < window.__bkPauseUntil) return;
@@ -4448,23 +4625,18 @@ async function bkRefreshFast(){
   const _now = () => ((window.performance && performance.now) ? performance.now() : Date.now());
   const _t0 = _now();
   try {
-    /* 扩展采样（剩余容量 / SOH / 温区）每拍拼接在同一条命令里：
-       detail_kv.sh 运行期纯内建 read，不增加可感知耗时与命令打断次数 */
-    const raw = await bkSh(BK_DIR + '/status_fast.sh'
-      + '; sh ' + BK_DIR + '/detail_kv.sh'
-      + '; echo ' + BK_STATUS_SEP + '; cat ' + MODDIR + '/config/status.json 2>/dev/null');
+    const snapshot = await apiJson('snapshot');
     if (document.hidden) return;
-    const sep = raw.indexOf(BK_STATUS_SEP);
-    const fastText = sep >= 0 ? raw.slice(0, sep) : raw;
-    const statusText = sep >= 0 ? raw.slice(sep + BK_STATUS_SEP.length) : '';
-    const kv = bkKV(fastText);
-    if (kv.soc) {
-      window.__bkFresh = Date.now();
+    const kv = snapshotKV(snapshot);
+    window.__bkKv = kv;
+    if (kv.soc !== undefined) {
+      window.__bkFresh = Number(snapshot.timestamp) * 1000;
       bkApplyFast(kv);
     }
-    if (kv.tzlist !== undefined) detailApply(kv);
-    if (statusText.trim()) applyStatusSnapshot(statusText);
+    detailApply(kv);
+    applyNativeSnapshot(snapshot);
   } catch(e) {
+    showSnapshotError(e);
   } finally {
     bkBusy = false;
     window.__bkLastMs = Math.round(_now() - _t0);
@@ -4490,11 +4662,14 @@ async function bkRefresh(force){
   const _now = () => ((window.performance && performance.now) ? performance.now() : Date.now());
   const _t0 = _now();
   try {
-    const raw = await bkSh(BK_DIR + '/status_kv.sh');
+    const snapshot = await apiJson('snapshot');
     if (document.hidden) return;
-    const kv = bkKV(raw);
+    const kv = snapshotKV(snapshot);
+    const raw = JSON.stringify(snapshot);
+    detailApply(kv);
+    applyNativeSnapshot(snapshot);
     window.__bkKv = kv;
-    if (raw && kv.soc) window.__bkFresh = Date.now();
+    if (raw && kv.soc) window.__bkFresh = Number(snapshot.timestamp) * 1000;
     if (!raw || !kv.soc) {
       window.__bkFail++;
       // 取不到数据多半是 root 授权未通过，退避 30 秒，避免 KernelSU 反复弹窗
@@ -4582,6 +4757,8 @@ async function bkRefresh(force){
       bkTxt('bkDtboState', '资源缺失');
       bkTxt('bkDtboDesc', '本机 ' + (kv.dev_code || '未知') + ' 的 DTBO 资源缺失，请重新安装完整模块包');
     }
+  } catch(e){
+    showSnapshotError(e);
   } finally {
     window.__bkFullBusy = false;
     window.__bkLastFullMs = Math.round(_now() - _t0);
@@ -4593,32 +4770,71 @@ function bkUnlockDescUpdate(baa){
   bkTxt('bkUnlockDesc', baa === 'active' ? 'BAA 已挂载 · 防低电量锁容' : '挂载 BAA、防低电量锁容');
 }
 
-async function bkSet(kind, on){
+async function batteryAction(operation, checkboxId, key, requested){
+  const checkbox = checkboxId && document.getElementById(checkboxId);
+  if (checkbox) checkbox.disabled = true;
+  try { return await operation(); }
+  catch(e){
+    if (checkbox) checkbox.checked = !requested;
+    let readbackError = '';
+    try {
+      if (key) {
+        const current = await apiJson('battery.setting.get', {key});
+        if (checkbox) checkbox.checked = String(current.value) === '1';
+      } else {
+        const values = await Promise.all(['fv_v','term_v','fv_force'].map(key => apiJson('battery.setting.get', {key})));
+        const config = Object.fromEntries(values.map(item => [item.key,item.value]));
+        bkTxt('voltFvNow', config.fv_v ? config.fv_v + ' mV' : '未设置');
+        bkTxt('voltTermNow', config.term_v ? config.term_v + ' mV' : '未设置');
+        document.getElementById('voltForce').checked = String(config.fv_force) === '1';
+      }
+    } catch(readError){ readbackError = '；状态回读失败：' + readError.message; }
+    await bkRefresh(true);
+    toast('操作失败：' + e.message + readbackError);
+    return false;
+  } finally { if (checkbox) checkbox.disabled = false; }
+}
+function bkSet(kind,on){
+  const field = {unlock:['bkUnlock','unlock'],pps:['bkPps','freepps'],cloud:['bkCloud','cloud_guard']}[kind];
+  if (!field) return Promise.resolve(false);
+  return batteryAction(() => bkSetImpl(kind,on), field[0],field[1],on);
+}
+function bkAplToggle(on){ return batteryAction(() => bkAplToggleImpl(on),'bkApl','apl_enable',on); }
+function bkSetPower(mode){ return batteryAction(() => bkSetPowerImpl(mode),null,'power_limit'); }
+function voltApply(){ return batteryAction(voltApplyImpl); }
+function voltForceToggle(on){ return batteryAction(() => voltForceToggleImpl(on),'voltForce','fv_force',on); }
+function voltDisable(){ return batteryAction(voltDisableImpl); }
+function bkCycleApply(){ return batteryAction(bkCycleApplyImpl,null,'cycle_fake'); }
+function bkCycleClear(){ return batteryAction(bkCycleClearImpl,null,'cycle_fake'); }
+function bkDtboFlash(){ return batteryAction(async () => {
+  try { return await bkDtboFlashImpl(); }
+  catch(e){ bkTxt('bkDtboState','未完成'); throw e; }
+},null,'unlock'); }
+async function bkSetImpl(kind, on){
   bkResetGuard();
-  const map = { unlock: 'unlock.sh', pps: 'freepps.sh', cloud: 'cloud_guard.sh' };
-  const script = map[kind];
-  if (!script) return;
+  const action = {unlock:'battery.unlock',pps:'battery.pps',cloud:'battery.cloud'}[kind];
+  if (!action) return;
   toast((on ? '正在开启…' : '正在关闭…'));
-  const out = await bkSh(BK_DIR + '/' + script + ' ' + (on ? 'on' : 'off'));
+  const out = await apiOutput(action, {enabled:!!on});
   const tail = (out || '').trim().split(/\r?\n/).slice(-1)[0];
   if (tail) toast(tail.slice(0, 60));
   setTimeout(bkRefresh, 800);
 }
 
-async function bkAplToggle(on){
+async function bkAplToggleImpl(on){
   bkResetGuard();
   const el = document.getElementById('bkApl');
   const want = on ? '1' : '0';
   toast(on ? '正在开启 APL…' : '正在关闭 APL…');
-  const out = await bkSh(BK_DIR + '/apl_toggle.sh ' + want);
+  const out = await apiOutput('battery.apl', {enabled:!!on});
   const text = (out || '').trim();
   const tail = text.split(/\r?\n/).filter(Boolean).slice(-1)[0] || '';
   // 回读校验：脚本没写进去（或报错）时把开关拨回原位，别让界面“看着开了其实没开”
-  const chk = await bkSh(BK_DIR + '/cfg_cli.sh get apl_enable 0');
-  const got = (chk || '').trim().split(/\r?\n/).pop() || '';
+  const chk = await apiJson('battery.setting.get', {key:'apl_enable'});
+  const got = String(chk.value == null ? '' : chk.value);
   if (got !== want) {
     if (el) el.checked = !on;
-    toast('开启失败：' + (tail || text || '脚本无输出') + '（当前=' + (got || '空') + '）');
+    throw new Error('APL 回读值与设定不一致（当前=' + (got || '空') + '）');
   } else {
     if (tail) toast(tail.slice(0, 60));
     else toast(on ? 'APL 已开启' : 'APL 已关闭');
@@ -4626,10 +4842,10 @@ async function bkAplToggle(on){
   setTimeout(bkRefresh, 900);
 }
 
-async function bkSetPower(p){
+async function bkSetPowerImpl(p){
   bkResetGuard();
   toast('正在切换功率…');
-  const out = await bkSh(BK_DIR + '/power_limit.sh set ' + p);
+  const out = await apiOutput('battery.power', {mode:p});
   const tail = (out || '').trim().split(/\r?\n/).slice(-1)[0];
   if (tail) toast(tail.slice(0, 60));
   setTimeout(bkRefresh, 1200);
@@ -4661,13 +4877,14 @@ function paintPlan(){
 async function togglePlan(){
   const el = document.getElementById('plan_on');
   if(!el) return;
-  await save();
+  if (!(await save())) { el.checked = !el.checked; paintPlan(); return; }
   paintPlan();
   toast(el.checked ? '定时充电计划已开启' : '定时充电计划已关闭');
 }
 async function bkSetPlanMode(m){
+  const previous = settings.power_plan_mode;
   settings.power_plan_mode = m;
-  await save();
+  if (!(await save())) { settings.power_plan_mode = previous; paintPlan(); return; }
   paintPlan();
   toast('计划时段功率设为 ' + planModeLabel(m));
 }
@@ -4706,7 +4923,7 @@ function showModal(title, body, okText, cancelText){
     const b = document.createElement('div');
     b.className = 'notice-body';
     b.style.color = 'var(--text)';
-    b.style.opacity = '0.82';
+    b.style.opacity = '1';
     b.textContent = body;
     const row = document.createElement('div');
     row.style.cssText = 'display:flex;gap:10px;margin-top:20px;flex-shrink:0;';
@@ -4741,7 +4958,7 @@ function showModal(title, body, okText, cancelText){
   });
 }
 
-async function bkDtboFlash(){
+async function bkDtboFlashImpl(){
   const st = document.getElementById('bkDtboState');
   const kv = window.__bkKv || {};
   // 只看镜像是否存在（已刷入也要能重刷），不再用文字判断
@@ -4757,7 +4974,7 @@ async function bkDtboFlash(){
   if (!go) return;
   const prev = st.textContent;
   st.textContent = '刷入中…';
-  const out = await bkSh(BK_DIR + '/dtbo.sh flashlocal');
+  const out = await window.xjJob('action.run', {id:'dtbo_flash'});
   const lines = (out || '').trim().split(/\r?\n/).map(function(l){ return l.trim(); }).filter(Boolean);
   const done = lines.some(function(l){ return /刷入成功|校验一致/.test(l); });
   const fail = lines.slice().reverse().find(function(l){ return /失败|不一致|中止|错误|不存在|跳过/.test(l); });
@@ -4787,8 +5004,7 @@ async function openChangelog(){
   if (document.getElementById('changelogWrap')) return;
   let txt = '';
   try {
-    const r = await __kexec('cat "' + MODDIR + '/更新日志.log" 2>/dev/null', 12000);
-    txt = (r && r.stdout) ? r.stdout : '';
+    txt = await apiOutput('module.changelog');
   } catch(e){}
   const mask = document.createElement('div');
   mask.id = 'changelogWrap';
@@ -4819,7 +5035,7 @@ async function openChangelog(){
   requestAnimationFrame(function(){ mask.classList.add('show'); });
 }
 
-async function voltApply(){
+async function voltApplyImpl(){
   bkResetGuard();
   const fv = ((document.getElementById('voltFv') || {}).value || '').trim();
   const tv = ((document.getElementById('voltTerm') || {}).value || '').trim();
@@ -4834,61 +5050,61 @@ async function voltApply(){
       '设定值 ' + _fv + ' mV 高于原厂最高满充电压 ' + _mx + ' mV。\n\n未开启「强制覆盖原厂上限」时不会生效；开启后会改写 BAA 载荷 vterm 并重新加密挂载（约 1~6 分钟）。',
       '开启并应用', '取消');
     if (!go) return;
-    await bkSh(BK_DIR + '/cfg_cli.sh set fv_force 1');
+    await window.xjApi('battery.setting.set', {key:'fv_force',value:'1'});
   }
   toast('正在应用…');
-  await bkSh(BK_DIR + '/cfg_cli.sh set fv_v ' + fv);
-  await bkSh(BK_DIR + '/cfg_cli.sh set term_v ' + tv);
-  await bkSh(BK_DIR + '/volt_guard.sh start');
+  await window.xjApi('battery.setting.set', {key:'fv_v',value:fv});
+  await window.xjApi('battery.setting.set', {key:'term_v',value:tv});
+  await apiOutput('battery.voltage.start');
   const el1 = document.getElementById('voltFv'); if (el1) el1.value = '';
   const el2 = document.getElementById('voltTerm'); if (el2) el2.value = '';
   toast('已提交，守护进程会在 30 秒内生效');
   bkRefresh();
 }
 
-async function voltForceToggle(on){
+async function voltForceToggleImpl(on){
   bkResetGuard();
   const kv = window.__bkKv || {};
-  if (on && !kv.fv_v) { toast('请先填写并应用满电电压'); bkRefresh(); return; }
+  if (on && !kv.fv_v) { document.getElementById('voltForce').checked = false; toast('请先填写并应用满电电压'); return; }
   toast(on ? '正在开启强制覆盖…' : '正在关闭并还原原厂载荷…');
-  await bkSh(BK_DIR + '/cfg_cli.sh set fv_force ' + (on ? '1' : '0'));
+  await window.xjApi('battery.setting.set', {key:'fv_force',value:on ? '1' : '0'});
   if (on) {
-    await bkSh(BK_DIR + '/volt_guard.sh start');
+    await apiOutput('battery.voltage.start');
     toast('已开启，载荷改写约需 1~6 分钟');
   } else {
     // 关闭后还原原厂载荷；守护下一轮按新配置重新处理满电电压
-    await bkSh(BK_DIR + '/volt_guard.sh restore_force');
+    await apiOutput('battery.voltage.restore');
     toast('已关闭并还原原厂载荷');
   }
   bkRefresh();
 }
 
-async function voltDisable(){
+async function voltDisableImpl(){
   bkResetGuard();
   toast('正在关闭…');
-  await bkSh(BK_DIR + '/cfg_cli.sh set fv_v ');
-  await bkSh(BK_DIR + '/cfg_cli.sh set term_v ');
-  await bkSh(BK_DIR + '/volt_guard.sh stop');
+  await window.xjApi('battery.setting.set', {key:'fv_v',value:''});
+  await window.xjApi('battery.setting.set', {key:'term_v',value:''});
+  await apiOutput('battery.voltage.stop');
   toast('已关闭并还原电压');
   bkRefresh();
 }
 
-async function bkCycleApply(){
+async function bkCycleApplyImpl(){
   bkResetGuard();
   const el = document.getElementById('bkCycleInput');
   const v = ((el && el.value) || '').trim();
   if (!/^\d+$/.test(v)) { toast('请输入数字'); return; }
   toast('正在设置…');
-  await bkSh(BK_DIR + '/unlock.sh cycle ' + v);
+  await apiOutput('battery.cycle', {clear:false,count:Number(v)});
   if (el) el.value = '';
   toast('已设置伪装循环次数：' + v);
   bkRefresh();
 }
 
-async function bkCycleClear(){
+async function bkCycleClearImpl(){
   bkResetGuard();
   toast('正在清除…');
-  await bkSh(BK_DIR + '/unlock.sh cycle clear');
+  await apiOutput('battery.cycle', {clear:true});
   toast('已清除循环伪装');
   bkRefresh();
 }
@@ -4904,13 +5120,9 @@ setTimeout(function(){ if (bkShouldRefresh()) bkRefresh(); }, 1500);
 
 function setTxt(id,v){ bkTxt(id,v); }
 
-function openLink(url){
-  try {
-    const w = window.open(url, '_blank');
-    if (!w) window.location.href = url;
-  } catch(e){
-    try { window.location.href = url; } catch(err){ toast('无法打开链接'); }
-  }
+async function openLink(url){
+  try { await window.xjApi('links.open', {url}); }
+  catch(e){ toast('无法打开链接：' + e.message); }
 }
 
 
@@ -5056,143 +5268,26 @@ function copySettingsToClipboard(){
 
 
 
-let _writeChain = Promise.resolve();
-function writeJsonToPath(json, fullPath){
-  const job = () => _writeJsonToPathImpl(json, fullPath);
-  _writeChain = _writeChain.then(job, job);
-  return _writeChain;
+async function exportUiBackup(directory){
+  const result = await apiJson('backup.ui.export', {directory,content:buildBackupJson()});
+  if (!result.path) throw new Error('备份未返回保存路径');
+  return result;
 }
-async function _writeJsonToPathImpl(json, fullPath){
-  const b64 = utf8ToBase64(json);
-  if(!b64 || !b64.length) return { ok:false, msg:'内容编码失败' };
-  
-  const dir = fullPath.replace(/\/[^/]*$/, '') || '/';
-  
-  const nonce = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-  const tmpB64 = fullPath + '.' + nonce + '.b64tmp';
-  const tmpOut = fullPath + '.' + nonce + '.tmpout';
-  await __kexec(`mkdir -p '${dir}' 2>/dev/null; rm -f '${tmpB64}' '${tmpOut}' 2>/dev/null; true`);
-  
-  const CHUNK = 1500;
-  const total = Math.ceil(b64.length / CHUNK);
-  for (let i = 0; i < total; i++) {
-    const piece = b64.slice(i * CHUNK, (i + 1) * CHUNK);
-    
-    const redir = (i === 0) ? '>' : '>>';
-    const r = await __kexec(`printf '%s' '${piece}' ${redir} '${tmpB64}'`);
-    if (r.errno !== 0) {
-      await __kexec(`rm -f '${tmpB64}' '${tmpOut}' 2>/dev/null`);
-      return { ok:false, msg:'分块写入失败 (' + (i+1) + '/' + total + '): ' + ((r.stderr||'').trim()||('errno='+r.errno)) };
-    }
-  }
-  
-  const sizeCheck = await __kexec(`wc -c < '${tmpB64}' 2>/dev/null`);
-  const tmpSize = parseInt((sizeCheck.stdout || '0').trim()) || 0;
-  if (!tmpSize || tmpSize < b64.length) {
-    await __kexec(`rm -f '${tmpB64}' '${tmpOut}' 2>/dev/null`);
-    return { ok:false, msg:`临时文件大小异常 (${tmpSize}/${b64.length})` };
-  }
-  
-  const r2 = await __kexec(`base64 -d < '${tmpB64}' > '${tmpOut}' 2>/dev/null && echo __OK__`);
-  if ((r2.stdout || '').indexOf('__OK__') < 0) {
-    await __kexec(`rm -f '${tmpB64}' '${tmpOut}' 2>/dev/null`);
-    return { ok:false, msg:'解码写入失败' };
-  }
-  const mv = await __kexec(`mv -f '${tmpOut}' '${fullPath}' && sync 2>/dev/null; echo __OK__`);
-  await __kexec(`rm -f '${tmpB64}' 2>/dev/null`);
-  if ((mv.stdout || '').indexOf('__OK__') < 0) {
-    await __kexec(`rm -f '${tmpOut}' 2>/dev/null`);
-    return { ok:false, msg:'无法写入目标文件（权限不足）' };
-  }
-  
-  const finalCheck = await __kexec(`wc -c < '${fullPath}' 2>/dev/null`);
-  const finalSize = parseInt((finalCheck.stdout || '0').trim()) || 0;
-  if (finalSize <= 0) {
-    return { ok:false, msg:'目标文件为空' };
-  }
-  return { ok:true, size: finalSize };
-}
-
-
 async function saveBackupToPath(){
-  const keys = getAllBackupKeys();
-  if(!keys.length){ toast('没有可备份的设置'); return; }
-
-  const inputEl = document.getElementById('backupPath');
-  let dir = (inputEl && inputEl.value || '').trim();
-  if(!dir){ toast('请输入保存路径'); return; }
-  if(dir.indexOf("'") >= 0 || /[\n\r\t]/.test(dir)){
-    toast('路径包含非法字符');
-    return;
-  }
-  if(!dir.endsWith('/')) dir += '/';
-  setBackupPath(dir);
-  if(inputEl) inputEl.value = dir;
-
-  const json = buildBackupJson();
-  const fname = makeBackupFilename();
-  const fullPath = dir + fname;
-
-  toast('正在写入…');
-  
-  await __kexec(`mkdir -p '${dir}' 2>/dev/null`);
-
-  const res = await writeJsonToPath(json, fullPath);
-  if (res.ok) {
-    toast(`已保存 ${(res.size/1024).toFixed(1)} KB 到 ${fullPath}`);
-  } else {
-    toast('写入失败：' + (res.msg || '未知错误'));
-  }
+  const input = document.getElementById('backupPath');
+  const directory = (input && input.value || '').trim();
+  if (!directory) { toast('请输入保存路径'); return; }
+  try {
+    const result = await exportUiBackup(directory);
+    setBackupPath(directory);
+    toast('已保存到 ' + result.path);
+  } catch(e){ toast('写入失败：' + e.message); }
 }
-
-
 async function browserDownloadFile(){
-  const keys = getAllBackupKeys();
-  if(!keys.length){ toast('没有可备份的设置'); return; }
-
-  const dir = '/sdcard/Download/';
-  const fname = makeBackupFilename();
-  const fullPath = dir + fname;
-
-  toast('正在生成文件…');
-  await __kexec(`mkdir -p '${dir}' 2>/dev/null`);
-
-  const json = buildBackupJson();
-  const res = await writeJsonToPath(json, fullPath);
-  if (!res.ok) {
-    toast('文件生成失败：' + (res.msg || '未知错误'));
-    return;
-  }
-
-  
-  
-  const openCmds = [
-    
-    `am start -a android.intent.action.VIEW -d "file://${fullPath}" -t "application/json" 2>/dev/null`,
-    
-    `am start -a android.intent.action.VIEW -d "file://${fullPath}" 2>/dev/null`,
-    
-    `am start -a android.intent.action.VIEW -d "file:///sdcard/Download/" -t "resource/folder" 2>/dev/null`,
-    
-    `am start -a android.intent.action.GET_CONTENT -t "*/*" -d "file:///sdcard/Download/" 2>/dev/null`
-  ];
-
-  let opened = false;
-  for (const cmd of openCmds) {
-    const r = await __kexec(cmd);
-    const out = (r.stdout || '') + (r.stderr || '');
-    
-    if (r.errno === 0 && !/Error|Exception/i.test(out)) {
-      opened = true;
-      break;
-    }
-  }
-
-  if (opened) {
-    toast(`已生成并跳转下载：${fullPath}`);
-  } else {
-    toast(`已保存到 ${fullPath}，请到文件管理器查看`);
-  }
+  try {
+    const result = await exportUiBackup('/sdcard/Download/');
+    toast('已保存到 ' + result.path);
+  } catch(e){ toast('文件生成失败：' + e.message); }
 }
 
 function restoreSettingsFromJson(text){
@@ -5214,8 +5309,8 @@ function restoreSettingsFromJson(text){
   } catch(e){ toast('写入失败：' + (e.message || '未知错误')); return 0; }
   return keys.length;
 }
-function importSettingsFromText(){
-  const input = prompt('粘贴备份 JSON 内容：\n（恢复后将刷新页面）');
+async function importSettingsFromText(){
+  const input = await uiPrompt('粘贴备份 JSON 内容：\n（恢复后将刷新页面）');
   if (input === null) return;
   const n = restoreSettingsFromJson(input);
   if (n) {
@@ -5249,162 +5344,47 @@ function _badPath(p){
 }
 async function syncSettingsBackup(){
   toast('正在同步设置…');
-  let out = '';
-  try{
-    const r = await __kexec(`sh ${MODDIR}/config_backup.sh 2>&1`);
-    out = ((r && r.stdout) || '').trim().split(/\r?\n/).filter(Boolean).pop() || '';
-  }catch(e){ out = ''; }
-  toast(out || '已同步');
-  logOp('设置备份｜' + (out || '已同步'));
+  try {
+    const output = await apiOutput('backup.run');
+    toast(output.trim().split(/\r?\n/).pop() || '已同步');
+    logOp('设置备份｜已同步');
+  } catch(e){ toast('同步失败：' + e.message); }
 }
-
 async function saveFullBackup(){
-  const def = getBackupPath();
-  let dir = String(prompt('完整备份保存目录：', def) || '').trim();
-  if(!dir) return;
-  if(_badPath(dir)){ toast('路径含非法字符'); return; }
-  if(dir.charAt(dir.length - 1) !== '/') dir += '/';
-  setBackupPath(dir);
-  const T = '/data/local/tmp/.hx_full_bak';
-  const U = '/data/local/tmp/.hx_ui_settings.json';
-  const ts = _fullTs();
-  const out = dir + 'HyperOS_XJ_全部数据_' + ts + '.tar.gz';
-  
-  const pv = _mkProgress('完整备份', '包含：config/（不含 log）、profiles/、UI 设置\n保存到：' + dir);
+  const directory = await uiPrompt('完整备份保存目录：', getBackupPath());
+  if (!directory || !directory.trim()) return;
+  setBackupPath(directory.trim());
+  const pv = _mkProgress('完整备份', '包含温控设置、背屏设置、电池配置、profiles/ 与界面设置');
   const btn = _modalBtn(pv, '备份中', false, null);
   btn.disabled = true;
-  const endBtn = function(text){ btn.textContent = text; btn.disabled = false; btn.onclick = function(){ try { pv.remove(); } catch(e){} }; };
-  let stop = null;
-  logOp('完整备份｜开始｜' + out);
-  pv.setStep('写入 UI 设置', 8);
-  const w = await writeJsonToPath(buildBackupJson(), U);
-  if(!w || !w.ok){
-    const msg = (w && w.msg) || '未知错误';
-    pv.finish(false, '写入 UI 设置失败');
-    pv.addLog('失败：' + msg);
-    endBtn('关闭');
-    toast('UI 设置写入失败：' + msg);
-    logOp('完整备份｜UI 设置写入失败｜' + msg);
-    return;
-  }
-  pv.addLog('UI 设置已写入');
-  pv.setStep('收集并打包', 30);
-  stop = _barAscent(pv, 30, 92);
-  const cmd = [
-    'rm -rf "' + T + '" 2>/dev/null',
-    'mkdir -p "' + T + '/ui"',
-    '[ -d "' + MODDIR + '/config" ] && cp -rf "' + MODDIR + '/config" "' + T + '/config"',
-    '[ -d "' + T + '/config/log" ] && rm -rf "' + T + '/config/log" 2>/dev/null',
-    '[ -d "' + MODDIR + '/profiles" ] && cp -rf "' + MODDIR + '/profiles" "' + T + '/profiles"',
-    'cp -f "' + U + '" "' + T + '/ui/ui-settings.json"',
-    'printf "%s\\n" "HyperOS_XJ 全部数据备份" "时间: ' + ts + '" "包含: config/（不含 log）、profiles/、ui/ui-settings.json" > "' + T + '/README.txt"',
-    'mkdir -p "' + dir + '" 2>/dev/null',
-    'tar -czf "' + out + '" -C "' + T + '" . && echo __OK__',
-    'rm -rf "' + T + '" "' + U + '" 2>/dev/null'
-  ].join('\n');
-  let r = null;
-  try { r = await __kexec(cmd, 180000); }
-  catch(e){ r = { errno: -1, stdout: '', stderr: String(e) }; }
-  if(stop){ stop(); stop = null; }
-  if((r.stdout || '').indexOf('__OK__') < 0){
-    await __kexec('rm -rf "' + T + '" "' + U + '" 2>/dev/null');
-    const msg = (r.stderr || '').trim().split('\n')[0].slice(0, 60) || '未知错误';
-    pv.finish(false, r.errno === -2 ? '打包超时' : '备份失败');
-    pv.addLog('失败：' + msg);
-    endBtn('关闭');
-    toast('备份失败：' + msg);
-    logOp('完整备份｜失败｜' + msg);
-    return;
-  }
-  pv.setStep('校验文件大小', 95);
-  try { localStorage.setItem('ht_full_backup_last', out); } catch(e){}
-  const sz = await __kexec('wc -c < "' + out + '" 2>/dev/null');
-  const n = parseInt((sz.stdout || '0').trim()) || 0;
-  const txt = n < 1024 ? (n + ' B') : (n < 1048576 ? ((n / 1024).toFixed(1) + ' KB') : ((n / 1048576).toFixed(2) + ' MB'));
-  pv.finish(true, '备份完成');
-  pv.addLog('已完成 · ' + txt + '\n' + out);
-  endBtn('完成');
-  toast('已备份全部数据 · ' + txt);
-  logOp('完整备份｜完成｜' + txt);
+  const stop = _barAscent(pv, 10, 92);
+  try {
+    const output = await window.xjJob('backup.full.export', {directory:directory.trim(),content:buildBackupJson()}, job => { if (job.output) pv.__out.textContent = job.output; });
+    const result = JSON.parse(output);
+    if (!result.path) throw new Error('备份未返回保存路径');
+    localStorage.setItem('ht_full_backup_last', result.path);
+    pv.addLog('已保存：' + result.path);
+    pv.finish(true, '备份完成');
+  } catch(e){ pv.addLog(e.message); pv.finish(false, '备份失败'); }
+  finally { stop(); btn.disabled = false; btn.textContent = '关闭'; btn.onclick = () => pv.remove(); }
 }
 async function restoreFullBackup(){
-  let def = getBackupPath();
-  try { const v = localStorage.getItem('ht_full_backup_last'); if(v) def = v; } catch(e){}
-  let path = String(prompt('输入完整备份文件（.tar.gz）路径：', def) || '').trim();
-  if(!path) return;
-  path = path.replace(/^['"]+/, '').replace(/['"]+$/, '');
-  if(_badPath(path)){ toast('路径含非法字符'); return; }
-  if(!window.confirm('将用备份覆盖模块的 config/ 与 profiles/，并还原 UI 设置。\n\n当前数据会被替换，确定继续？')) return;
-  
-  const pv = _mkProgress('完整恢复', '来源：' + path + '\n\n将覆盖 config/、profiles/ 并还原 UI 设置');
+  const path = await uiPrompt('输入完整备份文件（.tar.gz）路径：', localStorage.getItem('ht_full_backup_last') || getBackupPath());
+  if (!path || !path.trim()) return;
+  if (!(await uiConfirm('将用备份覆盖温控设置、背屏设置、电池配置、profiles/ 和界面设置。当前设置会被替换，确定继续？'))) return;
+  const pv = _mkProgress('完整恢复', '来源：' + path);
   const btn = _modalBtn(pv, '恢复中', false, null);
   btn.disabled = true;
-  const endBtn = function(text){ btn.textContent = text; btn.disabled = false; btn.onclick = function(){ try { pv.remove(); } catch(e){} }; };
-  let stop = null;
-  logOp('完整恢复｜开始｜' + path);
-  pv.setStep('校验并解包备份', 15);
-  stop = _barAscent(pv, 15, 40);
-  const T = '/data/local/tmp/.hx_full_restore';
-  const cmd = [
-    '[ -s "' + path + '" ] || { echo __NOFILE__; exit 0; }',
-    'rm -rf "' + T + '" 2>/dev/null',
-    'mkdir -p "' + T + '"',
-    'tar -xzf "' + path + '" -C "' + T + '" && echo __UNPACKED__'
-  ].join('\n');
-  const r = await __kexec(cmd, 180000);
-  if(stop){ stop(); stop = null; }
-  const o = r.stdout || '';
-  if(o.indexOf('__NOFILE__') >= 0){
-    pv.finish(false, '未找到备份文件');
-    pv.addLog('请确认路径是否正确：' + path);
-    endBtn('关闭');
-    toast('未找到备份文件');
-    logOp('完整恢复｜未找到备份文件');
-    return;
-  }
-  if(o.indexOf('__UNPACKED__') < 0){
-    await __kexec('rm -rf "' + T + '" 2>/dev/null');
-    pv.finish(false, '解包失败');
-    pv.addLog('备份文件可能损坏或不是 .tar.gz');
-    endBtn('关闭');
-    toast('解包失败，备份文件可能损坏');
-    logOp('完整恢复｜解包失败');
-    return;
-  }
-  pv.addLog('已解包');
-  pv.setStep('写入 config/ 与 profiles/', 55);
-  stop = _barAscent(pv, 55, 78);
-  const cmd2 = [
-    'mkdir -p "' + MODDIR + '"',
-    '[ -d "' + T + '/config" ] && cp -rf "' + T + '/config" "' + MODDIR + '/"',
-    '[ -d "' + T + '/profiles" ] && cp -rf "' + T + '/profiles" "' + MODDIR + '/"',
-    'chmod -R 0771 "' + MODDIR + '/config" "' + MODDIR + '/profiles" 2>/dev/null',
-    'echo __OK__'
-  ].join('\n');
-  const r2 = await __kexec(cmd2, 120000);
-  if(stop){ stop(); stop = null; }
-  if((r2.stdout || '').indexOf('__OK__') < 0){
-    const msg = (r2.stderr || '').trim().split('\n')[0].slice(0, 60) || '未知错误';
-    pv.finish(false, '写入失败');
-    pv.addLog('失败：' + msg);
-    endBtn('关闭');
-    toast('写入失败：' + msg);
-    logOp('完整恢复｜写入失败｜' + msg);
-    return;
-  }
-  pv.addLog('模块数据已覆盖');
-  pv.setStep('还原 UI 设置', 85);
-  let uiN = 0;
-  const u = await __kexec('cat "' + T + '/ui/ui-settings.json" 2>/dev/null');
-  const uiText = (u.stdout || '').trim();
-  if(uiText){ try { uiN = restoreSettingsFromJson(uiText) || 0; } catch(e){} }
-  await __kexec('rm -rf "' + T + '" 2>/dev/null');
-  pv.finish(true, '恢复完成');
-  pv.addLog('UI 设置已还原' + (uiN ? '（' + uiN + ' 项）' : '（备份中无 UI 设置）'));
-  endBtn('完成');
-  toast('已恢复全部数据' + (uiN ? ('（UI ' + uiN + ' 项）') : '') + '，即将刷新');
-  logOp('完整恢复｜完成｜UI ' + uiN + ' 项');
-  setTimeout(function(){ location.reload(); }, 1200);
+  const stop = _barAscent(pv, 10, 92);
+  try {
+    const output = await window.xjJob('backup.full.restore', {path:path.trim()}, job => { if (job.output) pv.__out.textContent = job.output; });
+    const result = JSON.parse(output);
+    const count = result.ui ? restoreSettingsFromJson(JSON.stringify(result.ui)) : 0;
+    pv.addLog('模块数据已恢复，界面设置 ' + count + ' 项');
+    pv.finish(true, '恢复完成');
+    setTimeout(() => location.reload(), 1200);
+  } catch(e){ pv.addLog(e.message); pv.finish(false, '恢复失败'); }
+  finally { stop(); btn.disabled = false; btn.textContent = '关闭'; btn.onclick = () => pv.remove(); }
 }
 function initBackup(){
   const el = document.getElementById('backupPath');
@@ -5512,8 +5492,8 @@ function onPageBlurInput(v){
   refreshPageBlurUI(n);
   try { localStorage.setItem('ht_page_blur', String(n)); } catch(e){}
 }
-function editPageBlur(){
-  const v = window.prompt('标题过渡模糊度（0-30，0 为不模糊）', String(getPageBlur()));
+async function editPageBlur(){
+  const v = await uiPrompt('标题过渡模糊度（0-30，0 为不模糊）', String(getPageBlur()));
   if(v === null) return;
   const n = parseInt(v);
   if(isNaN(n)){ toast('请输入 0-30 的数字'); return; }
@@ -6040,11 +6020,11 @@ function setScale(type, val){
   }catch(e){}
 }
 function onScaleInput(type, val){ setScale(type, val); }
-function editScale(type){
+async function editScale(type){
   const d=SCALE_DEFS[type];
   const cur=getScale(type);
   const defVal = d.isInt ? Math.round(cur) : cur.toFixed(2);
-  const input = prompt(d.hint, defVal);
+  const input = await uiPrompt(d.hint, defVal);
   if(input===null) return;
   setScale(type, input);
 }
@@ -6091,10 +6071,10 @@ function setBarAlpha(v){
   try { localStorage.setItem('ht_bar_alpha', String(v)); } catch(e){}
 }
 function onBarAlphaInput(v){ setBarAlpha(v); }
-function editBarAlpha(){
+async function editBarAlpha(){
   if(isBarAlphaLocked()){ toast('已跟随卡片透明度，请先关闭跟随'); return; }
   const cur = getBarAlpha();
-  const input = prompt('请输入 0.10 - 1.00 之间的数值', cur.toFixed(2));
+  const input = await uiPrompt('请输入 0.10 - 1.00 之间的数值', cur.toFixed(2));
   if(input === null) return;
   setBarAlpha(input);
 }
@@ -6127,9 +6107,9 @@ function setBarSolid(v){
   try { localStorage.setItem('ht_bar_solid', String(v)); } catch(e){}
 }
 function onBarSolidInput(v){ setBarSolid(v); }
-function editBarSolid(){
+async function editBarSolid(){
   const cur = getBarSolid();
-  const input = prompt('请输入 0.00 - 1.00 之间的数值（底栏纯色背景度）', cur.toFixed(2));
+  const input = await uiPrompt('请输入 0.00 - 1.00 之间的数值（底栏纯色背景度）', cur.toFixed(2));
   if(input === null) return;
   setBarSolid(input);
 }
@@ -6202,10 +6182,10 @@ function setBarBlur(v){
   try { localStorage.setItem('ht_bar_blur', String(v)); } catch(e){}
 }
 function onBarBlurInput(v){ setBarBlur(v); }
-function editBarBlur(){
+async function editBarBlur(){
   if(!isBarBlurOn()){ toast('请先开启底栏背景模糊'); return; }
   const cur = getBarBlur();
-  const input = prompt('请输入 0 - 30 之间的数值（底栏背景模糊度）', cur);
+  const input = await uiPrompt('请输入 0 - 30 之间的数值（底栏背景模糊度）', cur);
   if(input === null) return;
   setBarBlur(input);
 }
@@ -6337,9 +6317,9 @@ function onFontAlphaInput(kind, val){
   if(rEl) rEl.value = v;
   applyFontColors();
 }
-function editFontAlpha(kind){
+async function editFontAlpha(kind){
   const cur = getFontAlpha(kind);
-  const input = prompt('请输入 0.10 - 1.00 之间的数值（字体透明度）', cur.toFixed(2));
+  const input = await uiPrompt('请输入 0.10 - 1.00 之间的数值（字体透明度）', cur.toFixed(2));
   if(input === null) return;
   onFontAlphaInput(kind, input);
 }
@@ -6458,9 +6438,9 @@ function onDividerAlphaInput(val){
   if(rEl) rEl.value = v;
   applyDivider();
 }
-function editDividerAlpha(){
+async function editDividerAlpha(){
   const cur = getDividerAlpha();
-  const input = prompt('请输入 0.00 - 1.00 之间的数值（分割线透明度）', cur.toFixed(2));
+  const input = await uiPrompt('请输入 0.00 - 1.00 之间的数值（分割线透明度）', cur.toFixed(2));
   if(input === null) return;
   onDividerAlphaInput(input);
 }
@@ -6574,9 +6554,9 @@ function setCardAlpha(v){
   updateGlassSub();
 }
 function onCardAlphaInput(v){ setCardAlpha(v); }
-function editCardAlpha(){
+async function editCardAlpha(){
   const cur = getCardAlpha();
-  const input = prompt('请输入 0.10 - 0.95 之间的数值', cur.toFixed(2));
+  const input = await uiPrompt('请输入 0.10 - 0.95 之间的数值', cur.toFixed(2));
   if(input === null) return;
   setCardAlpha(input);
 }
@@ -6648,9 +6628,9 @@ function setWpBlur(v){
   try { localStorage.setItem('ht_wp_blur', String(v)); } catch(e){}
 }
 function onWpBlurInput(v){ setWpBlur(v); }
-function editWpBlur(){
+async function editWpBlur(){
   const cur = getWpBlur();
-  const input = prompt('请输入 0 - 30 之间的数值', cur);
+  const input = await uiPrompt('请输入 0 - 30 之间的数值', cur);
   if(input === null) return;
   setWpBlur(input);
 }
@@ -6829,8 +6809,7 @@ function initFirstNotice(){
   Promise.resolve().then(async () => {
     let curVer = '';
     try {
-      const r = await __kexec(`cat "${MODDIR}/module.prop" 2>/dev/null`);
-      const out = (r && r.stdout) || '';
+      const out = await moduleInfoText();
       const mc = out.match(/^\s*versionCode\s*=\s*(.+)\s*$/m);
       const mv = out.match(/^\s*version\s*=\s*(.+)\s*$/m);
       if(mc) curVer += mc[1].trim();
@@ -6842,8 +6821,8 @@ function initFirstNotice(){
     if(!curCode) return;
     let seenCode = '';
     try {
-      const rf = await __kexec(`cat "${MODDIR}/config/.notice_seen" 2>/dev/null`);
-      seenCode = ((rf && rf.stdout) || '').trim();
+      const notice = await apiJson('notice.get');
+      seenCode = String(notice.seen || '').trim();
     } catch(e){}
     if(!seenCode){ try { seenCode = (localStorage.getItem('ht_notice_code') || '').trim(); } catch(e){} }
     
@@ -6898,7 +6877,7 @@ function showFirstNotice(){
     } catch(e){}
     
     if(_noticeVer){
-      __kexec(`mkdir -p "${MODDIR}/config" 2>/dev/null; printf '%s' "${_noticeVer}" > "${MODDIR}/config/.notice_seen" 2>/dev/null`);
+      window.xjApi('notice.seen', {}).catch(e => toast('欢迎页状态保存失败：' + e.message));
     }
     if(showFirstNotice._t){ clearInterval(showFirstNotice._t); showFirstNotice._t = null; }
     if(mask._guardTouch){ mask.removeEventListener('touchmove', mask._guardTouch); }
@@ -6909,26 +6888,7 @@ function showFirstNotice(){
 }
 
 
-const AUTHOR_BASE = '/data/adb/modules/HyperOS_XJ/hyperosui/.file/';
 
-async function fileToDataUrl(path){
-  try {
-    let mime = 'image/png';
-    try {
-      const t = await __kexec(`file -b "${path}" 2>/dev/null`);
-      const tt = (t.stdout || '').toLowerCase();
-      if (tt.includes('jpeg') || tt.includes('jpg')) mime = 'image/jpeg';
-      else if (tt.includes('png')) mime = 'image/png';
-      else if (tt.includes('gif')) mime = 'image/gif';
-      else if (tt.includes('webp')) mime = 'image/webp';
-      else if (tt.includes('bmp')) mime = 'image/bmp';
-    } catch(e){}
-    const r = await __kexec(`base64 "${path}" 2>/dev/null`);
-    const b64 = (r.stdout || '').replace(/\s+/g, '');
-    if (!b64 || b64.length < 20) return null;
-    return `data:${mime};base64,${b64}`;
-  } catch(e){ return null; }
-}
 
 
 
@@ -7004,34 +6964,10 @@ function toggleExpand(id){
 
 
 async function openProfileConf(){
-  const modelEl = document.getElementById('devModel');
-  const rawModel = ((modelEl && modelEl.textContent) || '').trim();
-  
-  const model = /^[A-Za-z0-9._-]{1,64}$/.test(rawModel) ? rawModel : '';
-  const defPath = `${MODDIR}/profiles/default.conf`;
-  
-  let path = defPath;
-  let srcPath = defPath;
-  let isNew = false;
-  if(model){
-    const mp = `${MODDIR}/profiles/${model}.conf`;
-    try {
-      const rm = await __kexec(`[ -s "${mp}" ] && echo yes`);
-      if(((rm && rm.stdout) || '').trim() === 'yes'){ path = mp; srcPath = mp; }
-      else { path = mp; srcPath = defPath; isNew = true; }
-    } catch(e){}
-  }
-  let text = '';
-  try {
-    const rc = await __kexec(`cat "${srcPath}" 2>/dev/null`);
-    text = ((rc && rc.stdout) || '').replace(/\s+$/, '');
-  } catch(e){}
-  const lines = text ? text.split('\n') : [];
-  const kv = {};
-  lines.forEach(l => {
-    const m = l.match(/^\s*([A-Za-z0-9_]+)\s*=\s*(.*?)\s*$/);
-    if(m) kv[m[1]] = m[2];
-  });
+  const profile = await apiJson('profile.load', {target:'current'});
+  const path = profile.path || profile.name || '当前机型档案';
+  const isNew = !!profile.isNew;
+  const kv = profile.settings || {};
   const FIELDS = [
     { k:'poll_interval',       t:'num', l:'轮询间隔',     u:'秒', s:1,    d:'后台温度采样间隔，越小越灵敏，耗电略增' },
     { k:'foreground_interval', t:'num', l:'前台轮询间隔', u:'秒', s:1,    d:'亮屏（前台）时的采样间隔' },
@@ -7041,20 +6977,22 @@ async function openProfileConf(){
     { k:'charge_node',         t:'txt', l:'充电节点',     u:'',   s:1,    d:'留空则自动探测（一般无需修改）' }
   ];
   const ov = document.createElement('div');
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;';
+  ov.className = 'notice-mask show';
+  ov.style.zIndex = '100001';
   const stop = e => e.stopPropagation();
   ov.addEventListener('touchstart', stop, { passive:true });
   ov.addEventListener('touchmove', stop, { passive:true });
   const box = document.createElement('div');
-  box.style.cssText = 'width:100%;max-width:460px;max-height:84vh;display:flex;flex-direction:column;background:var(--card);color:var(--text);border-radius:18px;padding:18px;box-sizing:border-box;box-shadow:0 12px 40px rgba(0,0,0,.35);';
+  box.className = 'notice-card';
+  box.style.maxWidth = '460px';
   const title = document.createElement('div');
-  title.style.cssText = 'font-size:calc(16px * var(--fs));font-weight:600;margin-bottom:4px;color:var(--font-card);';
+  title.className = 'notice-title';
   title.textContent = '机型档案配置';
   const sub = document.createElement('div');
   sub.style.cssText = 'font-size:calc(11px * var(--fs));color:var(--font-desc);margin-bottom:12px;word-break:break-all;';
   sub.textContent = isNew ? `${path}｜新建：以 default.conf 为底稿` : path;
   const bodyEl = document.createElement('div');
-  bodyEl.style.cssText = 'flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:10px;';
+  bodyEl.className = 'notice-body';
   const inputs = {};
   FIELDS.forEach(f => {
     const wrap = document.createElement('div');
@@ -7070,7 +7008,7 @@ async function openProfileConf(){
     left.appendChild(lb); left.appendChild(ds);
     wrap.appendChild(left);
     if(f.t === 'sw'){
-      const on = (kv[f.k] === '1');
+      const on = (String(kv[f.k]) === '1' || kv[f.k] === true);
       let state = on;
       const pill = document.createElement('div');
       pill.style.cssText = 'flex:0 0 48px;width:48px;height:28px;border-radius:14px;position:relative;cursor:pointer;transition:background .2s;';
@@ -7092,9 +7030,9 @@ async function openProfileConf(){
       if(isNum){ ip.inputMode = 'decimal'; if(f.s && f.s > 1) ip.step = '0.1'; }
       ip.style.cssText = 'flex:0 0 ' + (isNum ? '86px' : '104px') + ';box-sizing:border-box;background:var(--card);color:var(--text);border:1px solid rgba(130,130,130,.3);border-radius:9px;padding:8px 6px;font-size:calc(13px * var(--fs));text-align:center;outline:none;';
       const raw = kv[f.k];
-      if(raw != null && raw !== '' && !isNaN(Number(raw))){
-        if(isNum) ip.value = String(+(Number(raw) / (f.s || 1)).toFixed(3));
-        else ip.value = raw;
+      if(raw != null && raw !== ''){
+        if(isNum && isFinite(Number(raw))) ip.value = String(+(Number(raw) / (f.s || 1)).toFixed(3));
+        else if(!isNum) ip.value = raw;
       }
       if(isNum) ip.placeholder = '--';
       inputs[f.k] = { type: isNum ? 'num' : 'txt', el: ip, scale: (f.s || 1) };
@@ -7123,57 +7061,29 @@ async function openProfileConf(){
   lockPageScroll();
   const done = () => { unlockPageScroll(); ov.remove(); };
   const put = async () => {
-    const out = lines.slice();
-    Object.keys(inputs).forEach(k => {
+    const values = {};
+    for (const k of Object.keys(inputs)) {
       const ctl = inputs[k];
-      let val;
-      if(ctl.type === 'sw') val = ctl.get();
+      if (ctl.type === 'sw') values[k] = Number(ctl.get());
       else {
-        const v = (ctl.el.value || '').trim();
-        if(v === '') return;
-        if(ctl.type === 'txt') val = v;
-        else {
-          const n = Number(v);
-          if(!isFinite(n)) return;
-          val = String(+(n * ctl.scale).toFixed(3)).replace(/\.0+$/, '');
-        }
+        const value = ctl.el.value.trim();
+        if (ctl.type === 'num') {
+          if (!value || !isFinite(Number(value))) { toast('请填写有效数字'); return; }
+          values[k] = Number(value) * ctl.scale;
+        } else values[k] = value;
       }
-      let hit = false;
-      for(let i = 0; i < out.length; i++){
-        const m = out[i].match(/^(\s*)([A-Za-z0-9_]+)(\s*=\s*)(.*)$/);
-        if(m && m[2] === k){ out[i] = m[1] + k + m[3] + val; hit = true; break; }
-      }
-      if(!hit) out.push(k + '=' + val);
-    });
-    const content = out.join('\n') + '\n';
+    }
     try {
-      const b64 = btoa(unescape(encodeURIComponent(content)));
-      const r = await __kexec(`echo "${b64}" | base64 -d > "${path}" 2>/dev/null; echo $?`);
-      if(((r && r.stdout) || '').trim() === '0'){
-        if(isNew){
-          toast('已为本机型新建档案，重启模块后生效');
-          logOp('新建机型档案：' + path.split('/').pop());
-        } else {
-          toast('已保存，下次轮询生效');
-          logOp('保存机型档案：' + path.split('/').pop());
-        }
-      }
-      else { toast('保存失败，请检查权限'); logOp('保存机型档案失败：' + path.split('/').pop()); }
-    } catch(e){ toast('保存失败'); }
+      await window.xjApi('profile.save', {target:'current',settings:values});
+      toast(isNew ? '已为本机型新建档案' : '已保存，下次轮询生效');
+      logOp('保存机型档案：' + path.split('/').pop());
+    } catch(e){ toast('保存失败：' + e.message); return; }
     done();
   };
   defB.onclick = async () => {
-    let dtext = '';
-    try {
-      const rd = await __kexec(`cat "${MODDIR}/profiles/default.conf" 2>/dev/null`);
-      dtext = ((rd && rd.stdout) || '');
-    } catch(e){}
-    if(!dtext.trim()){ toast('默认档案 default.conf 不存在'); return; }
-    const dkv = {};
-    dtext.split('\n').forEach(l => {
-      const m = l.match(/^\s*([A-Za-z0-9_]+)\s*=\s*(.*?)\s*$/);
-      if(m) dkv[m[1]] = m[2];
-    });
+    let dkv;
+    try { dkv = (await apiJson('profile.load', {target:'default'})).settings; }
+    catch(e){ toast('读取默认档案失败：' + e.message); return; }
     Object.keys(inputs).forEach(k => {
       const ctl = inputs[k];
       const v = dkv[k];
@@ -7280,81 +7190,21 @@ function sortApps(arr){
 }
 
 async function fetchInstalledApps(includeSys){
-  const _sys = !!includeSys;
-  if(installedAppsCache && installedAppsCache.length && installedAppsCache._sys === _sys) return installedAppsCache;
-  const F = '/data/local/tmp/.hx_applist.txt';
-  const pf = _sys ? 'pm list packages -f' : 'pm list packages -3 -f';
-  const pl = _sys ? 'pm list packages' : 'pm list packages -3';
-  const cmd = 'rm -f "' + F + '" 2>/dev/null\n'
-    + pf + ' 2>/dev/null | sed "s/^package://" | while IFS= read -r line; do\n'
-    + '  pkg="${line##*=}"; apk="${line%="$pkg"}";\n'
-    + '  [ -n "$pkg" ] && printf "%s\\t%s\\n" "$pkg" "$apk" >> "' + F + '" 2>/dev/null\n'
-    + 'done\n'
-    + 'if [ ! -s "' + F + '" ]; then\n'
-    + '  ' + pl + ' 2>/dev/null | sed "s/^package://" | while IFS= read -r pkg; do [ -n "$pkg" ] && printf "%s\\t\\n" "$pkg" >> "' + F + '" 2>/dev/null; done\n'
-    + 'fi\n'
-    + 'cat "' + F + '" 2>/dev/null';
-  let out = '';
-  try { const r = await __kexec(cmd); out = (r && r.stdout) ? r.stdout : ''; } catch(e){ out = ''; }
-  const map = {};
-  out.split('\n').forEach(function(line){
-    const t = parseAppLine(line);
-    if(!t) return;
-    if(!map[t.pkg]) map[t.pkg] = { pkg: t.pkg, name: t.name || t.pkg, apk: t.apk || '' };
-    else {
-      if(map[t.pkg].name === t.pkg && t.name) map[t.pkg].name = t.name;
-      if(!map[t.pkg].apk && t.apk) map[t.pkg].apk = t.apk;
-    }
+  const includeSystem = !!includeSys;
+  if (installedAppsCache && installedAppsCache._sys === includeSystem) return installedAppsCache;
+  const apps = await apiJson('apps.list', {includeSystem});
+  if (!Array.isArray(apps)) throw new Error('应用列表格式无效');
+  apps.forEach(function(app){
+    app.apk = '';
+    app.name = app.name || app.pkg;
+    if (app.name !== app.pkg) APP_LABEL_CACHE[app.pkg] = app.name;
   });
-  const arr = Object.keys(map).map(function(k){ return map[k]; });
-  sortApps(arr);
-  if(arr.length){ arr._sys = _sys; installedAppsCache = arr; }
-  return arr;
+  sortApps(apps);
+  apps._sys = includeSystem;
+  installedAppsCache = apps;
+  return apps;
 }
-
-async function enrichInstalledApps(arr){
-  if(appLabelBusy || !arr || !arr.length) return arr;
-  appLabelBusy = true;
-  try {
-    arr.forEach(function(a){
-      if(!a.name || a.name === a.pkg){
-        const c = APP_LABEL_CACHE[a.pkg];
-        if(c) a.name = c;
-      }
-    });
-    const todo = arr.filter(function(a){
-      return a && a.apk && (!a.name || a.name === a.pkg)
-        && APP_LABEL_CACHE[a.pkg] === undefined && !APP_LABEL_FAIL.has(a.pkg);
-    });
-    appLabelProgress = { done: 0, total: todo.length };
-    if(todo.length) scheduleAppLabelRepaint();
-    let idx = 0;
-    const worker = async function(){
-      while(idx < todo.length){
-        const a = todo[idx++];
-        let nm = '';
-        try { nm = await readApkLabel(a.apk); } catch(e){ nm = ''; }
-        if(nm && nm !== a.pkg){
-          a.name = nm;
-          APP_LABEL_CACHE[a.pkg] = nm;
-          appLabelDirty = true;
-        } else {
-          APP_LABEL_FAIL.add(a.pkg);
-        }
-        appLabelProgress.done++;
-        scheduleAppLabelRepaint();
-      }
-    };
-    const W = Math.min(4, todo.length || 1);
-    const ws = [];
-    for(let i = 0; i < W; i++) ws.push(worker());
-    await Promise.all(ws);
-    if(appLabelDirty){ appLabelDirty = false; saveAppLabelCache(); }
-    sortApps(arr);
-  } catch(e){}
-  appLabelBusy = false;
-  return arr;
-}
+async function enrichInstalledApps(arr){ return arr; }
 function loadAppNames(arr, repaint){
   appLabelRepaint = (typeof repaint === 'function') ? repaint : null;
   if(!arr || !arr.length){ appLabelState = 'done'; return; }
@@ -7657,53 +7507,27 @@ function _b64ToBytes(s){
     return u;
   } catch(e){ return null; }
 }
-async function _unzipEntry(apk, entry, maxBytes){
-  if(!apk) return null;
-  const q = "'" + String(apk).replace(/'/g, "'\\''") + "'";
-  const cmd = 'unzip -p ' + q + ' "' + entry + '" 2>/dev/null | head -c ' + (maxBytes || 1200000) + " | base64 | tr -d '\\n'";
-  let r = null;
-  try { r = await __kexec(cmd); } catch(e){ return null; }
-  const s = ((r && r.stdout) || '').replace(/[\s\r\n]+/g, '');
-  if(!s) return null;
-  return _b64ToBytes(s);
-}
-async function readApkLabel(apk){
-  const man = await _unzipEntry(apk, 'AndroidManifest.xml', 600000);
-  if(!man || !man.length) return '';
-  let m = null;
-  try { m = _manifestInfo(man); } catch(e){ return ''; }
-  if(m.label && m.label.trim()) return m.label.trim();
-  if(!m.labelId) return '';
-  const caps = [1200000, 2400000, 4000000];
-  for(let i = 0; i < caps.length; i++){
-    const a = await _unzipEntry(apk, 'resources.arsc', caps[i]);
-    if(!a || !a.length) return '';
-    let v = null;
-    try { v = _arscString(a, m.labelId); } catch(e){ v = null; }
-    if(v && v.trim()) return v.trim();
-    if(a.length < caps[i]) return '';
-  }
-  return '';
-}
 function _mkModal(title, sub){
   const ov = document.createElement('div');
-  ov.style.cssText = 'position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;background:rgba(0,0,0,.45);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);';
+  ov.className = 'notice-mask show';
+  ov.style.zIndex = '100001';
   const stop = function(e){ e.stopPropagation(); };
   ov.addEventListener('touchstart', stop, { passive: true });
   ov.addEventListener('touchmove', stop, { passive: true });
   const box = document.createElement('div');
-  box.style.cssText = 'width:100%;max-width:520px;max-height:78vh;display:flex;flex-direction:column;background:var(--card);border-radius:20px;padding:16px;box-sizing:border-box;box-shadow:0 24px 60px rgba(0,0,0,.45);';
+  box.className = 'notice-card';
+  box.style.maxWidth = '520px';
   const h = document.createElement('div');
-  h.style.cssText = 'font-size:calc(16px * var(--fs));font-weight:600;color:var(--text);margin-bottom:4px;';
+  h.className = 'notice-title';
   h.textContent = title;
   const s = document.createElement('div');
-  s.style.cssText = 'font-size:calc(12px * var(--fs));color:var(--font-desc);margin-bottom:10px;line-height:1.55;white-space:pre-wrap;';
+  s.className = 'notice-body';
   s.textContent = sub || '';
   const out = document.createElement('pre');
   out.style.cssText = 'flex:1;min-height:130px;overflow:auto;margin:0 0 12px;padding:10px;border-radius:12px;background:var(--input-bg);color:var(--text);font-size:calc(11.5px * var(--fs));line-height:1.55;white-space:pre-wrap;word-break:break-all;font-family:monospace;';
   out.textContent = '';
   const btns = document.createElement('div');
-  btns.style.cssText = 'display:flex;gap:10px;';
+  btns.className = 'dialog-actions';
   box.appendChild(h); box.appendChild(s); box.appendChild(out); box.appendChild(btns);
   ov.appendChild(box);
   ov.__out = out; ov.__btns = btns;
@@ -7800,14 +7624,10 @@ async function doDiagnose(){
   let ok = false;
   try {
     
-    const r = await __kexec('sh ' + MODDIR + '/diagnose.sh 2>&1', 180000);
-    let txt = ((r && r.stdout) || '');
-    if(r && r.stderr && r.stderr.trim()) txt += '\n[stderr]\n' + r.stderr;
-    if(!txt.trim()) txt = '（脚本无输出，退出码 ' + ((r && r.errno) || 0) + '）';
-    out.textContent = txt;
-    ok = !(r && r.errno === -2);
-    ov.finish(ok, r && r.errno === -2 ? '执行超时' : '已生成诊断包');
-    logOp('诊断与日志打包：完成，退出码 ' + ((r && r.errno) || 0) + (r && r.errno === -2 ? '（超时）' : ''));
+    out.textContent = await window.xjJob('action.run', {id:'diagnose'}, job => { if(job.output) out.textContent = job.output; });
+    ok = true;
+    ov.finish(true, '已生成诊断包');
+    logOp('诊断与日志打包：完成');
   } catch(e){
     out.textContent = '执行失败：' + e;
     ov.finish(false, '执行失败');
@@ -7839,53 +7659,30 @@ async function runUninstallScript(){
   const endBtn = function(text){ btn.textContent = text; btn.disabled = false; btn.onclick = function(){ try { ov.remove(); } catch(e){} }; };
   ov.setStep('提交执行', 5);
   try {
-    await __kexec('nohup sh ' + MODDIR + '/uninstall.sh > /data/local/tmp/HX_uninstall.out 2>&1 &');
-    logOp('卸载模块｜已启动 uninstall.sh（后台执行）');
-  } catch(e){
-    out.textContent = '启动失败：' + e;
-    ov.finish(false, '启动失败');
-    endBtn('关闭');
-    logOp('卸载模块｜启动 uninstall.sh 失败｜' + String(e));
-    return;
-  }
-  let last = '';
-  for(let i = 0; i < 14; i++){
-    ov.setStep(i < 3 ? '停止温控核心' : (i < 8 ? '还原原厂温控与充电电流' : '卸载配套 APK'), 8 + (i + 1) * 6);
-    await new Promise(function(res){ setTimeout(res, 600); });
-    let t = '';
-    try {
-      const r1 = await __kexec('cat /data/local/tmp/HX_uninstall.out 2>/dev/null');
-      t = ((r1 && r1.stdout) || '');
-      const r2 = await __kexec('cat /data/local/tmp/HyperOS_XJ_uninstall.log 2>/dev/null');
-      const lg = ((r2 && r2.stdout) || '');
-      if(lg) t += '\n── uninstall.log ──\n' + lg;
-    } catch(e){}
-    if(t && t !== last){ last = t; out.textContent = t; try { out.scrollTop = out.scrollHeight; } catch(e){} }
-  }
-  if(!last) out.textContent = '（暂无输出，脚本可能仍在执行）';
-  logOp('卸载模块｜输出采集结束｜' + (last ? '有输出(' + last.length + '字符)' : '无输出'));
-  out.textContent += '\n\n▶ 若配套 APK 已被卸载，本页面将自动关闭。';
-  ov.finish(true, '输出采集结束');
+    out.textContent = await window.xjJob('action.run', {id:'uninstall'}, job => { if(job.output) out.textContent = job.output; });
+    ov.finish(true, '卸载完成');
+  } catch(e){ out.textContent = e.message; ov.finish(false, '卸载未完成'); }
   endBtn('关闭');
 }
 
 
 async function viewLog(){
   
-  const r=await __kexec(`L="${MODDIR}/log/core.log"; [ -s "$L" ] || L="${MODDIR}/切换log.log"; [ -s "$L" ] || L="${MODDIR}/config/core.log"; tail -n 800 "$L" 2>/dev/null`);
-  const text=(r.stdout||'').trim();
+  const text = (await apiOutput('logs.read')).trim();
   const ov=document.createElement('div');
-  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;';
+  ov.className = 'notice-mask show';
+  ov.style.zIndex = '100001';
   const stopSwipe=e=>{e.stopPropagation();};
   ov.addEventListener('touchstart',stopSwipe,{passive:true});
   ov.addEventListener('touchmove',stopSwipe,{passive:true});
   const box=document.createElement('div');
-  box.style.cssText='width:100%;max-width:420px;max-height:70vh;display:flex;flex-direction:column;background:var(--card);color:var(--text);border-radius:16px;padding:18px;box-sizing:border-box;box-shadow:0 12px 40px rgba(0,0,0,.35);';
+  box.className = 'notice-card';
+  box.style.maxWidth = '420px';
   const title=document.createElement('div');
   title.style.cssText='font-size:calc(16px * var(--fs));font-weight:600;margin-bottom:10px;';
   title.textContent='日志文件';
   const body=document.createElement('div');
-  body.style.cssText='flex:1;overflow:auto;background:var(--bg);border-radius:10px;padding:10px;font-family:monospace;font-size:calc(12px * var(--fs));line-height:1.5;white-space:pre-wrap;word-break:break-all;color:var(--text-secondary);';
+  body.className = 'notice-body';
   body.textContent=text||'暂无日志（核心启动后会写入 log/core.log）';
   const row=document.createElement('div');
   row.style.cssText='display:flex;gap:12px;margin-top:14px;';
@@ -7904,16 +7701,10 @@ async function viewLog(){
 }
 
 async function exportLog(){
-  const d = new Date();
-  const p2 = n => String(n).padStart(2, '0');
-  const stamp = `${d.getFullYear()}${p2(d.getMonth()+1)}${p2(d.getDate())}_${p2(d.getHours())}${p2(d.getMinutes())}${p2(d.getSeconds())}`;
-  const dir = '/sdcard/Download/HyperOS_XJ_Log';
-  const dest = `${dir}/切换log_${stamp}.log`;
-  await __kexec(`mkdir -p "${dir}" 2>/dev/null`);
-  await __kexec(`L="${MODDIR}/log/core.log"; [ -s "$L" ] || L="${MODDIR}/切换log.log"; cat "$L" > "${dest}" 2>/dev/null`);
-  const chk = await __kexec(`[ -f "${dest}" ] && echo OK || echo FAIL`);
-  if (((chk.stdout) || '').indexOf('OK') !== -1) toast('日志已导出：' + dest);
-  else toast('导出失败，请检查存储权限');
+  try {
+    const result = await apiJson('logs.export', {directory:'/sdcard/Download/HyperOS_XJ_Log'});
+    toast('日志已导出：' + result.path);
+  } catch(e){ toast('导出失败：' + e.message); }
 }
 
 
@@ -7942,9 +7733,8 @@ async function toggleBypass(){
   
   let ok=false, tail='';
   try{
-    const r = await __kexec(`printf '%s' '${el.checked?1:0}' > ${MODDIR}/config/bypass_manual 2>/dev/null; echo "RC=$?"`);
-    tail=((r&&r.stdout)||'').replace(/\s+/g,' ').trim();
-    ok=/RC=0(\s|$)/.test(tail);
+    await window.xjApi('bypass.set', {enabled:!!el.checked});
+    ok=true;
   }catch(e){ tail='异常:'+String(e); }
   toast(ok?(el.checked?'旁路已开启':'旁路已关闭'):'旁路设置写入失败');
   logOp('手动旁路开关｜'+(el.checked?'开启':'关闭')+'｜'+(ok?'成功':'失败')+'｜'+tail.slice(0,120));
@@ -7959,9 +7749,8 @@ async function toggleGameBypass(){
 
 async function checkIsHyperOS(){
   try{
-    const r=await __kexec(`printf '%s\n%s\n%s\n' "$(getprop ro.mi.os.version.name)" "$(getprop ro.mi.os.version.code)" "$(getprop ro.miui.ui.version.name)"`);
-    const L=(((r&&r.stdout)||'').split('\n')).map(x=>(x||'').trim());
-    const n=L[0]||'', c=L[1]||'', mn=L[2]||'';
+    const os=await apiJson('device.os');
+    const n=os.hyperos || '', c=os.code || '', mn=os.miui || '';
     if(n && n!=='unknown') return true;
     if(/^\d+$/.test(c)) return true;
     if(/^V8\d\d$/.test(mn)) return true;
@@ -7970,30 +7759,17 @@ async function checkIsHyperOS(){
 }
 
 async function runHyperOS4Script(){
-  try{
-    
-    const r=await __kexec(`if [ -f '${MODDIR}/HyperOS/HyperOS-yes' ]; then sh '${MODDIR}/HyperOS/HyperOS-yes' 2>&1; echo "RC=$?"; else echo "RC=NOFILE"; fi; echo "P_SUP=$(getprop debug.game.video.support)"; echo "P_SPD=$(getprop debug.game.video.speed)"`);
-    const o=((r&&r.stdout)||'');
-    const ok=/RC=0(\s|$)/.test(o);
-    window._h4Msg=o.replace(/\s+/g,' ').trim().slice(0,200);
-    logOp('三倍速立即应用｜'+(ok?'成功':'失败')+'｜'+(window._h4Msg||''));
-    return ok;
-  }catch(e){ window._h4Msg='异常:'+String(e); logOp('三倍速立即应用｜异常｜'+String(e)); return false; }
+  try { window._h4Msg = await apiOutput('hyperspeed.set', {enabled:true}); return true; }
+  catch(e){ window._h4Msg = e.message; return false; }
 }
-
 async function runHyperOS4OffScript(){
-  try{
-    const r=await __kexec(`if [ -f '${MODDIR}/HyperOS/HyperOS-off' ]; then sh '${MODDIR}/HyperOS/HyperOS-off' 2>&1; echo "RC=$?"; else setprop debug.game.video.support false; setprop debug.game.video.speed false; echo "RC=$?"; fi; echo "P_SUP=$(getprop debug.game.video.support)"; echo "P_SPD=$(getprop debug.game.video.speed)"`);
-    const o=((r&&r.stdout)||'');
-    const ok=/RC=0(\s|$)/.test(o);
-    logOp('三倍速关闭｜'+(ok?'成功':'失败')+'｜'+o.replace(/\s+/g,' ').trim().slice(0,200));
-    return ok;
-  }catch(e){ logOp('三倍速关闭｜异常｜'+String(e)); return false; }
+  try { await apiOutput('hyperspeed.set', {enabled:false}); return true; }
+  catch(e){ window._h4Msg = e.message; return false; }
 }
 async function initHiTemp(){
   try{
-    const r=await __kexec('getprop persist.vendor.high_temp_stop_charge');
-    window.__htsc=((r&&r.stdout)||'').trim();
+    const runtime = await apiJson('device.runtime');
+    window.__htsc=String(runtime.high_temp_stop_charge == null ? '' : runtime.high_temp_stop_charge);
   }catch(e){ window.__htsc=''; }
   paintHiTemp();
 }
@@ -8015,10 +7791,10 @@ async function toggleHiTemp(){
   if(!el) return;
   const ok=await save();
   if(!ok){ el.checked=!el.checked; updateSubs(); toast('写入配置失败'); return; }
-  await __kexec(`sh ${MODDIR}/thermal_core.sh apply >/dev/null 2>&1 &`);
+  await apiOutput('thermal.apply');
   setTimeout(async ()=>{
-    const r=await __kexec(`getprop persist.vendor.high_temp_stop_charge`);
-    const v=((r&&r.stdout)||'').trim();
+    const runtime=await apiJson('device.runtime');
+    const v=String(runtime.high_temp_stop_charge == null ? '' : runtime.high_temp_stop_charge);
     const want=el.checked?'false':'true';
     if(v && v!==want) toast('已记录开关，但属性未生效（当前 '+v+'），守护进程会持续重试');
     else toast(el.checked?'已解除系统高温停充 · 高温时不再停止充电':'已恢复系统高温停充保护');
@@ -8043,7 +7819,7 @@ async function toggleChargeGov(){
   const ok = await save();
   if(!ok){ el.checked = !el.checked; paintChargeGov(); toast('写入配置失败'); return; }
   // 关闭时让温控立即把之前压低的功率档还回去
-  await __kexec(`sh ${MODDIR}/thermal_core.sh apply >/dev/null 2>&1 &`);
+  await apiOutput('thermal.apply');
   paintChargeGov();
   toast(el.checked ? '已开启高温降充电功率' : '已关闭高温降充电功率');
 }
@@ -8107,9 +7883,8 @@ function _fmtOs(kind,ver,rel){
 async function resolveOsLabel(runtimeOsVer){
   let rel='',hyName='',hyInc='',hyCode='',miuiName='';
   try{
-    const r=await __kexec(`printf '%s\n%s\n%s\n%s\n%s\n' "$(getprop ro.build.version.release)" "$(getprop ro.mi.os.version.name)" "$(getprop ro.mi.os.version.incremental)" "$(getprop ro.mi.os.version.code)" "$(getprop ro.miui.ui.version.name)"`);
-    const L=(((r&&r.stdout)||'').split('\n')).map(x=>(x||'').trim());
-    rel=L[0]||''; hyName=L[1]||''; hyInc=L[2]||''; hyCode=L[3]||''; miuiName=L[4]||'';
+    const os=await apiJson('device.os');
+    rel=os.android || ''; hyName=os.hyperos || ''; hyInc=os.incremental || ''; hyCode=os.code || ''; miuiName=os.miui || '';
   }catch(e){}
   const isHyper=(hyName && hyName!=='unknown') || /^\d+$/.test(hyCode) || /^V8\d\d$/.test(miuiName);
   if(isHyper){
@@ -8196,37 +7971,16 @@ async function saveImpl(){
     power_plan_start:clampInt('plan_start',23,0,23),
     power_plan_end:clampInt('plan_end',7,0,23),
     power_plan_mode:(settings.power_plan_mode||'slow'),
-    webui_defaults:DEF_SETTINGS.webui_defaults
+    webui_defaults:old.webui_defaults || DEF_SETTINGS.webui_defaults
   };
-  settings=out;
-  const json=JSON.stringify(out,null,2)+'\n';
-  const tmp=CONF+'.new';
   try{
-    await __kexec(`mkdir -p ${MODDIR}/config 2>/dev/null`);
-    const res=await writeJsonToPath(json,tmp);
-    if(!res||!res.ok){
-      await __kexec(`rm -f '${tmp}' 2>/dev/null`);
-      toast('保存失败：'+((res&&res.msg)||'写入错误'));
-      return false;
-    }
-    const head=await __kexec(`head -c 1 '${tmp}' 2>/dev/null`);
-    if((head.stdout||'').trim()!=='{'){
-      await __kexec(`rm -f '${tmp}' 2>/dev/null`);
-      toast('保存失败：写入校验不通过');
-      return false;
-    }
-    
-    const mv=await __kexec(`cat '${tmp}' > '${CONF}' 2>/dev/null && rm -f '${tmp}' && sync 2>/dev/null; echo __OK__`);
-    if((mv.stdout||'').indexOf('__OK__')<0){ toast('保存失败：无法覆盖配置'); return false; }
-    const chk=await __kexec(`wc -c < '${CONF}' 2>/dev/null`);
-    if((parseInt((chk.stdout||'0').trim())||0)<=0){ toast('保存失败：配置写入为空'); return false; }
-    __kexec(`(nohup sh ${MODDIR}/thermal_core.sh apply >/dev/null 2>&1 &) 2>/dev/null`);
+    await window.xjApi('settings.save', {settings:out});
+    settings=out;
+    await apiOutput('thermal.apply');
     
     logOp(`保存设置｜默认=${out.default_mode} 充电=${out.charge_mode?1:0}/${out.charge_level} 息屏=${out.sleep_level} 游戏=${out.game_mode?1:0}/${out.game_level} 旁路温=${out.bypass_temp_on}/${out.bypass_temp_off} 旁路电=${out.bypass_level} 三倍速=${out.hyperos4?1:0}`);
     updateSubs();
     toast('已保存');
-    // 同步一份到模块目录外，升级/重装时自动恢复
-    try{ __kexec(`mkdir -p /data/adb/HyperOS_XJ_data/config 2>/dev/null; cp -f '${CONF}' /data/adb/HyperOS_XJ_data/config/settings.json 2>/dev/null; true`); }catch(e){}
     return true;
   }catch(e){
     toast('保存异常：'+String(e));
@@ -8234,30 +7988,10 @@ async function saveImpl(){
   }
 }
 async function load(){
-  let raw='';
-  try{ raw=((await __kexec(`cat ${CONF} 2>/dev/null`)).stdout||'').trim(); }catch(e){ raw=''; }
-  let parsed=null, repaired=false;
-  if(raw){
-    try{ parsed=JSON.parse(raw); }
-    catch(e){
-      
-      try{
-        parsed=JSON.parse('{'+raw.replace(/^\{?/,'').replace(/\}\s*$/,'')+'}');
-        repaired=true;
-      }catch(e2){ parsed=null; }
-    }
-  }
-  if(!parsed){
-    if(raw){
-      await __kexec(`cp -f '${CONF}' '${CONF}.broken' 2>/dev/null`);
-      toast('配置损坏，已备份为 settings.json.broken，本次载入默认值');
-    }
-    parsed={};
-  }
+  let parsed;
+  try { parsed = await apiJson('settings.get'); }
+  catch(e){ toast('读取配置失败：' + e.message); throw e; }
   settings=Object.assign({},DEF_SETTINGS,parsed);
-  if(repaired){
-    try{ await writeJsonToPath(JSON.stringify(settings,null,2)+'\n',CONF+'.new'); await __kexec(`cat '${CONF}.new' > '${CONF}' 2>/dev/null && rm -f '${CONF}.new' && sync 2>/dev/null`); }catch(e){}
-  }
   document.getElementById('charge_mode').checked=settings.charge_mode!==false;
   document.getElementById('game_mode').checked=settings.game_mode!==false;
   document.getElementById('game_bypass').checked=settings.game_bypass===true;
@@ -8285,11 +8019,11 @@ async function load(){
   const dsub=document.getElementById('defaultSub');
   const dm=MODES.find(x=>x.id===(settings.default_mode||'default'));
   if(dsub) dsub.textContent=dm?dm.l:'系统默认';
-  const bp=await __kexec(`cat ${MODDIR}/config/bypass_manual 2>/dev/null`);
-  document.getElementById('bypass_manual').checked=bp.stdout.trim()==='1';
-  const rt=await __kexec(`cat ${MODDIR}/config/runtime.json 2>/dev/null`);
-  if(rt.stdout.trim())try{
-    const i=JSON.parse(rt.stdout.trim());
+  const bp=await apiJson('bypass.get');
+  document.getElementById('bypass_manual').checked=bp.enabled === true;
+  let runtimeOsVer = '';
+  try{
+    const i=await apiJson('device.runtime');
     const name = i.market_name || i.model || '--';
     runtimeOsVer = i.os_version || '';
     setTxt('devModel', name);
@@ -8302,6 +8036,7 @@ async function load(){
     if(osLabel){ setTxt('devOS', osLabel); setTxt('aboutOS', osLabel); }
   }catch(e){}
   updateSubs();
+  try { await rearLoad(); } catch(e){ toast('读取背屏设置失败：' + e.message); }
   setTimeout(()=>{ try{ autoApplyHyperOS4(); }catch(e){} }, 300);
 }
 
@@ -8310,34 +8045,8 @@ async function initRootEnv(){
   if(!el) return;
   let label = '未识别（可能为其他 Root 方案）';
   try {
-    const probe =
-      'E="";V="";' +
-      'if [ -d /data/adb/ksu ] || [ -f /data/adb/ksu/bin/ksud ] || command -v ksud >/dev/null 2>&1; then ' +
-        'E="KernelSU";V=$(head -n1 /data/adb/ksu/version 2>/dev/null);' +
-        '[ -z "$V" ] && V=$(getprop ro.kernelsu.version 2>/dev/null);' +
-      'elif [ -d /data/adb/ap ] || [ -f /data/adb/ap/bin/apd ] || command -v apd >/dev/null 2>&1; then ' +
-        'E="APatch";V=$(head -n1 /data/adb/ap/version 2>/dev/null);' +
-      'elif [ -d /data/adb/magisk ] || command -v magisk >/dev/null 2>&1; then ' +
-        'E="Magisk";V=$(head -n1 /data/adb/magisk/version 2>/dev/null);' +
-        '[ -z "$V" ] && V=$(magisk -c 2>/dev/null | head -n1);' +
-      'fi;' +
-      'if [ -z "$E" ] && [ -d /data/adb ]; then ' +
-        'for d in /data/adb/*; do b=${d##*/}; case "$b" in ' +
-        'ksu*) E="KernelSU";; ap) E="APatch";; magisk) E="Magisk";; esac; done;' +
-      'fi;' +
-      '[ -z "$E" ] && E="未识别";' +
-      'echo "@@$E|$V"';
-    const r = await __kexec(probe);
-    if(r && r.errno === -2){ label = '未识别（探测超时）'; }
-    else {
-      const out = (((r && r.stdout) || '').split('\n').filter(function(l){ return l.indexOf('@@') === 0; }).pop() || '').trim();
-      const raw = out.replace('@@', '');
-      const p = raw.split('|');
-      const env = (p[0] || '').trim();
-      let ver = (p[1] || '').trim().replace(/^v/i, '');
-      if(ver.length > 20) ver = ver.slice(0, 20);
-      if(env && env !== '未识别'){ label = ver ? (env + ' v' + ver) : env; }
-    }
+    const root = await apiJson('device.root');
+    if(root.name && root.name !== 'unknown') label = root.name + (root.version ? ' v' + root.version : '');
   } catch(e){ label = '未识别（Root 授权未响应）'; }
   el.textContent = label;
 }
@@ -8347,17 +8056,9 @@ async function initProfileSub(){
   const el = document.getElementById('profileSub');
   if(!el) return;
   try {
-    const r = await __kexec(`P="${MODDIR}/profiles/$(getprop ro.product.model).conf"; ` +
-      `[ -f "$P" ] || P="${MODDIR}/profiles/default.conf"; [ -f "$P" ] || exit 0; ` +
-      `echo "$(basename "$P")"; grep -E '^(poll_interval|bypass_current)=' "$P" 2>/dev/null`);
-    const lines = (((r && r.stdout) || '').trim()).split('\n').filter(x => x.trim());
-    if(!lines.length) return;
-    const name = lines[0].trim();
-    const kv = {};
-    lines.slice(1).forEach(l => {
-      const i = l.indexOf('=');
-      if(i > 0) kv[l.slice(0, i).trim()] = l.slice(i + 1).trim();
-    });
+    const profile = await apiJson('profile.summary', {target:'current'});
+    const name = profile.name || '当前机型档案';
+    const kv = profile.settings || {};
     const bits = [];
     if(kv.poll_interval) bits.push('轮询 ' + kv.poll_interval + 's');
     if(kv.bypass_current) bits.push('旁路 ' + Math.round(Number(kv.bypass_current) / 1000) + 'mA');
@@ -8379,8 +8080,7 @@ async function initVersion(){
   }
   if (!window._devDateTimer) window._devDateTimer = setInterval(updateDevDate, 60000);
   try {
-    const r = await __kexec(`cat "${MODDIR}/module.prop" 2>/dev/null`);
-    const out = (r && r.stdout) || '';
+    const out = await moduleInfoText();
     const mv = out.match(/^\s*version\s*=\s*(.+)\s*$/m);
     if(mv) setTxt('devVer', mv[1].trim());
     const mc = out.match(/^\s*versionCode\s*=\s*(.+)\s*$/m);
@@ -8390,12 +8090,12 @@ async function initVersion(){
 function applyStatusSnapshot(text){
   if(document.hidden || !text || !text.trim()) return;
   let s;try{s=JSON.parse(text.trim())}catch(e){return}
-  const tc=s.temp/10;
+  const tc=s.temp == null ? NaN : s.temp/10;
   const color = tc >= 45 ? '#FA5151' : tc >= 40 ? '#FFA940' : '#07C160';
 
   const tempEl=document.getElementById('sTemp');
   if(tempEl){
-    bkTxt('sTemp', tc.toFixed(1));
+    bkTxt('sTemp', isFinite(tc) ? tc.toFixed(1) : '--');
     if (tempEl.style.color !== color) tempEl.style.color=color;
   }
 
@@ -8433,9 +8133,11 @@ function applyStatusSnapshot(text){
 /* 轮询关闭时的独立刷新入口（也是关于页初始化时的一次性取数） */
 async function refreshStatus(){
   if(document.hidden) return;
-  const r=await __kexec(`cat ${MODDIR}/config/status.json 2>/dev/null`);
-  if(document.hidden || !r.stdout.trim())return;
-  applyStatusSnapshot(r.stdout);
+  try {
+    const snapshot=await apiJson('snapshot');
+    if(document.hidden) return;
+    applyNativeSnapshot(snapshot);
+  } catch(e){ showSnapshotError(e); }
 }
 
 
@@ -8690,10 +8392,10 @@ function diySliderInput(id, val){
   if(t) t.textContent = d.fmt(v);
   diyUpdateSubs();
 }
-function diyEditSlider(id){
+async function diyEditSlider(id){
   const d = DIY_SLIDERS[id];
   const cur = diyNum(d.key, d.def);
-  const input = window.prompt(d.label + '（' + d.min + ' - ' + d.max + '）', String(cur));
+  const input = await uiPrompt(d.label + '（' + d.min + ' - ' + d.max + '）', String(cur));
   if(input === null) return;
   const v = parseFloat(input);
   if(isNaN(v)){ toast('请输入数字'); return; }
@@ -9013,8 +8715,8 @@ function diySnapshot(){
   });
   return out;
 }
-function diySaveScheme(){
-  const name = window.prompt('方案名称', '方案 ' + (Object.keys(diySchemes()).length + 1));
+async function diySaveScheme(){
+  const name = await uiPrompt('方案名称', '方案 ' + (Object.keys(diySchemes()).length + 1));
   if(!name) return;
   const all = diySchemes();
   all[name] = diySnapshot();
@@ -9022,20 +8724,20 @@ function diySaveScheme(){
   diyRenderSchemes();
   toast('已保存方案「' + name + '」');
 }
-function diyApplyScheme(enc){
+async function diyApplyScheme(enc){
   const name = decodeURIComponent(enc);
   const s = diySchemes()[name];
   if(!s) return;
-  if(!window.confirm('应用方案「' + name + '」会覆盖当前全部外观设置，确定继续？')) return;
+  if(!(await uiConfirm('应用方案「' + name + '」会覆盖当前全部外观设置，确定继续？'))) return;
   const keep = ['ht_schemes', 'ht_backup_path'];
   getAllBackupKeys().forEach(k => { if(keep.indexOf(k) < 0){ try{ localStorage.removeItem(k); }catch(e){} } });
   Object.keys(s).forEach(k => { if(keep.indexOf(k) < 0){ try{ localStorage.setItem(k, s[k]); }catch(e){} } });
   toast('正在应用方案');
   setTimeout(() => { try{ location.reload(); }catch(e){} }, 600);
 }
-function diyDelScheme(enc){
+async function diyDelScheme(enc){
   const name = decodeURIComponent(enc);
-  if(!window.confirm('删除方案「' + name + '」？')) return;
+  if(!(await uiConfirm('删除方案「' + name + '」？'))) return;
   const all = diySchemes();
   delete all[name];
   diySaveJson('ht_schemes', all);
@@ -9219,6 +8921,10 @@ function safeInit(name, fn){
     if(r && typeof r.catch === 'function') r.catch(e => console.warn('[init] ' + name, e));
   } catch(e){ console.warn('[init] ' + name, e); }
 }
+window.addEventListener('unhandledrejection', function(event){
+  toast('操作失败：' + (event.reason && event.reason.message || String(event.reason)));
+  event.preventDefault();
+});
 safeInit('migrateAppearance', migrateAppearance);
 safeInit('initSkin', initSkin);
 safeInit('initScales', initScales);
@@ -9255,6 +8961,13 @@ safeInit('enableWebUIEdgeToEdge', () => { setTimeout(enableWebUIEdgeToEdge, 800)
 safeInit('initBackup', initBackup);
 safeInit('load', load);
 safeInit('refreshStatus', refreshStatus);
+setInterval(function(){
+  if (document.hidden) return;
+  if (window.__xjSnapshot) {
+    try { validateSnapshot(window.__xjSnapshot); } catch(e){ showSnapshotError(e); }
+  }
+  refreshRearHealth();
+}, 1000);
 
 requestAnimationFrame(() => {
   const activePage = document.querySelector('.page.active');

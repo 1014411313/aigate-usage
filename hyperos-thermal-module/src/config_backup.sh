@@ -6,27 +6,27 @@
 MODDIR=${MODDIR:-/data/adb/modules/HyperOS_XJ}
 BAK=${XJ_BAK:-/data/adb/HyperOS_XJ_data}
 n=0
+failed=0
 
-mkdir -p "$BAK/config" "$BAK/battery/config" "$BAK/profiles" 2>/dev/null
+mkdir -p "$BAK/config" "$BAK/battery/config" "$BAK/profiles" 2>/dev/null || exit 1
 
-for f in settings.json bypass_manual current_mode; do
+for f in settings.json rearscreen.json bypass_manual; do
     [ -s "$MODDIR/config/$f" ] || continue
     cmp -s "$MODDIR/config/$f" "$BAK/config/$f" 2>/dev/null && continue
-    cp -f "$MODDIR/config/$f" "$BAK/config/$f" 2>/dev/null && n=$((n + 1))
+    cp -f "$MODDIR/config/$f" "$BAK/config/$f" 2>/dev/null && n=$((n + 1)) || failed=1
 done
 
 for f in "$MODDIR"/battery/config/settings.conf; do
     [ -s "$f" ] || continue
     cmp -s "$f" "$BAK/battery/config/settings.conf" 2>/dev/null && continue
-    cp -f "$f" "$BAK/battery/config/settings.conf" 2>/dev/null && n=$((n + 1))
+    cp -f "$f" "$BAK/battery/config/settings.conf" 2>/dev/null && n=$((n + 1)) || failed=1
 done
 
 for p in "$MODDIR"/profiles/*.conf; do
     [ -f "$p" ] || continue
     bn=$(basename "$p")
-    [ "$bn" = "default.conf" ] && continue
     cmp -s "$p" "$BAK/profiles/$bn" 2>/dev/null && continue
-    cp -f "$p" "$BAK/profiles/$bn" 2>/dev/null && n=$((n + 1))
+    cp -f "$p" "$BAK/profiles/$bn" 2>/dev/null && n=$((n + 1)) || failed=1
 done
 
 # 运行态里需要跨升级保留的只有“恢复资料”，不是 PID/节流时间戳：
@@ -36,16 +36,20 @@ for d in fv_force_backup cloud_quarantine; do
     [ -d "$MODDIR/battery/state/$d" ] || continue
     if ! diff -rq "$MODDIR/battery/state/$d" "$BAK/battery/state/$d" >/dev/null 2>&1; then
         mkdir -p "$BAK/battery/state" 2>/dev/null
-        cp -af "$MODDIR/battery/state/$d" "$BAK/battery/state/" 2>/dev/null && n=$((n + 1))
+        cp -af "$MODDIR/battery/state/$d" "$BAK/battery/state/" 2>/dev/null && n=$((n + 1)) || failed=1
     fi
 done
 if [ -s "$MODDIR/battery/state/extra_dirs.txt" ]; then
     cmp -s "$MODDIR/battery/state/extra_dirs.txt" "$BAK/battery/state/extra_dirs.txt" 2>/dev/null || {
         mkdir -p "$BAK/battery/state" 2>/dev/null
-        cp -f "$MODDIR/battery/state/extra_dirs.txt" "$BAK/battery/state/extra_dirs.txt" 2>/dev/null && n=$((n + 1))
+        cp -f "$MODDIR/battery/state/extra_dirs.txt" "$BAK/battery/state/extra_dirs.txt" 2>/dev/null && n=$((n + 1)) || failed=1
     }
 fi
 
+if [ "$failed" = 1 ]; then
+    echo "部分设置备份失败，请检查磁盘空间与目录权限" >&2
+    exit 1
+fi
 if [ "$n" -gt 0 ]; then
     echo "已同步 $n 项设置到备份"
 else

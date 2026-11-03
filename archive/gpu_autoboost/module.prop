@@ -1,0 +1,6 @@
+id=gpu_autoboost
+name=GPU 智能升频
+version=V1.2
+versionCode=102
+author=AiCode
+description=按真实 GPU 繁忙度动态调整 min_pwrlevel，补偿 msm-adreno-tz 对 devfreq/gpu_load 的低估。高通 KGSL 专用，只调 GPU 不动 CPU。带学习与 WebUI。

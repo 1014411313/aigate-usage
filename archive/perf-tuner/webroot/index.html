@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Perf Tuner</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Perf Tuner</h1>
+      <p class="subtitle">当前方案：<span id="current">读取中…</span></p>
+    </header>
+
+    <p id="notice" class="notice" hidden></p>
+
+    <main>
+      <section class="profiles" id="profiles"></section>
+
+      <div class="actions">
+        <button id="refresh" class="ghost">刷新状态</button>
+        <button id="reset" class="ghost danger">恢复默认</button>
+      </div>
+
+      <section class="output">
+        <h2>执行输出</h2>
+        <pre id="log">—</pre>
+      </section>
+    </main>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

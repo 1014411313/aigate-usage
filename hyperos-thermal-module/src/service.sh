@@ -136,6 +136,11 @@ start_core() {
 
 start_core
 
+if [ -f "$MODDIR/api/snapshotd.sh" ]; then
+    ( setsid sh "$MODDIR/api/snapshotd.sh" >> "$LOGDIR/snapshot.log" 2>&1 < /dev/null & )
+    slog "统一状态快照采样器已拉起"
+fi
+
 if [ -f "$MODDIR/battery/service.sh" ]; then
     ( setsid sh "$MODDIR/battery/service.sh" >> "$LOGDIR/battery.log" 2>&1 & )
     slog "battery 服务已拉起（解容/PPS/守护）"
@@ -157,6 +162,8 @@ esac
 while true; do
     sleep 60
     [ -f "$MODDIR/disable" ] && continue
+    [ -f "$MODDIR/remove" ] && break
+    ( setsid sh "$MODDIR/api/snapshotd.sh" >> "$LOGDIR/snapshot.log" 2>&1 < /dev/null & )
     local_ok=1
     if [ -s "$PIDFILE" ]; then
         p=$(cat "$PIDFILE" 2>/dev/null)

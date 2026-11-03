@@ -1,7 +1,32 @@
 # 仓库协作规则
 
-本工作区是**多项目仓库**（远程 `1014411313/aigate-usage`），一个子目录一个项目：
-`aigate-usage/`、`github-hosts-app/`、`hyperos-thermal-module/`、`xiaomi-8Elite-charge-boost/`、`gpu_autoboost/` 等。
+远程 `1014411313/aigate-usage`。**2026-11-03 起以统一版 App 为主项目**：
+
+```
+app/                        控制端 App 源码（com.hyperos.xj）：WebView 界面 + NativeShell 白名单 Root API + LSPosed 背屏 Hook
+hyperos-thermal-module/     Root 模块（HyperOS_XJ）：温控/解容脚本、api 采样、模块管理器只读页、构建与发布工具
+docs/                       architecture.md（组件与数据流）、build-and-maintenance.md（构建/打包/发布）
+archive/                    已存档独立项目：aigate-usage、github-hosts-app、gpu_autoboost、perf-tuner、mcp-client
+health/                     个人文档，与项目无关
+xiaomi-8Elite-charge-boost/ 独立 Git 仓库（嵌套），保持原位，勿移动其 .git
+```
+
+整理说明（2026-11-03）：
+
+- 统一版 App 与模块代码已从 `work/unified-app` 工作树迁入 `main` 工作树；`/root/unified`、`/root/rs_beta`
+  两个旧工作树仍保留原状（其未提交改动未动）。
+- 仓库外备份在 `/root/repository-backups/2026-11-03/`：`main-current/`（整理前模块全量 + 逐文件 SHA-256 清单）、
+  `unrelated-main/`（旧项目与素材）、`workspace-module-before-swap/`（替换前模块目录）、`workspace-state/`（整理前状态分片）。
+- 旧解包副本、历史 ZIP、一次性素材已移出工作区（备份后删除）；旧下载链接不再维护，
+  根级 `dist/latest.json` 旧更新入口已于 2026-11-03 下线，旧版客户端不再收到更新提示。
+
+## 分工（强制）
+
+- 老板只定目标、优先级与拍板；**副总（主代理）负责统筹、拆条线、派活、验收、汇报，不亲自写业务代码**。
+- 主管＝子代理 standard/strong 档（出方案、拆子任务、评审）；员工＝子代理 light 档（搜索、机械修改、跑测试、打包核验）。
+- 子代理不能嵌套派子代理，全局最多 5 个并发；同一文件同一时间只允许一个代理写。
+- 派活必须写清：目标、已知上下文、输入输出、允许改动范围、验收标准、禁止事项。
+- 保留在副总、不外派：架构取舍、跨条线接口、密钥与发布、破坏性操作、最终验收。
 
 ## 通用
 
@@ -10,6 +35,17 @@
 - GitHub 在容器里经常连不上，推送要写重试；不要因为一次失败就放弃或改用其它通道。
 - 改完代码先自验（语法检查、静态校验、能跑就跑），再汇报；未验证的部分要如实说明。
 - 思考过程（推理）一律用中文写，不用英文。
+
+## Bug 反馈处理（强制：先记，等「修复」再统一修）
+
+- **收到 bug 反馈只记录，不动代码**：用户发来的报错、截图、诊断包、口头描述（「xx 不对」「闪退」「显示错误」等）一律先写进 `hyperos-thermal-module/state/bugs.json` 的 `collecting`，**不顺手改 `src/`、不打包、不发版、不改版本号**。
+- 允许做**只读排查**再落条目：读代码定位可疑行、解包分析诊断包、写临时复现脚本（放 `~/workspace/.aicode/tmp/`），把结论写进条目的 `root_cause` / `evidence` / `affected` / `fix_plan`，但不动源码。
+- 条目字段固定：`id`（bug-00N）、`title`、`reported`、`evidence`（截图/日志/诊断包路径）、`root_cause`、`fix_plan`、`affected`（文件:行）、`status`（默认「待修」）。
+- 同一条问题再次反馈时**不新建条目**，在原条目补 `evidence` 并更新时间；用户表达的是需求而非 bug 时，同样先记（`type: feature`），不要直接开做。
+- **只有用户明确说「修复」/「统一修复」/「开始修」才动代码**，且以一次性处理 `collecting` 全部条目为准：逐条对照 `fix_plan` 修，不要只挑其中一条。
+- 修复完成：条目从 `collecting` 移到 `fixed`，补 `fixed_in`（版本号 codeN）与 `status`（写明待真机复测/未发布），版本历史追加到 `release.json`；新功能类条目仍走「使用说明四件套」。
+- 用户明确说某条不做时，移到 `cancelled` 并注明「用户决定不做（日期）」，不再重提。
+- bug 修复与功能开发不混在一次改动里；用户没说修复，但期间有其它功能任务，功能照做、bug 只继续攒。
 
 ## 会话状态（自动维护，不得遗漏）
 
@@ -23,6 +59,7 @@
 | `ui.json` | 界面：页面结构、样式规范、取数陷阱 |
 | `apk.json` | 控制台 APK：签名、dex/arsc、图标去重 |
 | `release.json` | 发布流程、仓库结构、版本历史 |
+| `bugs.json` | 用户反馈收集区：先攒，等用户说「修复」再统一修 |
 | `pitfalls.json` | 踩坑与已定方案 |
 | `device.json` | 本机信息与当前运行状态 |
 
@@ -35,7 +72,26 @@
 ## 发布类操作（硬性）
 
 - **本地打包不需要征求同意**：改完直接打包并发给用户测试。
+- **UI 改动是唯一例外**：凡是改到界面的，先出预览图给用户看，用户点头后才打包（见下节）。
 - **上传 / 推送 / 更新线上清单必须等用户明确同意**（用户会说「发布」「上传」）。同意只对当次有效。
+
+## UI 修改预览（强制：先出预览图，用户点头再打包）
+
+- 适用范围：`src/hyperosui/index.html` 的页面/弹层/样式/文案排版/主题/图标，以及控制台 APK 的资源与界面改动。
+- 改完**先渲染预览图发到聊天里**，等用户明确说「打包」/「可以」/「就这样」才执行 `tools/pack.py` 或 `tools/release.py build`；**没点头不打包、不改版本号、不发包**。只改脚本/后端/温控逻辑的不受此限，照旧直接打包。
+- 预览图要能看清改动点：涉及的页面与弹层各一张，浅色与深色主题各一张，窄屏（320/360px）与默认宽度各一张；只贴与改动相关的图。
+- 渲染方式（容器内已验证可用）：用 `/root/.aicode/venvs/skills/bin/python`（已装 Playwright）跑脚本，**Firefox headless + `firefox_user_prefs={"security.sandbox.content.level": 0}`（或 `MOZ_DISABLE_CONTENT_SANDBOX=1`）**；chromium 在本容器必然 SIGTRAP(133)，不要用。
+- 直接 `file://` 打开 `src/hyperosui/index.html`，页面启动时就探测命令通道，所以必须用 `add_init_script` **在页面脚本前**给 `window.ksu`（不是 `__kexec`，那是页面内部函数）：
+  ```js
+  window.ksu = { exec: function (cmd, opts, cb) {
+    let out = ''; for (const [k, v] of MAP) if (cmd.indexOf(k) >= 0) { out = v; break; }
+    setTimeout(() => { if (window[cb]) window[cb](0, out, ''); }, 0);
+  } };
+  ```
+  `MAP` 按命令关键字返回假 stdout（`status_kv.sh` 造整机读数、`detail_kv.sh` 造容量/寿命，字段名照脚本实际输出，不匹配的格子会显示 `--`）；没 mock 到位时页面会提示「未检测到 root 命令通道」。要预置皮肤就复制一份 HTML，把 `data-skin` 与 `--p` 写死进首屏再截（页面定时器会把 evaluate 改的样式刷回真实值）。
+- 预览文件放 `~/workspace/.aicode/tmp/ui_preview/<日期>/`（`.aicode/` 已在 .gitignore），用 `sendFile` 发图，并说明「改了什么、看图看哪里、当前只是源码预览未打包」。
+- 用户提修改意见就改完重新出图，循环到用户点头为止；用户当次说「不用预览，直接打包」按当次放行，下一次 UI 改动仍要预览。
+- 截图已知坑：容器浏览器对大圆角 `backdrop-filter` 页面可能截出空白，此时截前给 body 加 `fx-lite` 并 inline 禁用 animation/backdropFilter（几何与 canvas 用 evaluate 验），但要在发图时说明「毛玻璃/流光实际观感预览图不还原，以真机为准」。
 
 ## hyperos-thermal-module（HyperOS - 动态温控·解容）
 
@@ -45,12 +101,13 @@
 ### 目录
 
 ```
-src/            模块源码（battery/ 为解容子模块，hyperosui/index.html 为控制台界面）
-tools/pack.py   打包：python3 tools/pack.py [输出路径]
-tools/release.py build   版本号 +1、打包到 dist/、不发不推
-tools/release.py publish 更新 latest.json、只留最近 3 版、提交推送、校验 CDN
-dist/           发布包，命名「动态温控·解容工具箱_vN.zip」
-latest.json     版本清单
+src/                 模块源码（battery/ 为解容子模块，api/ 为 Root API 与只读采样，hyperosui/index.html 为控制台界面）
+tools/build_app.py   构建控制端 App：python3 tools/build_app.py（ECJ + d8 + aapt2 + 原证书签名，产物 build/HyperOSxj.apk）
+tools/pack.py        打包模块：python3 tools/pack.py [输出路径]
+tools/release.py     build 版本号 +1 并打包到 dist/（不发不推）；publish 更新 latest.json、只留最近 3 版、提交推送、校验 CDN
+dist/                发布包，命名「动态温控·解容工具箱_vN.zip」
+latest.json          版本清单
+upstream/            双上游同步基线（manifest.json + base/ 快照）
 ```
 
 ### 使用说明（强制，不要等用户提醒）
@@ -73,11 +130,13 @@ latest.json     版本清单
 - **三条线都在远端**：正式版在 `main`，原版测试版在 `test/main`，背屏测试版在 `test/rearscreen`；
   各分支的 `dist/` 里放自己带线别的包，下载链接按分支区分（`@main` / `@test/main` / `@test/rearscreen`）。
 - **当前基线**：原版正式版 = **v2.0.0（versionCode 124）**；原版测试版 = v2.0.1（vc 125）；背屏测试版 = 2.1.0-beta（`test/rearscreen` 分支）。
+  2026-11-03 起，`main` 工作树承载**统一版 2.1.0-unified**（module code140 / APK 2001，含控制端 App），本地包已发送、待真机验证，**未发布、未推送**。
 - 只有**原版正式版**允许 `tools/release.py publish`（改 `latest.json`、清理旧版、提交推送、校验 CDN）。
 - 测试线打包后**推送到自己的分支**（`git push origin test/main` / `test/rearscreen`），但**不动 `main` 的 `latest.json`**，也不触发 `release.py publish`。
 - 背屏版代码只留在 `test/rearscreen`，**不合入 `main`**（曾误合一次，已 reset 回 `d5cfb84`）。
 - 测试版改名发送时可直接复制 zip（内容不动），保持与线上包 sha256 可对比。
 - 发版本时文件名必须带线别，避免用户装错包。
+- **`main` 的 `dist/` 只允许放正式包命名（`动态温控·解容工具箱_vX.Y.Z.zip`）**，其它线别包与历史遗留命名一律不入库（`release.py publish` 的 stage 已按命名排除）。
 
 ### 发布流程
 
