@@ -832,7 +832,7 @@ HyperOS - 动态温控·解容（二改整合版）
 
 - 模块升级保留设置：以前原地更新会替换整个模块目录，config/ 与 battery/config/ 一起没了，
   用户得重新配一遍
-  · thermal_core 运行时（最长 60 秒一次）把用户设置备份到模块目录外：/data/adb/HyperOS_XJ_data
+  · thermal_core 运行时（最长 60 秒一次）把用户设置备份到模块目录外：/data/adb/MiWKJR_data
   · 安装脚本 customize.sh 在新目录缺少配置时自动从该备份恢复（主配置、跳过标记、当前模式、
     解容 settings.conf、profiles）
   · 卸载模块时一并清理这个备份目录
@@ -944,7 +944,7 @@ HyperOS - 动态温控·解容（二改整合版）
 ## 修复 ##
 
 - 每次更新后用户设置又回默认（自适应爬坡 / 满电电压 / PPS / 循环伪装 / 关机电压）：
-  · v1.0.30 的卸载步骤会顺手删掉模块目录外的备份 /data/adb/HyperOS_XJ_data，
+  · v1.0.30 的卸载步骤会顺手删掉模块目录外的备份 /data/adb/MiWKJR_data，
     而大家更新常常是「删了重装」→ 备份先被删，重装自然没得恢复
     → 卸载不再删除该目录（要彻底清理可手动删），重装后照常恢复
   · 备份原来靠 thermal_core 每 60 秒定时同步，改完设置马上更新会漏
@@ -972,7 +972,7 @@ HyperOS - 动态温控·解容（二改整合版）
 
 ## 说明 ##
 
-- 备份仍落在 /data/adb/HyperOS_XJ_data，升级 / 重装时由 customize.sh 与 thermal_core 启动时恢复
+- 备份仍落在 /data/adb/MiWKJR_data，升级 / 重装时由 customize.sh 与 thermal_core 启动时恢复
 
 ==================================================
 更新日志 v1.0.37 -> v1.0.38
@@ -1043,7 +1043,7 @@ HyperOS - 动态温控·解容（二改整合版）
 
 ## 优化 ##
 
-- 充电快照脚本改为环境自适应：不传标签时自动判断（只装 battery_tune → stock，装了 HyperOS_XJ → mod），
+- 充电快照脚本改为环境自适应：不传标签时自动判断（只装 battery_tune → stock，装了 MiWKJR → mod），
   并在文件头记录 tag，避免两份文件命名混淆
 - 脚本不依赖模块目录，可拷到 /data/local/tmp 单独跑（原版/纯系统环境也能采），
   所以「一个模块测两个版本」不需要同时装两套
@@ -1332,12 +1332,12 @@ HyperOS - 动态温控·解容（二改整合版）
 ## 修复 ##
 
 - 解容看门狗存活检测一直为空：status_kv.sh 查的是旧路径 battery_tune/scripts/guard_watchdog.sh，
-  整合版实际在 HyperOS_XJ/battery/scripts/ 下；同时改用 [g]uard_watchdog 模式避免匹配到 pgrep 自身
+  整合版实际在 MiWKJR/battery/scripts/ 下；同时改用 [g]uard_watchdog 模式避免匹配到 pgrep 自身
 - 解容诊断的 rom 行重复显示版本（OS4.0 OS4.0.0.19.XOBCNXM）：改为只取 ro.mi.os.version.incremental
 
 ## 界面 ##
 
-- 诊断包文件名由 HyperOS_XJ_diag_<时间戳>.tar.gz 改为「诊断包_月-日-时-分.tar.gz」，便于辨认
+- 诊断包文件名由 MiWKJR_diag_<时间戳>.tar.gz 改为「诊断包_月-日-时-分.tar.gz」，便于辨认
 
 ==================================================
 更新日志 v1.0.56 -> v1.0.57
@@ -1795,3 +1795,18 @@ HyperOS - 动态温控·解容（二改整合版）
 - 结构化固定操作接口替代网页任意 Shell 调用，诊断、DTBO、完整备份恢复及卸载使用可查询状态的后台任务。
 - 背屏 Provider 访问移至后台线程，限制单个在途请求；状态存于 App 私有目录并验证来源与时效。
 - 设置与背屏外观同步模块外备份，升级恢复设置；卸载保留控制 App 和用户备份。
+
+==================================================
+更新日志 v2.1.0-unified（统一测试版 / code140 · 改名与包名迁移）
+==================================================
+
+## 界面 ##
+
+- 全站改名「温控解容工具箱」：页面标题、主页顶栏、欢迎弹窗、关于页副标题与维护者署名、使用说明同步更新。
+- 安装、卸载与诊断横幅改用新名称。
+
+## 变更 ##
+
+- 模块 id 由 HyperOS_XJ 改为 MiWKJR，控制端包名由 com.hyperos.xj 改为 com.MiWKJR，APK 文件名为 MiWKJR.apk。
+- 升级时自动把 /data/adb/HyperOS_XJ_data 与 /data/adb/HyperOS_XJ_backup 迁移到新目录（仅在目标不存在时搬移，不覆盖），并自动卸载旧控制端 com.hyperos.xj。
+- 旧模块目录 /data/adb/modules/HyperOS_XJ 不自动删除，检测到会提示在模块管理器里卸载旧模块后重启。

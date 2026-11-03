@@ -1,7 +1,7 @@
 #!/system/bin/sh
 # 电池解容工具箱 - 卸载清理（v2.6.22 还原增强版：FreePPS 清理 / 进程 -9 强杀纠正 / cycle_guard 补漏）
 # 还原策略：还原一切"被模块接管过的运行时可还原项"；DTBO 不自动回滚（由用户决定保留或从备份刷回）。
-XBT=/data/adb/modules/HyperOS_XJ/battery
+XBT=/data/adb/modules/MiWKJR/battery
 BK=/sdcard/Download/xt_uninstall_backup_$(date +%Y%m%d_%H%M%S)
 
 # v2.6.23：提前 source common.sh —— 后面要用 xbt_kill（pgrep 版安全进程管理）
@@ -66,21 +66,21 @@ if ! command -v xbt_kill >/dev/null 2>&1; then
   xbt_kill() { for _p in $(pgrep -f "$1" 2>/dev/null); do kill -9 "$_p" 2>/dev/null; done; }
 fi
 # 3a) FreePPS（Rust 进程，忽略 SIGTERM，必须 -9；且最先杀，防 cloud_guard 保活复拉）
-xbt_kill 'HyperOS_XJ/battery/bin/freepps' 'HyperOS_XJ/battery/bin/freepps'
+xbt_kill 'MiWKJR/battery/bin/freepps' 'MiWKJR/battery/bin/freepps'
 xbt_kill '^freepps$' 'freepps'
 # 3b) 其余守护（含 cloud_guard watch / charge / cycle / diag）
 # 注：tr 周期清理已挂进 charge_guard 主循环（非独立进程），杀 charge_guard 即随之结束
-xbt_kill 'HyperOS_XJ/battery/scripts/charge_guard\.sh'   'HyperOS_XJ/battery/scripts/charge_guard.sh'
-xbt_kill 'HyperOS_XJ/battery/scripts/cycle_guard\.sh'    'HyperOS_XJ/battery/scripts/cycle_guard.sh'
-xbt_kill 'HyperOS_XJ/battery/scripts/cloud_guard\.sh'    'HyperOS_XJ/battery/scripts/cloud_guard.sh'
-xbt_kill 'HyperOS_XJ/battery/scripts/diag_log\.sh'       'HyperOS_XJ/battery/scripts/diag_log.sh'
-xbt_kill 'HyperOS_XJ/battery/scripts/fv_guard\.sh'       'HyperOS_XJ/battery/scripts/fv_guard.sh'
-xbt_kill 'HyperOS_XJ/battery/scripts/fv_handler\.sh'     'HyperOS_XJ/battery/scripts/fv_handler.sh'
+xbt_kill 'MiWKJR/battery/scripts/charge_guard\.sh'   'MiWKJR/battery/scripts/charge_guard.sh'
+xbt_kill 'MiWKJR/battery/scripts/cycle_guard\.sh'    'MiWKJR/battery/scripts/cycle_guard.sh'
+xbt_kill 'MiWKJR/battery/scripts/cloud_guard\.sh'    'MiWKJR/battery/scripts/cloud_guard.sh'
+xbt_kill 'MiWKJR/battery/scripts/diag_log\.sh'       'MiWKJR/battery/scripts/diag_log.sh'
+xbt_kill 'MiWKJR/battery/scripts/fv_guard\.sh'       'MiWKJR/battery/scripts/fv_guard.sh'
+xbt_kill 'MiWKJR/battery/scripts/fv_handler\.sh'     'MiWKJR/battery/scripts/fv_handler.sh'
 # 电压守护：进程上面已按路径杀过，这里只补一次 stop（幂等，文件已还原则快速返回）
 if [ -f "$XBT/scripts/volt_guard.sh" ]; then
   sh "$XBT/scripts/volt_guard.sh" stop >/dev/null 2>&1
 fi
-xbt_kill 'HyperOS_XJ/battery/scripts/volt_guard\.sh' 'HyperOS_XJ/battery/scripts/volt_guard.sh'
+xbt_kill 'MiWKJR/battery/scripts/volt_guard\.sh' 'MiWKJR/battery/scripts/volt_guard.sh'
 # 3c) 归还被云控屏蔽隔离的云端配置：隔离区在模块目录内，必须先归还再删模块目录，
 #     否则这些文件随目录一起消失，系统会少掉云端下发的配置。
 if [ -f "$XBT/scripts/cloud_guard.sh" ]; then
@@ -341,8 +341,8 @@ fi
 #   ④ 刷 DTBO 是整个模块唯一可能变砖的操作，绝不该在卸载时自动执行。
 #   ⇒ 卸载只做两件事：检测当前槽是不是本模块镜像 + 打印备份清单与手动命令
 #     （见第 9 节「卸载残留报告」）。要还原请用户自己执行：
-#        su -c 'sh /data/adb/modules/HyperOS_XJ/battery/scripts/dtbo.sh list'
-#        su -c 'sh /data/adb/modules/HyperOS_XJ/battery/scripts/dtbo.sh flash <备份>'
+#        su -c 'sh /data/adb/modules/MiWKJR/battery/scripts/dtbo.sh list'
+#        su -c 'sh /data/adb/modules/MiWKJR/battery/scripts/dtbo.sh flash <备份>'
 #     然后重启 —— 保留人的判断，比任何自动判据都可靠。
 _bkdir=$(cfg_get backup_dir "/sdcard/Download/dtbo_backup")
 # ---- 无条件检测：当前槽是否仍是本模块镜像（写进残留报告，v2.10.3 新增）----
@@ -405,8 +405,8 @@ rm -f /sdcard/xt_toolbox.log 2>/dev/null
   if [ -n "$_dtbo_slot" ]; then
     echo "       槽位: dtbo_$_dtbo_slot"
     echo "       ⚠ DTBO 是唯一需要重启才生效的项；要还原原厂请手动执行："
-    echo "         su -c 'sh /data/adb/modules/HyperOS_XJ/battery/scripts/dtbo.sh list'"
-    echo "         su -c 'sh /data/adb/modules/HyperOS_XJ/battery/scripts/dtbo.sh flash <备份文件>'"
+    echo "         su -c 'sh /data/adb/modules/MiWKJR/battery/scripts/dtbo.sh list'"
+    echo "         su -c 'sh /data/adb/modules/MiWKJR/battery/scripts/dtbo.sh flash <备份文件>'"
     echo "         （备份命名 dtbo_<槽>_before_install_<时间>.img，在 $_bkdir）"
     echo "       ⚠ 注意：备份里【较早的那份】才是原厂；较晚的可能是上一版模块的魔改镜像。"
     echo "         判断方法：文件里模块镜像长度(616593B)之后若全为零 = 那次刷入是补零写"

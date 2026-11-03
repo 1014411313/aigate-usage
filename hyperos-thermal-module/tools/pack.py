@@ -42,7 +42,7 @@ def main():
     vc = read_prop(os.path.join(SRC, 'module.prop'), 'versionCode')
     vn = read_prop(os.path.join(SRC, 'module.prop'), 'version')
     out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(
-        DIST, 'HyperOS_XJ_K2_battery-pps-dtbo_v%s.zip' % vc)
+        DIST, '温控解容工具箱_统一测试版_v%s.zip' % vn)
     apk_data = verify_apk(APP_APK)
     if not os.path.isfile(os.path.join(SRC, 'webroot', 'index.html')):
         sys.exit('缺少独立模块 WebUI: src/webroot/index.html')
@@ -55,7 +55,7 @@ def main():
         dirs.sort(); fs.sort()
         for f in fs:
             rel = os.path.relpath(os.path.join(root, f), SRC)
-            if rel == 'HyperOSxj.apk':
+            if rel == 'MiWKJR.apk':
                 continue
             # 开发期的旧版备份（*.bak / *.glass-bak 等）不进包
             if '.bak' in f or f.endswith('-bak') or f.endswith('.orig'):
@@ -67,7 +67,7 @@ def main():
             [f for f in files if f != 'module.prop' and not f.startswith('META-INF/')]
     order = [f for f in order if f in files]
 
-    extra = {'HyperOSxj.apk': apk_data}
+    extra = {'MiWKJR.apk': apk_data}
 
     with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as z:
         for rel in order:

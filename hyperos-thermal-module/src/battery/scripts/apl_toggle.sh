@@ -3,7 +3,7 @@
 # 用法：apl_toggle.sh 1|0        # 1=开启（需 power_limit=inf），0=关闭
 # 说明：APL 是常驻进程，改配置后必须重启进程才生效；这里只做「停旧 + 按新配置起新」，
 #       不碰 charge_guard 的其它逻辑。
-XBT=${XBT:-/data/adb/modules/HyperOS_XJ/battery}
+XBT=${XBT:-/data/adb/modules/MiWKJR/battery}
 if [ ! -f "$XBT/scripts/common.sh" ]; then
     echo "ERR: 找不到 common.sh（$XBT）"
     exit 1
@@ -25,12 +25,12 @@ if [ "$_back" != "$on" ]; then
 fi
 
 _stop() {
-    for _p in $(timeout 5 pgrep -f 'HyperOS_XJ/battery/scripts/apl\.sh' 2>/dev/null); do
+    for _p in $(timeout 5 pgrep -f 'MiWKJR/battery/scripts/apl\.sh' 2>/dev/null); do
         [ "$_p" = "$$" ] && continue
         kill -TERM "$_p" 2>/dev/null
     done
     sleep 0.4
-    for _p in $(timeout 5 pgrep -f 'HyperOS_XJ/battery/scripts/apl\.sh' 2>/dev/null); do
+    for _p in $(timeout 5 pgrep -f 'MiWKJR/battery/scripts/apl\.sh' 2>/dev/null); do
         [ "$_p" = "$$" ] && continue
         kill -9 "$_p" 2>/dev/null
     done

@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # 安装期 DTBO 刷入：只在 OS4 上、只写当前槽的 dtbo 分区，先备份后写入并整分区校验
-XBT=${XBT:-/data/adb/modules/HyperOS_XJ/battery}
+XBT=${XBT:-/data/adb/modules/MiWKJR/battery}
 DR="$XBT/dtbo"
 BK=/sdcard/Download/dtbo_backup
 PAD=/data/local/tmp/xj_dtbo_pad.img

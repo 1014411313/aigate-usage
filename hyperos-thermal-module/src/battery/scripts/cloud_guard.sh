@@ -1,7 +1,7 @@
 #!/system/bin/sh
 # cloud_guard.sh v1.0 — BAA云控屏蔽（云端下发防护 + 云端目录巡检隔离）
 # 用法: cloud_guard.sh status|on|off|check|early|watch
-XBT=/data/adb/modules/HyperOS_XJ/battery
+XBT=/data/adb/modules/MiWKJR/battery
 . $XBT/scripts/common.sh
 
 STATE=$XBT/state/cloud_guard.state
@@ -141,7 +141,7 @@ cmd_status() {
 
 watch_start() {
   # v2.6.23：改用 xbt_pids（pgrep），并排除自身 pid，避免"自己匹配自己"导致永不启动
-  _others=$(xbt_pids 'HyperOS_XJ/battery/scripts/cloud_guard\.sh watch' 'HyperOS_XJ/battery/scripts/cloud_guard.sh watch' | grep -v "^$$\$")
+  _others=$(xbt_pids 'MiWKJR/battery/scripts/cloud_guard\.sh watch' 'MiWKJR/battery/scripts/cloud_guard.sh watch' | grep -v "^$$\$")
   if [ -z "$_others" ]; then
     ( setsid sh $XBT/scripts/cloud_guard.sh watch >/dev/null 2>&1 < /dev/null & )
     log "cloud_guard: watch started"

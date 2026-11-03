@@ -23,8 +23,8 @@ XPOSED_JAR = ROOT.parent / 'app' / 'libs' / 'xposed-api-82.jar'
 APKSIGNER = TOOL / 'build-tools/lib/apksigner.jar'
 KEYSTORE = TOOL / 'hyperos-xj.keystore'
 KS_ALIAS = 'hyperosxj'
-OUT = ROOT / 'build' / 'HyperOSxj.apk'
-PACKAGE = 'com.hyperos.xj'
+OUT = ROOT / 'build' / 'MiWKJR.apk'
+PACKAGE = 'com.MiWKJR'
 VERSION_CODE = '2001'
 VERSION_NAME = '2.1.0-unified'
 MIN_API = '26'
@@ -150,7 +150,7 @@ def verify_apk(apk):
             raise RuntimeError('APK 控制页与当前完整 hyperosui 源码不符，请重新构建')
         if archive.read('assets/control/bridge.js') != (APP / 'assets/control/bridge.js').read_bytes():
             raise RuntimeError('APK bridge.js 与当前源码不符，请重新构建')
-        if archive.read('assets/xposed_init').strip() != b'com.hyperos.xj.hook.HookEntry':
+        if archive.read('assets/xposed_init').strip() != b'com.MiWKJR.hook.HookEntry':
             raise RuntimeError('APK Xposed 入口不符')
         if 'classes.dex' not in names or any(name.startswith('de/robv/android/xposed/') or
                                             name.endswith('.jar') for name in names):

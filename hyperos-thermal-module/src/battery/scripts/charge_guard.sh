@@ -1,7 +1,7 @@
 #!/system/bin/sh
 # charge_guard.sh v2.1.1 - Scene 同源四路原生节点功率守护 + 闭环反馈限流（非inf档：读电池电流动态贴目标）
 # 用法: charge_guard.sh once|watch|status
-XBT=/data/adb/modules/HyperOS_XJ/battery
+XBT=/data/adb/modules/MiWKJR/battery
 . $XBT/scripts/common.sh
 
 BAT=/sys/class/power_supply/battery
@@ -590,7 +590,7 @@ case "$ONCE" in
     # 实现：杀掉所有【长驻实例】（无参数调用），保留 once/status 短命调用不受影响。
     _n=0
     if command -v pgrep >/dev/null 2>&1; then
-      for _p in $(timeout 5 pgrep -f 'HyperOS_XJ/battery/scripts/charge_guard\.sh' 2>/dev/null); do
+      for _p in $(timeout 5 pgrep -f 'MiWKJR/battery/scripts/charge_guard\.sh' 2>/dev/null); do
         [ "$_p" = "$$" ] && continue
         _cl=$(timeout 1 cat "/proc/$_p/cmdline" 2>/dev/null | tr '\0' ' ')
         case "$_cl" in
@@ -600,7 +600,7 @@ case "$ONCE" in
       done
       sleep 0.6
       # 复核：仍存活的强杀
-      for _p in $(timeout 5 pgrep -f 'HyperOS_XJ/battery/scripts/charge_guard\.sh' 2>/dev/null); do
+      for _p in $(timeout 5 pgrep -f 'MiWKJR/battery/scripts/charge_guard\.sh' 2>/dev/null); do
         [ "$_p" = "$$" ] && continue
         _cl=$(timeout 1 cat "/proc/$_p/cmdline" 2>/dev/null | tr '\0' ' ')
         case "$_cl" in
@@ -632,7 +632,7 @@ if command -v pgrep >/dev/null 2>&1; then
   _other=""
   for _w in 1 2 3; do
     _other=""
-    for _p in $(timeout 5 pgrep -f 'HyperOS_XJ/battery/scripts/charge_guard\.sh' 2>/dev/null); do
+    for _p in $(timeout 5 pgrep -f 'MiWKJR/battery/scripts/charge_guard\.sh' 2>/dev/null); do
       [ "$_p" = "$_me" ] && continue
       kill -0 "$_p" 2>/dev/null || continue
       _cl=$(timeout 1 cat "/proc/$_p/cmdline" 2>/dev/null | tr '\0' ' ')

@@ -2,7 +2,7 @@
 # BAA 挂载控制（自动进入 PID1 mount namespace 执行）
 # 用法: baa_ops.sh mount|umount|check
 
-XBT=/data/adb/modules/HyperOS_XJ/battery
+XBT=/data/adb/modules/MiWKJR/battery
 
 if [ "${XBT_IN_PID1:-0}" != "1" ]; then
   # 优先进入 PID1 mount namespace —— 只有 init 及其子进程才能"看到"这里的 bind mount。

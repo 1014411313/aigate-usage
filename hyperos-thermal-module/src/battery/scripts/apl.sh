@@ -20,7 +20,7 @@
 #   CV 段（vbat ≥ vterm-30mV）完全让路
 #   power_limit ≠ inf 完全让路
 # ============================================================================
-XBT=/data/adb/modules/HyperOS_XJ/battery
+XBT=/data/adb/modules/MiWKJR/battery
 [ -f "$XBT/scripts/common.sh" ] && . "$XBT/scripts/common.sh" 2>/dev/null
 
 B=/sys/class/power_supply/battery
@@ -42,7 +42,7 @@ now() { date +%s; }
 _me=$$
 if command -v pgrep >/dev/null 2>&1; then
   _other=""
-  for _p in $(timeout 5 pgrep -f 'HyperOS_XJ/battery/scripts/apl\.sh' 2>/dev/null); do
+  for _p in $(timeout 5 pgrep -f 'MiWKJR/battery/scripts/apl\.sh' 2>/dev/null); do
     [ "$_p" = "$_me" ] && continue
     kill -0 "$_p" 2>/dev/null || continue
     _other="$_p"; break

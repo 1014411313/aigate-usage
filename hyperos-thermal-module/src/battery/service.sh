@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # 电池解容工具箱 - late_start service
-XBT=/data/adb/modules/HyperOS_XJ/battery
+XBT=/data/adb/modules/MiWKJR/battery
 . $XBT/scripts/common.sh
 
 i=0
@@ -192,27 +192,27 @@ fi
 # Re-launch so an in-place module update never keeps an old guard process.
 # v2.6.23：全部改用 xbt_kill（内部走 pgrep）—— 直接扫 /proc 读 cmdline 在进程退出瞬间会永久阻塞
 if [ "$UNLOCK" = "1" ]; then
-  xbt_kill 'HyperOS_XJ/battery/scripts/charge_guard\.sh' 'HyperOS_XJ/battery/scripts/charge_guard.sh'
+  xbt_kill 'MiWKJR/battery/scripts/charge_guard\.sh' 'MiWKJR/battery/scripts/charge_guard.sh'
   ( setsid sh $XBT/scripts/charge_guard.sh >/dev/null 2>&1 < /dev/null & )
   log "service: charge_guard started (direct) for $(power_label)"
   # 【v3.9.5】重新启用 charge_guard 掉线自愈看护（v3.4.0 因 tr 裸读 proc 的 bug 被整只删除，
   #   自愈功能也一起没了）。新版 guard_watchdog.sh 改用 state/cg.pid + kill -0 判活，
   #   完全不读 /proc/<pid>/cmdline，从根上消除「toybox tr 遇 ESRCH 死循环烧满单核」那个 bug。
   sleep 2
-  xbt_kill 'HyperOS_XJ/battery/scripts/guard_watchdog\.sh' 'HyperOS_XJ/battery/scripts/guard_watchdog.sh'
+  xbt_kill 'MiWKJR/battery/scripts/guard_watchdog\.sh' 'MiWKJR/battery/scripts/guard_watchdog.sh'
   ( setsid sh $XBT/scripts/guard_watchdog.sh >/dev/null 2>&1 < /dev/null & )
   log "service: guard_watchdog started (PID-file 模式，charge_guard 掉线自愈)"
 else
   log "service: unlock=0, charge_guard not started"
 fi
 # 6c. cloud_guard：云控屏蔽巡检（v1.6.0）——先清理旧实例，避免重复巡检/重复计数
-xbt_kill 'HyperOS_XJ/battery/scripts/cloud_guard\.sh watch' 'HyperOS_XJ/battery/scripts/cloud_guard.sh watch'
+xbt_kill 'MiWKJR/battery/scripts/cloud_guard\.sh watch' 'MiWKJR/battery/scripts/cloud_guard.sh watch'
 ( setsid sh $XBT/scripts/cloud_guard.sh watch >/dev/null 2>&1 < /dev/null & )
 log "service: cloud_guard watch started"
 # 8.5 自适应功率爬坡器（v3.11.0，整合版默认关闭，由 apl_enable 开关控制）
 #   让 inf 档目标不再写死 20000，而是按实测量出来的硬件上限动态调整。
 #   与 charge_guard 解耦：只写 state/apl_target_ma，由 closed_loop_ma() 读取。
-xbt_kill 'HyperOS_XJ/battery/scripts/apl\.sh' 'HyperOS_XJ/battery/scripts/apl.sh'
+xbt_kill 'MiWKJR/battery/scripts/apl\.sh' 'MiWKJR/battery/scripts/apl.sh'
 if [ "$(cfg_get power_limit inf)" = "inf" ] && [ "$(cfg_get apl_enable 0)" = "1" ]; then
   rm -f "$XBT/state/apl_target_ma" "$XBT/state/apl_lock_until" "$XBT/state/apl_urgent" 2>/dev/null
   ( setsid sh $XBT/scripts/apl.sh >/dev/null 2>&1 < /dev/null & )

@@ -1,4 +1,4 @@
-package com.hyperos.xj;
+package com.MiWKJR;
 
 import android.util.Base64;
 import org.json.JSONObject;

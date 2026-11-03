@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # 电池解容工具箱 - 交互式主菜单
-XBT=/data/adb/modules/HyperOS_XJ/battery
+XBT=/data/adb/modules/MiWKJR/battery
 . $XBT/scripts/common.sh
 
 sub_unlock() {

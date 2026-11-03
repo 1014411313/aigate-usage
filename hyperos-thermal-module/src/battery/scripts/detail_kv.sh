@@ -3,7 +3,7 @@
 # 手法与充电监视器 detect.sh/read.sh 对齐：运行期只做内建 read，不 fork；
 # 节点路径探测结果缓存 state/detail.cache（带 CV 版本键，字段集变更强制重扫；
 # 关键节点不可读也触发重扫）。探测要求 cat 读出非空才收录（空值节点不占位）。
-XBT=/data/adb/modules/HyperOS_XJ/battery
+XBT=/data/adb/modules/MiWKJR/battery
 CACHE=$XBT/state/detail.cache
 CVN=62
 

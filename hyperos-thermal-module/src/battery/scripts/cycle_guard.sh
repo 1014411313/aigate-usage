@@ -4,7 +4,7 @@
 #       本守护 10s 检查一次，仅"被回滚"时重压（值未变不写），并同步维护
 #       battery/cycle_count（如存在且可写），保证各读取端一致。
 # 用法: cycle_guard.sh start|stop|status
-XBT=/data/adb/modules/HyperOS_XJ/battery
+XBT=/data/adb/modules/MiWKJR/battery
 . $XBT/scripts/common.sh
 PIDFILE=/data/local/tmp/xt_cycle_guard.pid
 NODES="/sys/class/xm_power/fg_master/cyclecount /sys/class/power_supply/battery/cycle_count"

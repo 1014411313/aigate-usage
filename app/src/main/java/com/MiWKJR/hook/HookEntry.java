@@ -1,11 +1,11 @@
-package com.hyperos.xj.hook;
+package com.MiWKJR.hook;
 
 import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.os.Bundle;
 
-import com.hyperos.xj.CardOverlay;
+import com.MiWKJR.CardOverlay;
 
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.XC_MethodHook;

@@ -5,7 +5,7 @@ CONFDIR="$MODDIR/config"
 say() { echo "$*"; }
 log() { say "$*"; }
 
-say "===== 开始卸载 HyperOS - 动态温控·解容 ====="
+say "===== 开始卸载 温控解容工具箱 ====="
 say "模块目录：$MODDIR"
 say " "
 
@@ -48,7 +48,7 @@ if [ -z "$THERMAL_PATH" ] || [ ! -d "$THERMAL_PATH" ]; then
 fi
 
 BK_MOD="$MODDIR/backup/thermal-config"
-BK_MIR="/data/adb/HyperOS_XJ_backup/thermal-config"
+BK_MIR="/data/adb/MiWKJR_backup/thermal-config"
 
 BK=""
 [ -f "$BK_MOD/.done" ] && BK="$BK_MOD"
@@ -121,7 +121,7 @@ case "$ORIG" in
 esac
 say " "
 
-say "- 保留统一控制端 com.hyperos.xj 及其 App 数据，可在系统设置中自行管理"
+say "- 保留统一控制端 com.MiWKJR 及其 App 数据，可在系统设置中自行管理"
 say " "
 
 if [ -f "$MODDIR/battery/uninstall.sh" ]; then
@@ -134,23 +134,23 @@ if [ -d /data/adb/modules/battery_tune ] && [ ! -f /data/adb/modules/battery_tun
     rm -rf /data/adb/modules/battery_tune 2>/dev/null
 fi
 
-say "- 保留模块外用户设置与备份：/data/adb/HyperOS_XJ_data、/data/adb/HyperOS_XJ_backup"
+say "- 保留模块外用户设置与备份：/data/adb/MiWKJR_data、/data/adb/MiWKJR_backup"
 rm -rf /data/local/tmp/xj_diag_* 2>/dev/null
-rm -f /data/local/tmp/HyperOS_XJ_uninstall.log 2>/dev/null
-rm -f /data/local/tmp/HyperOS_XJ_action.log 2>/dev/null
+rm -f /data/local/tmp/MiWKJR_uninstall.log 2>/dev/null
+rm -f /data/local/tmp/MiWKJR_action.log 2>/dev/null
 say "- 已清理临时日志与诊断包工作目录"
 
 rm -rf "$CONFDIR/log" 2>/dev/null
 rm -f "$MODDIR/thermal_list" "$MODDIR/切换log.log" 2>/dev/null
-rm -rf /data/adb/modules_update/HyperOS_XJ 2>/dev/null
+rm -rf /data/adb/modules_update/MiWKJR 2>/dev/null
 say "- 已清理运行态残留文件"
 
 case "$MODDIR" in
     /data/adb/modules/*|/data/adb/modules_update/*)
         find "$MODDIR" -mindepth 1 -maxdepth 1 ! -name 'uninstall.sh' -exec rm -rf {} + 2>/dev/null
         ( sleep 2; rm -rf "$MODDIR" ) >/dev/null 2>&1 &
-        # 保留 /data/adb/HyperOS_XJ_data：用户常常「删了重装」，删掉就等于把设置一起清了
-        say "- 已清理模块目录：$MODDIR（用户设置备份保留在 /data/adb/HyperOS_XJ_data，重装后自动恢复）"
+        # 保留 /data/adb/MiWKJR_data：用户常常「删了重装」，删掉就等于把设置一起清了
+        say "- 已清理模块目录：$MODDIR（用户设置备份保留在 /data/adb/MiWKJR_data，重装后自动恢复）"
         ;;
     *)
         say "! 非标准模块目录，跳过目录清理：$MODDIR"

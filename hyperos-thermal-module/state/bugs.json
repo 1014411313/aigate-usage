@@ -1,54 +1,6 @@
 {
   "note": "用户反馈问题的收集区（强制规则见仓库 AGENTS.md「Bug 反馈处理」）：新反馈只往 collecting 追加条目，允许只读排查但不改源码、不打包；等用户明确说「修复」/「统一修复」才按 fix_plan 一次性处理全部 collecting，修完移到 fixed 并补 fixed_in，同时把改动写进 release.json 版本历史",
-  "collecting": [
-    {
-      "id": "bug-009",
-      "type": "bug",
-      "title": "背屏显示的卡片不是模块里设计的四角卡片，仍是第三方 ETA 卡片旧样式",
-      "reported": "2026-11-03",
-      "evidence": "用户截图 13:09（背屏：左侧「充电中 / 0.0℃ / 0.000V / 0.00A」+ 右侧绿色圆环 0%、环下 +0.00W）与外观页预览卡的「四角温度/电量/电压/电流 + 中心功率光环」完全不同；诊断包 ~/workspace/.aicode/attachments/诊断包_11-03-01-34.tar-1.gz（解包在 ~/workspace/.aicode/tmp/diag_beta14/xj_diag_20261103_013414，模块 2.1.0-beta code138）",
-      "root_cause": "投到副屏的卡片 UI 完全由第三方载体 src/rearscreen/rs.apk 绘制，该 APK 与 thirdparty/背屏电池卡片_v1/apk/rs.apk 逐字节相同（sha256 eea58d63e8950ec45138870b76589471b40672ad8be22c87216ce07d5e3c0123，20937 字节，classes.dex 12.6KB，含 Card/DaView/Ui 绘制类），rearscreen.sh 只做两件事：写 /storage/emulated/0/Android/data/com.eta.rearscreen/files/batt.txt、把 com.eta.rearscreen 投到 Display #1；模块里设计的四角卡片只存在于 hyperosui 外观页预览区与 src/rearscreen/card_preview.html，是纯 CSS 预览，从来没有投屏实现（state/index.json pending 早有一条「背屏版投屏未实现」）。",
-      "fix_plan": "两条路径，需用户确认后做：A（推荐）自建载体——为一个最小 WebView 壳 APK 或模块内 Canvas 页面，用与现在相同的 am --display 1 / service call activity_task 50 方式投到副屏，页面直接复用 card_preview.html 的样式（976×596、左侧 296px 挖孔避让），数据仍走 batt.txt 或 LocalSocket，这样设计稿改样式即生效；B 改 rs.apk 的 dex 绘制（无源码，只能改字符串/常量，重排布局不可行，风险高、不推荐）。方案 A 需先验证 Android 17 上第三方壳 App 投 Display #1 会不会被 subscreencenter 顶掉。",
-      "affected": [
-        "src/rearscreen/rs.apk（第三方原版 APK，卡片 UI 写死）",
-        "src/rearscreen/rearscreen.sh:daemon / push_display（只喂数据+投放，不决定 UI）",
-        "src/rearscreen/card_preview.html（设计稿预览，未接入投屏）",
-        "src/hyperosui/index.html:2693-2760（外观页预览区）"
-      ],
-      "status": "待修（缺用户对路径 A/B 的选择）"
-    },
-    {
-      "id": "bug-010",
-      "type": "bug",
-      "title": "外观页背屏电池卡片开关打不开／点了被拨回",
-      "reported": "2026-11-03",
-      "evidence": "用户反馈「模块里打不开背屏开关」+ 截图 13:09（外观页开关为关、thumb 未激活）；诊断包（同上，01:34 采集）00-总览.txt rearscreen=0、40-系统/模块文件.txt 显示 /data/adb/modules/HyperOS_XJ/rearscreen 有 state 子目录（01:32，说明 rearscreen.sh start 确实被执行过）；该诊断包由 2.1.0-beta(138) 生成，早于 beta14(139) 打包时间 02:10，且不含 beta14 新增的 40-系统/背屏.txt，看不到 last_fail / probe 现场",
-      "root_cause": "待取证。按代码有三条会直接导致开关弹回或 start 无输出的路径：1）index.html 的 bkSh 用 __kexec(..., 12000) 12 秒超时，而 rearscreen.sh start 串了 pm install -r、ensure_data_dir（am start + 最多 6 秒等待）、push_display（3+2 秒）与 service call，正常路径就可能超 12 秒被中断，超时后 bkSh 返回空串；2）看门狗 guard 把「dumpsys window 取不到 mCurrentFocus」直接判成 focus_lost、把 batt 超过 12 秒未刷新判成 batt_stale，任一命中即 restore 并写 guard_fail，界面 12 秒后复查 last_fail 就把开关拨回；3）batt_write 写 /storage/emulated/0/Android/data/com.eta.rearscreen/files 在 Android 17 FUSE 下可能失败（属主/权限），start 会输出 ERR: 卡片数据目录不可写。诊断包里没有背屏采集与日志，三者尚未区分。",
-      "fix_plan": "先取现场再改：装 beta14(139) 后从控制台「关于 → 诊断」重新出包（beta14 的 diagnose.sh 已加 40-系统/背屏.txt），并附 /data/local/tmp/xj_rearscreen.log 与 sh /data/adb/modules/HyperOS_XJ/rearscreen/rearscreen.sh probe 的输出。按结果分头修：a）超时——把 start 拆成「装包/准备目录」与「投放」两次调用，或 bkSh 对背屏命令单独放宽到 30 秒；b）guard——focus 读不到时记 unknown 不判失败（与 main_state 的 UNKNOWN 处理对齐），batt_stale 阈值放宽到 20 秒；c）写入——失败时改用 App 侧目录 + 属主对齐重试，仍失败则明确提示需要先手动打开一次卡片 App。",
-      "affected": [
-        "src/hyperosui/index.html:4297-4301（bkSh 12 秒超时）、4879-4918（bkRearToggle 回退逻辑）",
-        "src/rearscreen/rearscreen.sh:start / guard / push_display / batt_write"
-      ],
-      "status": "待修（缺 beta14 现场：probe + 背屏诊断 + xj_rearscreen.log）"
-    },
-    {
-      "id": "bug-011",
-      "type": "feature",
-      "title": "背屏卡片改用模块自己的 App 实现，替换第三方 ETA 卡片 APK",
-      "reported": "2026-11-03",
-      "evidence": "用户指令「重新设计app背屏的功能用app实现」（承接 bug-009：背屏现在显示的是第三方 ETA 卡片旧样式，模块设计稿只是 hyperosui 预览）",
-      "root_cause": "替换对象是 src/rearscreen/rs.apk —— 第三方 21KB Xposed hook APK（com.eta.rearscreen，hook com.xiaomi.subscreencenter），卡片 UI 写死在其 dex（Card/DaView/Ui），模块只能喂 batt.txt、无法改版式，也看不到 14 项四角自选、光环液面、状态胶囊这些设计稿能力。",
-      "fix_plan": "自建载体 APK：包名 com.hyperosxj.rearcard，纯 framework API（不用 AndroidX），MainActivity 全屏黑底 + WebView 加载 assets/card.html（把 src/rearscreen/card_preview.html 的样式搬到背屏页，去掉预览工具条，按 976×596 真机尺寸排版，支持 14 项四角自选 + 光环 + 状态胶囊 + accent 主题色）；数据走 App 私有目录 rear.json（App 首次启动自建目录保证属主，rearscreen.sh 的 root 侧写入后 chown 对齐，1 秒轮询，避免 beta14 那种「root 写 FUSE 后 App 读不到」）；rearscreen.sh 改为装 rearcard.apk、每 2 秒写实时字段 + 每 30 秒合入 status_kv 慢字段、am start --display 1 投放并每 4 秒重投、看门狗与 probe 同步改；构建链 ecj（编译 java）+ d8 + aapt2 + zipalign + apksigner（JDK21 无 javac，用 ~/android-toolchain/ecj.jar）。风险：Android 17 上第三方 Activity 投 Display #1 能否常驻需要真机验证，不稳就靠重投兜底。",
-      "affected": [
-        "新增 src/rearcard/（AndroidManifest.xml、java/、res/、assets/card.html）",
-        "新增 tools/build_rearcard.py（编译+签名）",
-        "src/rearscreen/rearscreen.sh（换载体、JSON 数据、投放与 probe）",
-        "src/hyperosui/index.html（外观页背屏卡片说明与字段自选、使用说明）",
-        "src/rearscreen/rs.apk 后续不再使用"
-      ],
-      "status": "开发中（先出预览图给用户确认外观，再打包）"
-    }
-  ],
+  "collecting": [],
   "fixed": [
     {
       "id": "bug-001",
@@ -154,6 +106,34 @@
       "line": "all",
       "fixed_in": "2.1.0-beta14 (139)",
       "fixed_note": "bugs.json 增加 lines 与每条 line（main=原版线 / rearscreen=背屏版线 / all=流程）；按功能归属自动分线；fixed_in 写该线版本+code"
+    },
+    {
+      "id": "bug-012",
+      "type": "bug",
+      "title": "温控页/关于页等非数据页停几秒就显示「实时数据不可用：快照已过期」，此时后台采样其实正常",
+      "reported": "2026-11-03",
+      "evidence": "用户截图两张：①~/workspace/.aicode/attachments/Screenshot_2026-11-03-18-51-02-255_com.hyperos.xj.jpg（18:51，关于页顶部横幅「实时数据不可用：快照已过期，等待后台采样恢复」）；②~/workspace/.aicode/attachments/26317.jpg（17:28:36，温控页同样报同一横幅，状态栏 74% / 101℃ / -10.4W）。诊断包 ~/workspace/.aicode/attachments/诊断包_11-03-17-29.tar.gz（解包 ~/workspace/.aicode/tmp/diag_1103c/xj_diag_20261103_172940，2.1.0-unified code140）。关键时间对照：截图②17:28:36 报过期，仅 64 秒后（17:29:40）出的诊断包里 run/snapshot.json 的 timestamp=1793698206（=17:30:06）、provider_health.json 为 {\"ok\":true,\"timestamp\":1793698207}（=17:30:07），且诊断包 soc=74 与截图②状态栏 74% 一致——同一台机、同一分钟内，界面报「快照已过期」而后台采样与发布完全正常，直接证伪采样器故障。同一文件末尾另有 2026-11-03 17:26:17 [snapshot] Provider publish_snapshot 失败: Result: Bundle[{ok=false, error=IllegalArgumentException}]（服务 17:25:55 刚重启后的首拍）。已用 .aicode/tmp/probe_snapshot_check.py 校验该快照：35 个顶层字段全部在 Provider 白名单内、kv 88 项（上限 160）、无控制字符、紧凑 2651 字节 / base64 3536（上限 89432），排除字段不兼容与体积超限。",
+      "root_cause": "主因在前端，不在采样器。src/hyperosui/index.html 末尾（约 8964 行）有一个全局 setInterval 每 1 秒执行：if (window.__xjSnapshot) { try { validateSnapshot(window.__xjSnapshot); } catch(e){ showSnapshotError(e); } }。validateSnapshot（3723-3730）要求 snapshot.fresh===true 且 Date.now()-timestamp*1000 ≤ SNAPSHOT_MAX_AGE_MS（5000ms）。而 bkShouldRefresh()（5112-5118）只在 page-console / page-battery 两页返回 true，温控页、关于页、外观页都不刷新数据，window.__xjSnapshot 就停在上一次成功取数（applyNativeSnapshot 3868-3875 赋值）。所以在任一非数据页停留超过 5 秒，旧快照必然被判过期，showSnapshotError 每秒重写横幅并给 body 加 snapshot-stale；切回主页刷新成功后才清除。截图②（17:28:36 温控页）与同分钟诊断包（17:30:07 发布成功）正好构成对照，证明现象与采样器是否存活无关。次要放大因素：切页/轮询关闭时的一次性取数 refreshStatus（8133-8140、8185-8188、8963）若恰好取到 stale 快照，也会直接置错误态，之后没有数据页刷新来清除。",
+      "fix_plan": "改前端即可，改完出预览图再打包（UI 改动规则）：1）把 8964 的 1 秒定时器改成只在 bkShouldRefresh() 为真、或 window.__snapshotError 已置位时校验；非数据页不再主动用旧快照判定新鲜度，避免无中生有的横幅。2）若希望非数据页也能自愈，改成错误态下调用一次 apiJson('snapshot') 重新取数，成功才清 stale，失败保持。3）回归：Firefox 模拟停在关于页 15 秒不得出现横幅；停在温控/外观页同理；主页停留 15 秒正常刷新、不闪横幅；把 mock 的时间戳调旧，主页应在 5 秒内出现横幅，恢复后自动消失。",
+      "related_findings": [
+        "真实链路隐患（本次未造成故障，建议同批修）：snapshotd.sh 的 CFG:_timestamp 在 read_fast 之后立即取（第 113-120 行），之后还要跑 detail_kv.sh / snapshot_ro.sh（各自每 8 秒）、awk、base64 与 content call（第 121-127 行）；设备繁忙时这些步骤合计可吃掉 5 秒窗口，Provider 的 timestampFresh 会直接拒绝并抛 IllegalArgumentException（即 17:26:17 那条日志）。建议发布前重新取时间戳，失败立即重试一次并写明失败原因。",
+        "采样器没有真正存活守护：service.sh 每 60 秒 setisid 再拉一个 snapshotd（第 163-166 行），新实例靠 lock_acquire 抢锁，旧实例卡死（status_fast 读 sysfs、content call 卡住）时抢锁失败后 15 秒 exit 0，谁也不会替换它。建议按 run/snapshot.json 的 mtime 判定，超过 15 秒未更新才 kill 并重启。",
+        "log_limited 对同类失败 60 秒才写一行，事故后很难判断是持续失败还是偶发；建议失败超过 3 次/分钟单独记一条。"
+      ],
+      "affected": [
+        "src/hyperosui/index.html:8964-8970（全局 1 秒快照校验定时器，主因）",
+        "src/hyperosui/index.html:3723-3744（SNAPSHOT_MAX_AGE_MS=5000 / validateSnapshot / showSnapshotError）",
+        "src/hyperosui/index.html:5112-5118（bkShouldRefresh 只含 page-console / page-battery）",
+        "src/hyperosui/index.html:8133-8140、8185-8188、8963（refreshStatus 一次性取数）",
+        "src/api/snapshotd.sh:113-127（timestamp 取值时机与发布）",
+        "src/service.sh:163-166（每分钟抢锁式拉起）"
+      ],
+      "status": "已修（前端逻辑改动已本地验证，待真机复测；未打包）；未发布",
+      "device": "截图 Xiaomi 15 Pro / KernelSU v3.0.5；诊断包 popsicle / 2509FPN0BC / Xiaomi 17 Pro Max / OS4.0.5 / KernelSU（已确认是两台机器，机型不一致不算问题，见 cancelled 的 bug-013）",
+      "version_seen": "2.1.0-unified (code 140 / APK 2001)",
+      "line": "main",
+      "fixed_in": "2.1.0-unified（开发中，未打包）",
+      "fixed_note": "index.html 全局 1 秒定时器改为仅在 bkShouldRefresh()（主页/电池页）时校验快照；非数据页只在已置错误态时每 5 秒调一次 refreshStatus 自愈，不再凭空报过期。Firefox 验证：温控页停 15 秒、关于页停 10 秒均无横幅；模拟采样停摆时主页正确提示「快照已过期」并在恢复后自动消失"
     }
   ],
   "cancelled": [
@@ -190,6 +170,70 @@
       "root_cause": "KernelSU bugreport 定性：崩的不是我们的脚本，而是 KernelSU 自己的 Rust 安装器 libksud.so——Cmdline 为 module install /data/user/0/me.weishu.kernelsu/cache/module.zip，Abort message = called Result::unwrap() on an Err value: InvalidArchive(Invalid local file header)，即它拿到的 zip 不是自洽完整的包，于是 panic → SIGABRT(134)。用户补充：在线（CDN）下的包装不上、QQ 群下的同版本包能装上 —— 即下载不完整。容器侧已反向验证：dist 与从 cdn.jsdelivr.net 现拉的同名包 sha256 均为 f1e5d1323c3928bd547276429faf25eb7d85960187bb84ab862ce2e40b15280e（6240025 字节、190 条目、逐条解压且 CRC/大小一致、central↔local 字段零差异），包与打包脚本无问题。设备为 dada（小米 15）OS4.0.0.19，KernelSU Manager v3.2.5（32525），LKM 模式，此前未装过本模块。",
       "fix_plan": "可选（待用户定）：A 模块「检查更新」加「下载并校验」（设备端换源下载到 /sdcard/Download，用 latest.json 里已有的 size + sha256 校验，不通过自动换源重试并明确提示包不完整）；B 仅在界面显示包大小/sha256 与「134 = 包不完整」的排查提示；C 下载入口改走 QQ 群/网盘等更稳通道。",
       "status": "用户决定不做（2026-11-02）"
+    },
+    {
+      "id": "bug-013",
+      "type": "bug",
+      "title": "关于页「设备型号」显示 Xiaomi 15 Pro，与诊断包机型 Xiaomi 17 Pro Max 不一致",
+      "reported": "2026-11-03",
+      "evidence": "截图（18:51）关于页 about-4 卡片显示「设备型号 Xiaomi 15 Pro」+「运行环境 KernelSU v3.0.5」；同批诊断包（17:29）为 popsicle / 2509FPN0BC / Xiaomi 17 Pro Max / OS4.0.5，其 runtime.json 的 market_name 也是 Xiaomi 17 Pro Max。",
+      "root_cause": "用户确认截图与诊断包不是同一台手机：截图来自 Xiaomi 15 Pro，诊断包来自 Xiaomi 17 Pro Max。两台各自显示自己的机型，数据源正常，不是 bug。",
+      "affected": [],
+      "status": "非 bug（用户确认是两台机器，2026-11-03 结案）",
+      "line": "main"
+    },
+    {
+      "id": "bug-009",
+      "type": "bug",
+      "title": "背屏显示的卡片不是模块里设计的四角卡片，仍是第三方 ETA 卡片旧样式",
+      "reported": "2026-11-03",
+      "evidence": "用户截图 13:09（背屏：左侧「充电中 / 0.0℃ / 0.000V / 0.00A」+ 右侧绿色圆环 0%、环下 +0.00W）与外观页预览卡的「四角温度/电量/电压/电流 + 中心功率光环」完全不同；诊断包 ~/workspace/.aicode/attachments/诊断包_11-03-01-34.tar-1.gz（解包在 ~/workspace/.aicode/tmp/diag_beta14/xj_diag_20261103_013414，模块 2.1.0-beta code138）",
+      "root_cause": "投到副屏的卡片 UI 完全由第三方载体 src/rearscreen/rs.apk 绘制，该 APK 与 thirdparty/背屏电池卡片_v1/apk/rs.apk 逐字节相同（sha256 eea58d63e8950ec45138870b76589471b40672ad8be22c87216ce07d5e3c0123，20937 字节，classes.dex 12.6KB，含 Card/DaView/Ui 绘制类），rearscreen.sh 只做两件事：写 /storage/emulated/0/Android/data/com.eta.rearscreen/files/batt.txt、把 com.eta.rearscreen 投到 Display #1；模块里设计的四角卡片只存在于 hyperosui 外观页预览区与 src/rearscreen/card_preview.html，是纯 CSS 预览，从来没有投屏实现（state/index.json pending 早有一条「背屏版投屏未实现」）。",
+      "fix_plan": "两条路径，需用户确认后做：A（推荐）自建载体——为一个最小 WebView 壳 APK 或模块内 Canvas 页面，用与现在相同的 am --display 1 / service call activity_task 50 方式投到副屏，页面直接复用 card_preview.html 的样式（976×596、左侧 296px 挖孔避让），数据仍走 batt.txt 或 LocalSocket，这样设计稿改样式即生效；B 改 rs.apk 的 dex 绘制（无源码，只能改字符串/常量，重排布局不可行，风险高、不推荐）。方案 A 需先验证 Android 17 上第三方壳 App 投 Display #1 会不会被 subscreencenter 顶掉。",
+      "affected": [
+        "src/rearscreen/rs.apk（第三方原版 APK，卡片 UI 写死）",
+        "src/rearscreen/rearscreen.sh:daemon / push_display（只喂数据+投放，不决定 UI）",
+        "src/rearscreen/card_preview.html（设计稿预览，未接入投屏）",
+        "src/hyperosui/index.html:2693-2760（外观页预览区）"
+      ],
+      "status": "随背屏线取消（2026-11-03）：统一版改走 App + LSPosed Hook，rearcard 独立壳与 test/rearscreen 已删除，不再按此方案复测",
+      "fixed_in": "2.1.0-beta15 (140)",
+      "fixed_note": "新增 src/rearcard/（普通 WebView 壳，assets/card.html 复用设计稿）+ tools/build_rearcard.py（ecj/d8/aapt2/zipalign/apksigner）；rearscreen.sh 改为装 rearcard.apk、写 rear.json、am --display 1 投屏，旧 rs.apk 保留不回退使用"
+    },
+    {
+      "id": "bug-010",
+      "type": "bug",
+      "title": "外观页背屏电池卡片开关打不开／点了被拨回",
+      "reported": "2026-11-03",
+      "evidence": "用户反馈「模块里打不开背屏开关」+ 截图 13:09（外观页开关为关、thumb 未激活）；诊断包（同上，01:34 采集）00-总览.txt rearscreen=0、40-系统/模块文件.txt 显示 /data/adb/modules/HyperOS_XJ/rearscreen 有 state 子目录（01:32，说明 rearscreen.sh start 确实被执行过）；该诊断包由 2.1.0-beta(138) 生成，早于 beta14(139) 打包时间 02:10，且不含 beta14 新增的 40-系统/背屏.txt，看不到 last_fail / probe 现场",
+      "root_cause": "待取证。按代码有三条会直接导致开关弹回或 start 无输出的路径：1）index.html 的 bkSh 用 __kexec(..., 12000) 12 秒超时，而 rearscreen.sh start 串了 pm install -r、ensure_data_dir（am start + 最多 6 秒等待）、push_display（3+2 秒）与 service call，正常路径就可能超 12 秒被中断，超时后 bkSh 返回空串；2）看门狗 guard 把「dumpsys window 取不到 mCurrentFocus」直接判成 focus_lost、把 batt 超过 12 秒未刷新判成 batt_stale，任一命中即 restore 并写 guard_fail，界面 12 秒后复查 last_fail 就把开关拨回；3）batt_write 写 /storage/emulated/0/Android/data/com.eta.rearscreen/files 在 Android 17 FUSE 下可能失败（属主/权限），start 会输出 ERR: 卡片数据目录不可写。诊断包里没有背屏采集与日志，三者尚未区分。",
+      "fix_plan": "先取现场再改：装 beta14(139) 后从控制台「关于 → 诊断」重新出包（beta14 的 diagnose.sh 已加 40-系统/背屏.txt），并附 /data/local/tmp/xj_rearscreen.log 与 sh /data/adb/modules/HyperOS_XJ/rearscreen/rearscreen.sh probe 的输出。按结果分头修：a）超时——把 start 拆成「装包/准备目录」与「投放」两次调用，或 bkSh 对背屏命令单独放宽到 30 秒；b）guard——focus 读不到时记 unknown 不判失败（与 main_state 的 UNKNOWN 处理对齐），batt_stale 阈值放宽到 20 秒；c）写入——失败时改用 App 侧目录 + 属主对齐重试，仍失败则明确提示需要先手动打开一次卡片 App。",
+      "affected": [
+        "src/hyperosui/index.html:4297-4301（bkSh 12 秒超时）、4879-4918（bkRearToggle 回退逻辑）",
+        "src/rearscreen/rearscreen.sh:start / guard / push_display / batt_write"
+      ],
+      "status": "随背屏线取消（2026-11-03）：统一版改走 App + LSPosed Hook，rearcard 独立壳与 test/rearscreen 已删除，不再按此方案复测",
+      "fixed_in": "2.1.0-beta15 (140)",
+      "fixed_note": "bkSh 增加超时参数，rearscreen.sh start/stop 用 30 秒；自检复查从 12 秒改到 32 秒；guard 不再把主屏息屏判失败，焦点读不到只在主屏亮着时累计、连续 3 次才算，数据超时 12→20 秒；写入失败仍走目录自建 + 属主对齐 + 回读校验"
+    },
+    {
+      "id": "bug-011",
+      "type": "feature",
+      "title": "背屏卡片改用模块自己的 App 实现，替换第三方 ETA 卡片 APK",
+      "reported": "2026-11-03",
+      "evidence": "用户指令「重新设计app背屏的功能用app实现」（承接 bug-009：背屏现在显示的是第三方 ETA 卡片旧样式，模块设计稿只是 hyperosui 预览）",
+      "root_cause": "替换对象是 src/rearscreen/rs.apk —— 第三方 21KB Xposed hook APK（com.eta.rearscreen，hook com.xiaomi.subscreencenter），卡片 UI 写死在其 dex（Card/DaView/Ui），模块只能喂 batt.txt、无法改版式，也看不到 14 项四角自选、光环液面、状态胶囊这些设计稿能力。",
+      "fix_plan": "自建载体 APK：包名 com.hyperosxj.rearcard，纯 framework API（不用 AndroidX），MainActivity 全屏黑底 + WebView 加载 assets/card.html（把 src/rearscreen/card_preview.html 的样式搬到背屏页，去掉预览工具条，按 976×596 真机尺寸排版，支持 14 项四角自选 + 光环 + 状态胶囊 + accent 主题色）；数据走 App 私有目录 rear.json（App 首次启动自建目录保证属主，rearscreen.sh 的 root 侧写入后 chown 对齐，1 秒轮询，避免 beta14 那种「root 写 FUSE 后 App 读不到」）；rearscreen.sh 改为装 rearcard.apk、每 2 秒写实时字段 + 每 30 秒合入 status_kv 慢字段、am start --display 1 投放并每 4 秒重投、看门狗与 probe 同步改；构建链 ecj（编译 java）+ d8 + aapt2 + zipalign + apksigner（JDK21 无 javac，用 ~/android-toolchain/ecj.jar）。风险：Android 17 上第三方 Activity 投 Display #1 能否常驻需要真机验证，不稳就靠重投兜底。",
+      "affected": [
+        "新增 src/rearcard/（AndroidManifest.xml、java/、res/、assets/card.html）",
+        "新增 tools/build_rearcard.py（编译+签名）",
+        "src/rearscreen/rearscreen.sh（换载体、JSON 数据、投放与 probe）",
+        "src/hyperosui/index.html（外观页背屏卡片说明与字段自选、使用说明）",
+        "src/rearscreen/rs.apk 后续不再使用"
+      ],
+      "status": "随背屏线取消（2026-11-03）：统一版改走 App + LSPosed Hook，rearcard 独立壳与 test/rearscreen 已删除，不再按此方案复测",
+      "fixed_in": "2.1.0-beta15 (140)",
+      "fixed_note": "rearcard.apk（com.hyperosxj.rearcard，21KB，原证书签名）+ assets/card.html 四角/光环/状态胶囊；数据走 App 私有目录 rear.json，rearscreen.sh 每 2 秒写并回读校验，慢字段复用 run/detail.kv 与 run/status.kv；pack.py 只收录最终 APK；外观页、使用说明、欢迎页补「自带卡片不需要 LSPosed，第三方卡片需在 LSPosed 只勾 com.xiaomi.subscreencenter」"
     }
   ],
   "lines": {

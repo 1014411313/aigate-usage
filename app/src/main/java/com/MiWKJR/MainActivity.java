@@ -1,4 +1,4 @@
-package com.hyperos.xj;
+package com.MiWKJR;
 
 import android.app.Activity;
 import android.graphics.Color;

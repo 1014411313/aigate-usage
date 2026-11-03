@@ -179,7 +179,7 @@ case "$OP" in
   logs.export)
     request_keys directory; need_string directory; external_path "$FIELD" || error '导出目录无效'; directory=$EXTERNAL
     mkdir -p "$directory" || error '无法创建导出目录'; read_log > "$WORK/log"
-    destination=$directory/HyperOS_XJ_log_$(date +%Y%m%d_%H%M%S)_$$.txt
+    destination=$directory/MiWKJR_log_$(date +%Y%m%d_%H%M%S)_$$.txt
     atomic_file "$WORK/log" "$destination" || error '日志导出失败'; printf '{"path":'; printf '%s' "$destination" | json_quote; printf '}\n' ;;
   profile.load|profile.summary)
     request_keys target; profile_paths
@@ -207,7 +207,7 @@ case "$OP" in
     request_keys 'directory content'; need_string directory; external_path "$FIELD" || error '备份目录无效'; directory=$EXTERNAL
     ui_content
     mkdir -p "$directory" || error '无法创建导出目录'
-    destination=$directory/HyperOS_XJ_ui_$(date +%Y%m%d_%H%M%S)_$$.json
+    destination=$directory/MiWKJR_ui_$(date +%Y%m%d_%H%M%S)_$$.json
     atomic_file "$WORK/ui.valid" "$destination" || error 'UI 备份导出失败'
     commit_config ui/ui-settings.json "$WORK/ui.valid" || error 'UI 设置外备份失败'
     printf '{"path":'; printf '%s' "$destination" | json_quote; printf '}\n' ;;

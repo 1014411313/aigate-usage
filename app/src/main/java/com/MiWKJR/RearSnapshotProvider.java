@@ -1,4 +1,4 @@
-package com.hyperos.xj;
+package com.MiWKJR;
 
 import android.content.ContentProvider;
 import android.content.ContentValues;
@@ -27,7 +27,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 public final class RearSnapshotProvider extends ContentProvider {
-    public static final String AUTHORITY = "com.hyperos.xj.rearsnapshot";
+    public static final String AUTHORITY = "com.MiWKJR.rearsnapshot";
     public static final String METHOD_SNAPSHOT = "snapshot";
     public static final String METHOD_CARD = "card_html";
     public static final String METHOD_REPORT_HEALTH = "report_health";

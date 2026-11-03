@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # 电池解容工具箱 - 电池信息
-XBT=/data/adb/modules/HyperOS_XJ/battery
+XBT=/data/adb/modules/MiWKJR/battery
 . $XBT/scripts/common.sh
 
 BAT=/sys/class/power_supply/battery

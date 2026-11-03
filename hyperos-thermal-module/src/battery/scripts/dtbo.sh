@@ -4,7 +4,7 @@
 #       dtbo.sh dirs | dirslist | adddir <目录> | deldir <目录>   (扫描目录管理)
 # 注意: list 仅扫描你通过 adddir / WebUI 添加的目录（不再自动扫描内置目录）
 #       备份默认保存到 /sdcard/Download/dtbo_backup（可在 settings.conf 改 backup_dir）
-XBT=/data/adb/modules/HyperOS_XJ/battery
+XBT=/data/adb/modules/MiWKJR/battery
 . $XBT/scripts/common.sh
 
 BK=$(cfg_get backup_dir "/sdcard/Download/dtbo_backup")

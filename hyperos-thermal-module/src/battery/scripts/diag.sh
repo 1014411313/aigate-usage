@@ -3,7 +3,7 @@
 # v2.6.8：新增『DTBO 现场信息』『BAA 现场信息』（分区指纹 / 模块一致性 / 来源识别）
 # v2.6.15：新增『系统/ROM信息（官方包判断参考）』『已装模块』『循环计数』；电源块增强；BAA增加common说明
 # v2.6.22n：DTBO生效检查机型化（vcutoff 通用主判 / drop_fv 多路径 / ffc 仅展示）
-XBT=/data/adb/modules/HyperOS_XJ/battery
+XBT=/data/adb/modules/MiWKJR/battery
 [ -f "$XBT/scripts/common.sh" ] && . "$XBT/scripts/common.sh" 2>/dev/null
 
 # 兜底函数（common.sh 缺失时）
@@ -53,7 +53,7 @@ _modn=0
 for _m in /data/adb/modules/*/; do
   [ -d "$_m" ] || continue
   _mn=$(basename "$_m"); _modn=1
-  if [ "$_mn" = "freepps" ]; then echo "  [集成] $_mn (HyperOS_XJ/battery 数据目录，非独立模块)"
+  if [ "$_mn" = "freepps" ]; then echo "  [集成] $_mn (MiWKJR/battery 数据目录，非独立模块)"
   elif [ -f "$_m/remove" ]; then echo "  [移除中] $_mn"
   elif [ -f "$_m/disable" ]; then echo "  [禁用] $_mn"
   else echo "  [启用] $_mn"; fi
@@ -760,11 +760,11 @@ done
 echo "--- 各守护单实例核验（多实例会互相抢节点）---"
 # 注意：模式用字符类 [x] 包住首字母，避免 pgrep 匹配到自己
 for _pat in \
-  'HyperOS_XJ/battery/scripts/[c]harge_guard\.sh' \
-  'HyperOS_XJ/battery/scripts/[c]loud_guard\.sh' \
-  'HyperOS_XJ/battery/scripts/[c]ycle_guard\.sh' \
-  'HyperOS_XJ/battery/scripts/[f]v_guard\.sh' \
-  'HyperOS_XJ/battery/scripts/[f]v_handler\.sh'; do
+  'MiWKJR/battery/scripts/[c]harge_guard\.sh' \
+  'MiWKJR/battery/scripts/[c]loud_guard\.sh' \
+  'MiWKJR/battery/scripts/[c]ycle_guard\.sh' \
+  'MiWKJR/battery/scripts/[f]v_guard\.sh' \
+  'MiWKJR/battery/scripts/[f]v_handler\.sh'; do
   _lbl=$(echo "$_pat" | sed 's/.*\[\(.\)\]/\1/; s/\\\.sh//')
   _n=$(timeout 5 pgrep -cf "$_pat" 2>/dev/null)
   case "$_n" in ''|*[!0-9]*) _n=0 ;; esac

@@ -1,7 +1,7 @@
 #!/system/bin/sh
 # diag_log.sh — 电池解容工具箱 · 连续诊断记录器
 # 用法: diag_log.sh start|stop|status|tail [n]|list|clear|pack|_run
-XBT=/data/adb/modules/HyperOS_XJ/battery
+XBT=/data/adb/modules/MiWKJR/battery
 [ -f "$XBT/scripts/common.sh" ] && . "$XBT/scripts/common.sh" 2>/dev/null
 DIR=$XBT/state/diag
 PIDF=$DIR/pid
@@ -301,7 +301,7 @@ case "$1" in
       _fpc=0
       for _p in /proc/[0-9]*; do
         case "$(timeout 1 cat $_p/cmdline 2>/dev/null | tr '\0' ' ')" in
-          *HyperOS_XJ/battery/bin/freepps*) _fpc=$((_fpc + 1)) ;;
+          *MiWKJR/battery/bin/freepps*) _fpc=$((_fpc + 1)) ;;
         esac
       done
       echo "  freepps 进程数                     = $_fpc"

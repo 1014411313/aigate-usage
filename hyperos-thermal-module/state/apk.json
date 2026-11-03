@@ -1,19 +1,20 @@
 {
-  "package": "com.hyperos.xj",
+  "package": "com.MiWKJR",
   "keystore": "~/android-toolchain/hyperos-xj.keystore（别名 hyperosxj，从 v18 起使用）",
   "unified_target": {
     "module_version": "2.1.0-unified",
     "module_code": 140,
     "apk_version_code": 2001,
-    "apk_output": "build/HyperOSxj.apk",
-    "status": "最终APK构建完成（922968字节），ECJ六个Java源文件编译通过；包名/版本/原证书签名及当前完整HTML/bridge/card一致性校验通过，已收入code140统一测试包。未真机安装验证。"
+    "apk_output": "build/MiWKJR.apk",
+    "status": "APK 构建完成（922968 字节），包名 com.MiWKJR、版本 2001/2.1.0-unified、原证书签名与 HTML/bridge/card 一致性校验通过，已收入 code140 统一测试包。包名迁移：Java 目录 app/src/main/java/com/MiWKJR/，authority com.MiWKJR.rearsnapshot，xposed 入口 com.MiWKJR.hook.HookEntry。未真机安装验证。"
   },
   "build_pipeline": "tools/build_app.py 使用 ECJ + d8 + aapt2 并用原证书签名；模块 pack 校验 APK 完整性、HTML/bridge/signature 及只读 webroot，排除旧 hyperosui。所有 .sh 脚本须有执行权限。",
   "webview_loading": "统一架构保留完整原生五页 App；Root 独立采样输出 JSON + kv，模块 webroot 只读消费。",
   "icon_dedupe": "res 下 10 张图标内容相同，arsc 路径等长替换为 res/3S.png 后可删 9 张（2.35MB→259KB）",
-  "app_name": "resources.arsc 里的 app_name 已等长/追加改写为「HyperOS - 动态温控·解容」",
+  "app_name": "resources.arsc 里的 app_name 已改写为「温控解容工具箱」",
   "rebuild_steps": [
     "统一开发使用 tools/build_app.py（ECJ + d8 + aapt2），沿用原证书签名；完成 HTML 修正后执行最终构建并按 pack 规则校验。"
   ],
-  "install_flow": "pm -r 安装失败必须立即 abort；保留 App 数据，不停止旧守护。"
+  "install_flow": "pm -r 安装失败必须立即 abort；保留 App 数据，不停止旧守护。",
+  "package_migration": "2026-11-03：com.hyperos.xj → com.MiWKJR，APK 文件名 HyperOSxj.apk → MiWKJR.apk；安装脚本在装新包前自动 pm uninstall 旧包 com.hyperos.xj（换包名无法覆盖安装）。"
 }

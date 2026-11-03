@@ -20,16 +20,17 @@
     "version": "2.1.0-unified",
     "module_code": 140,
     "apk_version_code": 2001,
-    "branch": "work/unified-app",
+    "branch": "main",
     "base_branch": "test/main",
     "status": "local_test_package_sent",
     "delivery_status": "2026-11-03已通过sendFile发送统一测试包至聊天，待真机安装、LSPosed 作用域与充电验证；未发布、未推送",
-    "resume_path": "在 /root/unified/hyperos-thermal-module、work/unified-app 继续；本地回归、打包与文件发送已完成：dist/动态温控·解容工具箱_统一测试版_v2.1.0-unified.zip；安装流程子代理确认无阻断，协议子代理未返回完整报告已停止，该部分由主代理源码核对与实际脚本回归验收。下一步是真机安装、Root 授权、LSPosed 作用域 com.xiaomi.subscreencenter 与背屏验证。不得 push、publish、改远端或更新线上清单，除非另获用户明确授权。",
+    "resume_path": "统一版已进入 main 工作树（/root/workspace/hyperos-thermal-module + app/）；work/unified-app、/root/unified、/root/rs_beta 已于 2026-11-03 删除（备份 /root/repository-backups/2026-11-03/cleanup-2026-11-03/）。后续直接在 main 工作树开发，改完 python3 tools/build_app.py && python3 tools/pack.py 后把 dist 包发聊天。下一步仍是真机安装、Root 授权、LSPosed 作用域 com.xiaomi.subscreencenter 与背屏验证。不得 push、publish、改远端或更新线上清单，除非另获用户明确授权。",
     "artifact": {
-      "path": "dist/动态温控·解容工具箱_统一测试版_v2.1.0-unified.zip",
-      "bytes": 5764632,
-      "entries": 194,
-      "sha256": "1efea9e640b63383b5870f570eb4bdde35ef6ab0e5129f5132aa04ea9408f7d3"
+      "path": "dist/温控解容工具箱_统一测试版_v2.1.0-unified.zip",
+      "bytes": 6000607,
+      "entries": 195,
+      "sha256": "13d66ee8c8eb5b108bf45a807120440951b0477817fa0829118879cdde9dc8c0",
+      "built": "2026-11-03 22:31（含产品改名与模块 id/App 包名迁移）"
     },
     "architecture": {
       "app": "保留原生完整五页 App；Root 独立采样输出 JSON + kv，模块 webroot 只读消费。",
@@ -57,7 +58,14 @@
       ]
     },
     "authorization": "仅允许本地完成、打包和发送模块；未授权 push/publish。UI 本次可不等用户点头直接打包。",
-    "worktree_note": "2026-11-03 仓库整理：统一版代码已从 /root/unified（work/unified-app）迁入 /root/workspace 的 main 工作树；/root/unified 与 /root/rs_beta 仍保留原状（未提交改动未动）"
+    "worktree_note": "2026-11-03 仓库整理与清理：统一版代码已在 /root/workspace 的 main 工作树；/root/unified与/root/rs_beta 已删除，未提交改动、rearcard 源码、beta16 包与旧 dist 包归档在 /root/repository-backups/2026-11-03/cleanup-2026-11-03/。test/rearscreen 与 work/unified-app 本地分支已删，远端 test/rearscreen 已于 2026-11-03 删除完成。",
+    "naming": {
+      "module_id": "MiWKJR",
+      "app_package": "com.MiWKJR",
+      "apk_file": "MiWKJR.apk",
+      "module_name": "温控解容工具箱",
+      "legacy_migration": "安装时迁移 /data/adb/HyperOS_XJ_data 与 _backup，卸载旧包 com.hyperos.xj，旧模块目录仅提示不删"
+    }
   },
   "release_flow": {
     "build": "改完直接执行，不需征得同意，把 zip 发给用户；v1.0.74 液态玻璃按用户当轮特殊要求先预览，确认后已构建。",
@@ -333,6 +341,21 @@
       "v": "2.1.0-beta14",
       "line": "rearscreen",
       "note": "背屏版测试包 2.1.0-beta14(139) 本地构建并发送，未发布。修复背屏有画面数据全 0：数据目录由卡片 App 自建、写前按 App uid 对齐属主、写入回读校验、连续失败回滚、空字段兜底；控制台 12 秒复查 last_fail 并回拨开关、start 清旧失败标记；rearscreen.sh 新增 probe 与 hideclock 实验入口、30 秒看门狗、开机默认不自启（rearscreen_boot=0）并在 guard_fail 时跳过；诊断包新增 40-系统/背屏.txt；说明/欢迎页/更新日志/settings.conf 同步。验证：sh -n 通过；mock 自建环境验证 batt.txt 写入格式、不可写 ERR、看门狗回滚、hideclock 开关；包内 194 条目、testzip 无坏条目、rearscreen.sh/diagnose.sh 0755。"
+    },
+    {
+      "v": "2.1.0-beta16",
+      "line": "rearscreen",
+      "note": "背屏版测试包 2.1.0-beta16(141) 本地构建并发送，未发布、未推送。相对 beta15 只改卡片光环中心数字：card.html 的 .pw 字距 -2px→-4px、中心功率 toFixed(2) 带符号→Math.abs(pw).toFixed(1) 去符号，与主页一致（原来「+5.12」文本宽达环内径 83%，看着比主页大一圈；现与主页同比例）。重跑 build_rearcard.py 重建 rearcard.apk（pack.py 只收该 APK）。验证：包内 rearcard.apk 与源码 APK 同 sha256、assets/card.html 含新两行且无符号拼接；zip 195 条目 6303200 字节 testzip 无坏条目；webroot/index.html 除构建日期(2026-11-03)外与源文件逐字一致；模块脚本全 0755；module.prop 2.1.0-beta16/141。"
+    },
+    {
+      "version": "2.1.0-unified",
+      "module_code": 140,
+      "apk_version_code": 2001,
+      "branch": "main",
+      "status": "renamed_local_test_package_built",
+      "size": 6000607,
+      "sha256": "13d66ee8c8eb5b108bf45a807120440951b0477817fa0829118879cdde9dc8c0",
+      "note": "改名与包名迁移：模块 id HyperOS_XJ→MiWKJR，模块显示名与 App 名→温控解容工具箱，App 包名 com.hyperos.xj→com.MiWKJR，APK HyperOSxj.apk→MiWKJR.apk；新增旧数据/旧备份迁移与旧控制端自动卸载。ZIP195项，build_app --check 与全量构建通过。未真机安装验证，未发布、未推送。"
     }
   ],
   "audit_20261101": {
@@ -606,6 +629,17 @@
       "sha256": "f1e5d1323c3928bd547276429faf25eb7d85960187bb84ab862ce2e40b15280e",
       "date": "2026-11-02",
       "note": "首个 2.x 正式版：汇总 1.0.52 以来的实时面板/曲线/充电记录/主题与液态玻璃/取数优化/诊断包重构。发布后 testingcf 与 cdn.jsdelivr.net 均 HTTP 200、字节一致；raw 在容器内超时未验。酷安图文（封面 + 功能介绍 GIF + 更新要点）已生成在 .aicode/tmp/kuan_v2/"
+    },
+    {
+      "version": "2.1.0-beta16",
+      "line": "rearscreen",
+      "code": 141,
+      "size": 6303200,
+      "sha256": "28d69ad98245b448d5c19a5bb5cfb8c637eab9d280f4a9e0260842d1745dbf85",
+      "date": "2026-11-03",
+      "path": "/root/rs_beta/hyperos-thermal-module/dist/动态温控·解容工具箱_背屏版_v2.1.0-beta16.zip",
+      "status": "本地打包并已发聊天，未发布、未推送、未提交",
+      "note": "背屏卡片光环中心数字对齐主页（去符号 + 1 位小数 + 字距 -4px），rearcard.apk 同步重建"
     }
   ]
 }

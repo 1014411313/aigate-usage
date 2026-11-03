@@ -1,6 +1,6 @@
 #!/system/bin/sh
 umask 077
-BAK=${XJ_BAK:-/data/adb/HyperOS_XJ_data}
+BAK=${XJ_BAK:-/data/adb/MiWKJR_data}
 JOBS=$BAK/api-jobs
 JSON_AWK=$API_DIR/json.awk
 LOCK_HELD=0

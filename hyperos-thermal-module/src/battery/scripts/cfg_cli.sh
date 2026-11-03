@@ -5,7 +5,7 @@
 #   /data/local/tmp/battery_tune.conf 的不稳定通道。
 # 用法：cfg_cli.sh get <key> [default]    # 读配置（USER_CONF 优先，settings.conf 兜底）
 #       cfg_cli.sh set <key> <value>      # 写配置到 USER_CONF，成功后回显 key=value
-XBT=/data/adb/modules/HyperOS_XJ/battery
+XBT=/data/adb/modules/MiWKJR/battery
 . "$XBT/scripts/common.sh" 2>/dev/null || exit 1
 case "$1" in
   get)

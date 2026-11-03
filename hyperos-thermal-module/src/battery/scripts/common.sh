@@ -1,7 +1,7 @@
 #!/system/bin/sh
 # 电池解容工具箱 公共函数库
 
-XBT=/data/adb/modules/HyperOS_XJ/battery
+XBT=/data/adb/modules/MiWKJR/battery
 CONF=$XBT/config/settings.conf
 LOG=/data/local/tmp/xt_toolbox.log
 # 机型代号: 安装时由 customize.sh 写入 (xuanyuan|dada|haotian|nezha|myron|annibale|bixi|onyx|popsicle|miro|songyuan|warsaw|pudding|pandora|byron)；缺失时回退 xuanyuan
@@ -601,7 +601,7 @@ direct_set_current_ma() {
   # ===== 旁路供电让路 =====
   # 温控侧旁路需要把充电电流压得很低；期间电池解容不要抢节点，
   # 旁路结束后由温控调用 charge_guard.sh once 交还。
-  if [ "$(cat /data/adb/modules/HyperOS_XJ/config/bypass_active 2>/dev/null)" = "1" ]; then
+  if [ "$(cat /data/adb/modules/MiWKJR/config/bypass_active 2>/dev/null)" = "1" ]; then
     return 0
   fi
 

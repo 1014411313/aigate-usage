@@ -6,7 +6,7 @@ log() { echo "[$(date '+%H:%M:%S')] $*" >> "$LOG"; }
 
 log "---------- action.sh 触发 | MODDIR=$MODDIR ----------"
 
-PKG=com.hyperos.xj
+PKG=com.MiWKJR
 
 OUT=$(am start -n "$PKG/.MainActivity" 2>&1)
 case "$OUT" in

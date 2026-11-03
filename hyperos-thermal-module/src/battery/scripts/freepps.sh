@@ -2,7 +2,7 @@
 # freepps.sh v1.0 - 公版 PPS 解锁（整合自 FreePPS v1.7.0，二进制已本地化路径）
 # 用法: freepps.sh status | on | off | boot | ensure
 # 说明: settings freepps=0/1；运行时数据目录 /data/adb/modules/freepps（free=1锁定 / 0暂停）
-XBT=/data/adb/modules/HyperOS_XJ/battery
+XBT=/data/adb/modules/MiWKJR/battery
 . $XBT/scripts/common.sh
 FP=/data/adb/modules/freepps
 FP_FREE=$FP/free
@@ -32,7 +32,7 @@ ensure_dir() {
 is_running() {
   # pgrep 快筛（主路径，内核遍历 ~几十 ms）；无 pgrep 时回退 /proc 遍历
   if command -v pgrep >/dev/null 2>&1; then
-    pgrep -f 'HyperOS_XJ/battery/bin/[f]reepps' >/dev/null 2>&1 && return 0
+    pgrep -f 'MiWKJR/battery/bin/[f]reepps' >/dev/null 2>&1 && return 0
     return 1
   fi
   # v2.6.23：降级分支加超时保护（读 /proc/<pid>/cmdline 在进程退出瞬间会永久阻塞）
@@ -40,7 +40,7 @@ is_running() {
     case "$(timeout 1 cat $_p/comm 2>/dev/null)" in
       freepps)
         case "$(timeout 1 cat "$_p/cmdline" 2>/dev/null | tr '\0' ' ')" in
-          *HyperOS_XJ/battery/bin/freepps*) return 0 ;;
+          *MiWKJR/battery/bin/freepps*) return 0 ;;
         esac
         ;;
     esac

@@ -73,7 +73,7 @@ for pair in 'cg charge_guard' 'apl apl'; do
   put "$2_alive" "$live"
   if [ "$1" = cg ]; then put charge_guard_ok "$live"; else apl_live=$live; put apl_pid "$pid"; fi
 done
-watchdog=$(timeout 2 pgrep -f 'HyperOS_XJ/battery/scripts/[g]uard_watchdog\.sh' 2>/dev/null | head -n 1)
+watchdog=$(timeout 2 pgrep -f 'MiWKJR/battery/scripts/[g]uard_watchdog\.sh' 2>/dev/null | head -n 1)
 put watchdog_alive "$watchdog"
 put apl_target_ma "$(read1 "$XBT/state/apl_target_ma")"
 cap=
@@ -85,7 +85,7 @@ if [ -f "$XBT/state/apl_lock_until" ]; then put apl_locked 1; else put apl_locke
 profile=$XBT/state/apl_profile.$code.kv
 if [ -f "$profile" ]; then put apl_profile 1; else put apl_profile 0; fi
 awk -F= '/^b[0-9]=/ {if($2+0>m)m=$2+0} /^_reset_/ {v=substr($0,index($0,"=")+1)} END{print "apl_best_ma=" (m>0?m:"");print "apl_reset_reason=" v}' "$profile" 2>/dev/null
-put freepps_runtime "$(read1 "${XBT%/HyperOS_XJ/battery}/freepps/free")"
+put freepps_runtime "$(read1 "${XBT%/MiWKJR/battery}/freepps/free")"
 source_file=$XBT/baa/payload_BAA_config_$code.json
 target_file=$ODM/etc/charger/BAA_config_$code.json
 src_hash=$(sha256sum "$source_file" 2>/dev/null); src_hash=${src_hash%% *}

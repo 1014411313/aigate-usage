@@ -4,7 +4,7 @@
   "root": "KernelSU（另有 susfs/maphide/LSPosed 等）",
   "slot": "_b",
   "current_state": {
-    "unified_test_pending": "2026-11-03：2.1.0-unified(code140/APK2001)本地测试包已构建、校验并发到聊天，待真机安装；需为控制App授权Root，在LSPosed启用并勾选com.xiaomi.subscreencenter，重启后验证背屏显示/关闭恢复原生/过期移除和主屏稳定性。容器API208次RPC（含轮询）、Firefox240页、只读采样/双串数据和签名ZIP通过；尚未验证手机安装、Hook和实际充电。",
+    "unified_test_pending": "2026-11-03 改名与包名迁移后的统一包已构建：dist/温控解容工具箱_统一测试版_v2.1.0-unified.zip（195 项 / 6000607 字节 / sha256 13d66ee8…），模块 id MiWKJR、App 包名 com.MiWKJR、显示名「温控解容工具箱」。待真机安装：需为控制 App 授权 Root，LSPosed 启用并勾选 com.xiaomi.subscreencenter，重启后验证背屏显示/关闭恢复原生/过期移除与主屏稳定性。注意：本机当前装的是背屏线 beta16（code141，/data/adb/modules/HyperOS_XJ），该线不装控制端 App 且 id 为旧值；刷统一版时会走迁移逻辑（搬 HyperOS_XJ_data、卸载旧控制端），旧模块目录需在管理器里卸载后重启。",
     "installed_version": "v1.0.59 真机反馈仍卡；v1.0.60 合并快照命令；v1.0.61 status_kv.sh 零 fork；v1.0.62 命令通道切 ksu.spawn 异步（脚本执行不再冻结界面）；v1.0.63 主页扩展（实时曲线/电池详情/充电协议/温区）+ 沉浸全屏，等待安装复测：真机看四卡数据与系统栏取色",
     "webui_test_pending": "v1.0.75(122)本地测试包已构建并发送：四款液态水滴壁纸可选、移除独立温控守护、修复DTBO跳过安装刷写后的识别误报；Firefox壁纸与七种DTBO状态/18组响应式、十五机型和模拟刷写安全门/升级清理通过。待用户安装验证壁纸观感与本机DTBO识别，未发布，未操作真实分区。",
     "dtbo_test_pending": "源码与v1.0.74包确实内置popsicle等十五种镜像；旧安装跳过后未生成local.img且机型未独立写入，页面只查local.img误报资源缺失。v1.0.75独立识别与准备本机镜像，手动/状态/诊断共用读取；升级后电池→DTBO应显示对应镜像可刷入，刷写须用户确认并重启才生效。",

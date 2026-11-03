@@ -5,7 +5,7 @@
 # 都按「每秒采样」的零 fork 方式写：节点用内建 read，配置一次读入变量。
 # 注意：common.sh 曾回退过 cfg_get 的变量缓存（长驻守护 source 后读到旧值的 bug）；
 # 那条教训只适用于常驻进程——本脚本每次都是新进程、读完即退，缓存安全。
-XBT=/data/adb/modules/HyperOS_XJ/battery
+XBT=/data/adb/modules/MiWKJR/battery
 . $XBT/scripts/common.sh
 
 BAT=/sys/class/power_supply/battery
@@ -116,7 +116,7 @@ case "$_cgpid" in ''|*[!0-9]*) _cgalive=0 ;; *)
 esac
 echo "charge_guard_alive=$_cgalive"
 echo "charge_guard_ok=$_cgalive"
-echo "watchdog_alive=$(timeout 5 pgrep -f 'HyperOS_XJ/battery/scripts/[g]uard_watchdog\.sh' 2>/dev/null | head -n1)"
+echo "watchdog_alive=$(timeout 5 pgrep -f 'MiWKJR/battery/scripts/[g]uard_watchdog\.sh' 2>/dev/null | head -n1)"
 # ===== v3.11.0 自适应功率爬坡器状态 =====
 rdf _apl_pid $XBT/state/apl.pid
 case "$_apl_pid" in ''|*[!0-9]*) _apl_live=0 ;; *)

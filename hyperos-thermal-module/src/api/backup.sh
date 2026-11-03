@@ -54,7 +54,7 @@ full_export() {
   battery_lock || error '电池配置正忙' 6
   backup_collect && backup_validate_files || error '配置校验失败，未导出'
   tar -czf "$WORK/backup.tar.gz" -C "$STAGE" -T "$WORK/members" || error '备份打包失败'
-  destination=$directory/HyperOS_XJ_backup_$(date +%Y%m%d_%H%M%S)_$$.tar.gz
+  destination=$directory/MiWKJR_backup_$(date +%Y%m%d_%H%M%S)_$$.tar.gz
   atomic_file "$WORK/backup.tar.gz" "$destination" || error '备份导出失败'
   printf '{"path":'; printf '%s' "$destination" | json_quote; printf '}\n'
 }

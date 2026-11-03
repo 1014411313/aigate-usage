@@ -12,7 +12,7 @@
 #   - 首次写入前记录原始值（state/volt_orig.txt），stop/卸载时还原
 # 用法: volt_guard.sh start|stop|status
 # ============================================================
-XBT=${XBT:-/data/adb/modules/HyperOS_XJ/battery}
+XBT=${XBT:-/data/adb/modules/MiWKJR/battery}
 . $XBT/scripts/common.sh
 
 PIDFILE=/data/local/tmp/xt_volt_guard.pid

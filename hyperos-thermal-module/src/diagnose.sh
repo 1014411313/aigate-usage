@@ -17,7 +17,7 @@
 # 只读采集，不写任何系统节点；文本按白名单脱敏（序列号 / IMEI / MAC / 手机号）。
 
 MODDIR=${0%/*}
-[ -d "$MODDIR" ] || MODDIR=/data/adb/modules/HyperOS_XJ
+[ -d "$MODDIR" ] || MODDIR=/data/adb/modules/MiWKJR
 CONFDIR="$MODDIR/config"
 XBT="$MODDIR/battery"
 OUTDIR=/sdcard/Download
@@ -54,7 +54,7 @@ sanitize() {
 scrub() { [ -f "$1" ] || return 0; sanitize < "$1" > "$1.scrub" 2>/dev/null && mv -f "$1.scrub" "$1" 2>/dev/null; }
 
 hr
-echo " - HyperOS - 动态温控·解容"
+echo " - 温控解容工具箱"
 echo " - 诊断与日志打包（整个模块：温控 + 解容）"
 echo " - 时间: $(date '+%F %T')"
 hr
@@ -349,10 +349,10 @@ step 8 "系统与模块文件"
     done
     echo
     echo "== 模块目录外备份（升级恢复用）=="
-    if [ -d /data/adb/HyperOS_XJ_data ]; then
-        ls -lR /data/adb/HyperOS_XJ_data 2>/dev/null | head -n 120
+    if [ -d /data/adb/MiWKJR_data ]; then
+        ls -lR /data/adb/MiWKJR_data 2>/dev/null | head -n 120
     else
-        echo "（无 /data/adb/HyperOS_XJ_data）"
+        echo "（无 /data/adb/MiWKJR_data）"
     fi
 } > "$D_S/模块文件.txt" 2>/dev/null
 
@@ -395,12 +395,12 @@ echo " - 机型信息 / 模块文件 / 进程 / dmesg / logcat"
         echo
     done
     echo "== 控制端安装状态 =="
-    cmd package list packages --user 0 -U com.hyperos.xj 2>/dev/null
+    cmd package list packages --user 0 -U com.MiWKJR 2>/dev/null
     echo "== 背屏中心安装状态 =="
     cmd package list packages --user 0 -U com.xiaomi.subscreencenter 2>/dev/null
     echo "== 快照与 Hook 日志 =="
     tail -n 80 "$MODDIR/log/snapshot.log" 2>/dev/null
-    logcat -d -t 1000 2>/dev/null | grep -F HyperOS_XJ | tail -n 80
+    logcat -d -t 1000 2>/dev/null | grep -F MiWKJR | tail -n 80
 } > "$D_S/背屏与快照.txt" 2>/dev/null
 scrub "$D_S/背屏与快照.txt"
 
@@ -415,7 +415,7 @@ else
 fi
 
 {
-    echo "HyperOS - 动态温控·解容  诊断包"
+    echo "温控解容工具箱  诊断包"
     echo "采集时间 : $(date '+%F %T')   模块版本: $(grep '^version=' "$MODDIR/module.prop" 2>/dev/null | sed 's/^version=//')"
     echo "自检退出码: $SC   （非 0 时优先看 10-温控/自检.txt）"
     echo

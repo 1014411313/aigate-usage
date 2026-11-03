@@ -21,7 +21,7 @@
 #   ③ 全局限流：同一分钟内最多重启 1 次
 #   ④ 所有外部命令仍加 timeout，遵守模块既有惯例
 # ============================================================================
-XBT=/data/adb/modules/HyperOS_XJ/battery
+XBT=/data/adb/modules/MiWKJR/battery
 LOG="${LOG:-/data/local/tmp/xt_toolbox.log}"
 PIDF="$XBT/state/cg.pid"
 LASTF="$XBT/state/wd_last_restart"
@@ -65,7 +65,7 @@ cg_alive() {
 # 【v1.0.42】用户关掉解容（unlock=0）或禁用模块后，旧版看护仍在 60 秒后把 charge_guard 拉回来，
 #   表现为"关了解容/关掉了，过一会儿又开始改充电节点"。守护必须和启用状态一致。
 cg_expected() {
-  [ -f "/data/adb/modules/HyperOS_XJ/disable" ] && return 1
+  [ -f "/data/adb/modules/MiWKJR/disable" ] && return 1
   [ "$(cfg_get unlock 1)" = "1" ] || return 1
   return 0
 }

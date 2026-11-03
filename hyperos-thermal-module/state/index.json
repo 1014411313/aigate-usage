@@ -2,14 +2,15 @@
   "meta": {
     "module_id": "HyperOS_XJ",
     "name": "HyperOS - 动态温控·解容",
-    "current_version": "2.1.0-unified (module code 140, APK 2001; 已迁入 main，待真机验证，未发布)",
+    "current_version": "2.1.0-unified（module id MiWKJR / code 140 / APK 2001；显示名「温控解容工具箱」，App 包名 com.MiWKJR；待真机验证，未发布）",
     "updated": "2026-11-03",
     "maintainer": "小米热炸了（酷安 517965）",
     "upstream": {
       "dynamic_thermal": "Axiaojiux（动态温控 K2）",
       "battery_toolbox": "听夜风1337（电池解容工具箱 v3.12.6）"
     },
-    "how_to_resume": "先读 index.json；统一开发续作先读 release.json 的 unified_work.resume_path 与 status，再按任务读对应分片；任务结束更新相关分片 + meta.current_version",
+    "how_to_resume": "开工前先做分工决定（定级 A/B/C/D + 派给谁/档位/文件所有权，或写明为何不派），见 AGENTS.md 顶部；然后读本文件；统一开发续作先读 release.json 的 unified_work.resume_path 与 status，再按任务读对应分片；任务结束更新相关分片 + meta.current_version",
+    "session_start": "新会话第一屏必读：①先写分工决定（不派只能是只读/验收/架构/不可逆/密钥/小于派发开销，并说明）②task 省略 agent 即创建可写可执行的通用子代理，Explore 只是只读代理之一 ③再读 state/index.json 与对应分片。没有分工决定，不改任何文件。",
     "version_scheme": "统一开发目标为 v2.1.0-unified（module code 140，APK versionCode 2001）；当前开发分支 work/unified-app，基于 test/main；旧历史版本记录保留",
     "current_unified_work": {
       "version": "2.1.0-unified",
@@ -59,12 +60,16 @@
     "v2.0.1（125）已本地打包并发送，待真机复测：修复涓流/满电功率显示 0.0W、双电芯机型电压格显示总压（改为显单串、功率仍用总压）、满电电压上限 4600→4700；已修条目见 state/bugs.json 的 fixed",
     "第三方存档：ETA 背屏电池卡片 v1 已解包到 thirdparty/背屏电池卡片_v1/（含原始 zip）。机制：装 com.eta.rearscreen APK + 禁用 com.xiaomi.subscreencenter（原生背屏时钟）+ service.sh 每 2 秒把 battery 的电压/电流/温度/电量/状态写入 /storage/emulated/0/Android/data/com.eta.rearscreen/files/batt.txt，再把 APK 的 Activity 投到 Display #1（service call activity_task 50）。后期集成时可直接用我们 status_kv/status_fast 的取数，改成控制台开关",
     "当前统一任务 v2.1.0-unified（module code140 / APK2001）：位于 /root/unified/hyperos-thermal-module、work/unified-app（基 test/main）。最终APK与本地模块包已完成，ZIP194项/5764632字节，SHA256 1efea9e640b63383b5870f570eb4bdde35ef6ab0e5129f5132aa04ea9408f7d3；RPC 统一回归通过（次数随 job 轮询浮动，不写固定数）、Firefox240页矩阵及失败回滚、只读页、采样三场景/Provider协议/只读节点哈希/双串功率通过。已于2026-11-03发送至聊天，待真机安装/Hook/实际充电验证，未授权push/publish。详情见release.json→unified_work；保留旧pending，不改/root/workspace/state用户未提交内容。",
-    "三线并行：原版正式版 v2.0.0（latest.json 已指向，提交 cf41fa2）、原版测试版 v2.0.1（手动发）、背屏测试版 2.1.0-beta（test/rearscreen 分支，12 提交 da44062），背屏版待做 WebView 投屏载体",
-    "背屏版投屏未实现：当前 rearscreen.sh 仍投原 ETA Canvas 卡片，模块内只是样式预览",
+    "三线并行已收敛（2026-11-03）：只维护统一版 2.1.0-unified（main）。test/rearscreen（背屏线）本地分支与 /root/rs_beta、/root/unified 工作树已删除，备份 /root/repository-backups/2026-11-03/cleanup-2026-11-03/；远端 test/rearscreen 已于 2026-11-03 删除完成（git push origin --delete test/rearscreen）；test/main 冻结备查。背屏只走统一版方案（App + LSPosed Hook com.xiaomi.subscreencenter）。",
+    "背屏实现定案（2026-11-03）：只保留统一版纯 Hook 方案——App com.hyperos.xj 内 HookEntry 挂 com.xiaomi.subscreencenter 的 SubScreenLauncher，CardOverlay 每秒读 content://com.hyperos.xj.rearsnapshot 贴卡片；不并入 rearcard 独立壳。因此底屏机型必须装 App 并在 LSPosed 勾 com.xiaomi.subscreencenter，没 App 就没有卡片。用户机器当前装的是 beta16（背屏线），该线 customize.sh 会主动卸载 App，需改刷统一版包。",
     "bug-007（2026-11-03，待验证，模块侧已基本排除）：2.0.0 code124 在 pandora（小米 17 Pro / OS4.0.5）上有线充电完全不被识别——usb/online=0、type=Unknown、real_type=Unknown、power_max=0、port0/power_operation_mode=default 且缺 partner/*；同平台 popsicle（2.1.0-beta）有线正常（USB_PD / PD_PPS / 45W）。用户已自测关公版 PPS、禁用模块均无效。结论：断在 USB/typec 端口层，不是模块充电参数；唯一未排除的模块痕迹是 01:03:40 刷入的 pandora DTBO（禁模块不回滚），需按 bugs.json 的 fix_plan 第 5 步刷回备份 dtbo_a_before_20261103-010340.img 实测。排查顺序见 state/bugs.json",
     "背屏版 2.1.0-beta14(139)：修复背屏有画面数据全 0（目录自建/属主对齐/回读校验/字段兜底）+ 30 秒看门狗与 probe；本地包已发送，待真机复测；未发布，未推送",
     "背屏反馈已记入 bugs.json：bug-009（背屏显示的是第三方 ETA 卡片旧样式，rs.apk 与原包逐字节相同，四角卡片只是 hyperosui 预览，无投屏实现）、bug-010（外观页背屏开关打不开/被拨回，待 beta14 现场：probe + 40-系统/背屏.txt + /data/local/tmp/xj_rearscreen.log）；两条均未改代码，等用户说「修复」统一处理",
-    "2026-11-03 仓库整理完成：统一版 app/ 与模块已进入 main 工作树，5 个独立项目（aigate-usage、github-hosts-app、gpu_autoboost、perf-tuner、mcp-client）归档到 archive/，旧解包/历史包/素材已移出工作区；外部备份在 /root/repository-backups/2026-11-03/（main-current、unrelated-main、workspace-module-before-swap、workspace-state）。构建与打包已复验（build_app.py --check 通过、pack 194 项，仅 APK 时间戳差异）。未提交、未推送。后续按老板拍板收尾：根 dist/latest.json 旧更新入口已下线（目录已删）；release.py 的 stage 已扩到 app/ 并排除测试版/背屏版/快照版包；AGENTS.md 新增「main 的 dist 只放正式包」约定；architecture.md 按代码修正 3 处；app/src/main/assets/control 除 bridge.js 外一律不入库"
+    "2026-11-03 仓库整理完成：统一版 app/ 与模块已进入 main 工作树，5 个独立项目（aigate-usage、github-hosts-app、gpu_autoboost、perf-tuner、mcp-client）归档到 archive/，旧解包/历史包/素材已移出工作区；外部备份在 /root/repository-backups/2026-11-03/（main-current、unrelated-main、workspace-module-before-swap、workspace-state）。构建与打包已复验（build_app.py --check 通过、pack 194 项，仅 APK 时间戳差异）。未提交、未推送。后续按老板拍板收尾：根 dist/latest.json 旧更新入口已下线（目录已删）；release.py 的 stage 已扩到 app/ 并排除测试版/背屏版/快照版包；AGENTS.md 新增「main 的 dist 只放正式包」约定；architecture.md 按代码修正 3 处；app/src/main/assets/control 除 bridge.js 外一律不入库",
+    "bug-012/bug-013 已结案（2026-11-03）：bug-012「温控页/关于页等非数据页停几秒提示快照已过期」主因是 index.html 全局 1 秒定时器拿旧快照做 5 秒新鲜度校验，而 bkShouldRefresh 只覆盖主页/电池页；已改为仅数据页校验 + 非数据页错误态每 5 秒自愈（main 工作树，Firefox 四场景验证通过，未打包）。证据链：17:28:36 温控页截图报过期，64 秒后诊断包 provider_health 17:30:07 为 ok:true，采样实际正常。次生隐患（snapshotd 时间戳取早、service.sh 抢锁式拉起）已写入 bugs.json 的 related_findings，尚未修。bug-013 机型显示不一致已确认是两台机器，cancelled 结案。",
+    "背屏线 beta16（code141，/root/rs_beta）：卡片光环中心数字对齐主页——.pw 字距 -2→-4px、中心功率 toFixed(2) 带符号 → Math.abs(pw).toFixed(1) 去符号（原「+5.12」文本宽达环内径 83%，现与主页同比例）；已重跑 build_rearcard.py 重建 APK。ZIP 195 项 / 6303200 字节 / sha256 28d69ad9…，包已发聊天；终审：APK 与源同 sha、card.html 含新两行、webroot/index.html 除构建日期外与源一致、脚本全 0755。未推送、未发布，等真机复测",
+    "背屏线 beta15（code140）已构建（/root/rs_beta，未提交、未推送、包未发送）：bug-009/010/011 已修——新增 src/rearcard/（com.hyperosxj.rearcard 普通 WebView 壳）+ tools/build_rearcard.py，rearscreen.sh 改装 rearcard.apk、写 rear.json、am --display 1 投屏；bkSh 超时 12→30 秒、自检复查 32 秒；guard 不再把主屏息屏判失败、焦点连续 3 次才算；外观页/使用说明/欢迎页补「自带卡片不需要 LSPosed，第三方 ETA 卡片需在 LSPosed 只勾 com.xiaomi.subscreencenter」。包：dist/动态温控·解容工具箱_背屏版_v2.1.0-beta15.zip（189 项、6303096 字节、sha256 ac0cdd59...，已按主页光环参数重做卡片），预览图在 .aicode/tmp/ui_preview/2026-11-03/06、07（旧）、08（新光环）。",
+    "2026-11-03 改名与包名迁移完成：模块 id HyperOS_XJ→MiWKJR、显示名与 App 名→温控解容工具箱、App 包名 com.hyperos.xj→com.MiWKJR、APK→MiWKJR.apk；install 脚本新增旧数据/旧备份迁移与旧控制端卸载。统一包 dist/温控解容工具箱_统一测试版_v2.1.0-unified.zip（195 项 / 6000607 字节 / sha256 13d66ee8…）。未真机安装验证，未发布。"
   ],
   "audit": {
     "date": "2026-11-01",

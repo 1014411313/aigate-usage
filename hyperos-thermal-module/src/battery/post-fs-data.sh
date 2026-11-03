@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # 电池解容工具箱 - post-fs-data 阶段
-XBT=/data/adb/modules/HyperOS_XJ/battery
+XBT=/data/adb/modules/MiWKJR/battery
 . $XBT/scripts/common.sh
 
 log "pfd: begin"
@@ -20,7 +20,7 @@ rm -f /data/local/tmp/xt_fv_guard.pid 2>/dev/null
 
 KSUD=/data/adb/ksu/bin/ksud
 if [ -x "$KSUD" ]; then
-  KSU_MODULE=HyperOS_XJ "$KSUD" module config set manage.kernel_umount false >>"$LOG" 2>&1
+  KSU_MODULE=MiWKJR "$KSUD" module config set manage.kernel_umount false >>"$LOG" 2>&1
 fi
 
 if [ "$(cfg_get unlock 1)" = "1" ]; then

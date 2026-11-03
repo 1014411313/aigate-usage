@@ -1,7 +1,7 @@
 #!/system/bin/sh
 # apl_ctl.sh —— 自适应功率爬坡器控制  v3.12.0
 # 用法: apl_ctl.sh status | reset | boost | freeze
-XBT=/data/adb/modules/HyperOS_XJ/battery
+XBT=/data/adb/modules/MiWKJR/battery
 DEV=$(grep -a '^dev_code=' $XBT/config/settings.conf 2>/dev/null | head -n1 | cut -d= -f2)
 [ -n "$DEV" ] || DEV=$(getprop ro.product.device)
 PROF="$XBT/state/apl_profile.$DEV.kv"

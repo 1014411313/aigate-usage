@@ -3,7 +3,7 @@
 # v2: 改用 setsid 独立会话启动，即使从 WebUI/终端触发的“同步”重启守护，
 #     也不会随调用方会话结束被系统连带回收
 # 用法: fv_guard.sh start|stop|status
-XBT=/data/adb/modules/HyperOS_XJ/battery
+XBT=/data/adb/modules/MiWKJR/battery
 . $XBT/scripts/common.sh
 
 PIDFILE=/data/local/tmp/xt_fv_guard.pid

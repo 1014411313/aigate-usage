@@ -3,8 +3,8 @@
 # 用途：模块更新会整体替换模块目录，安装时从这份备份恢复。
 # 调用时机：界面「立即备份」按钮、cfg_set 写配置时（只同步 settings.conf）、保存温控配置时。
 # 注意：不做定时备份，只在这几个时机写。
-MODDIR=${MODDIR:-/data/adb/modules/HyperOS_XJ}
-BAK=${XJ_BAK:-/data/adb/HyperOS_XJ_data}
+MODDIR=${MODDIR:-/data/adb/modules/MiWKJR}
+BAK=${XJ_BAK:-/data/adb/MiWKJR_data}
 n=0
 failed=0
 

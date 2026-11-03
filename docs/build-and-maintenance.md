@@ -17,11 +17,11 @@
 在 `hyperos-thermal-module/` 目录下：
 
 ```bash
-python3 tools/build_app.py           # 编译 + 打包签名，产物 build/HyperOSxj.apk
+python3 tools/build_app.py           # 编译 + 打包签名，产物 build/MiWKJR.apk
 python3 tools/build_app.py --check   # 只跑 ECJ 编译，不出 APK
 ```
 
-`build_app.py` 会：ECJ 编译 `app/src/main/java` → aapt2 编译/链接资源 → D8 出 dex → zipalign → apksigner 签名，并校验包名 `com.hyperos.xj`、`versionCode`/`versionName`、APK 签名与 keystore 一致、`assets/control/index.html` 与 `src/hyperosui/` 源码一致。控制页由 `src/hyperosui/index.html` 经 `control_html()` 生成并注入 CSP 与 `bridge.js`。
+`build_app.py` 会：ECJ 编译 `app/src/main/java` → aapt2 编译/链接资源 → D8 出 dex → zipalign → apksigner 签名，并校验包名 `com.MiWKJR`、`versionCode`/`versionName`、APK 签名与 keystore 一致、`assets/control/index.html` 与 `src/hyperosui/` 源码一致。控制页由 `src/hyperosui/index.html` 经 `control_html()` 生成并注入 CSP 与 `bridge.js`。
 
 ## 打包模块 ZIP
 
@@ -37,7 +37,7 @@ python3 tools/pack.py [输出路径]      # 默认输出到 dist/
 python3 tools/release.py build [版本号]   # versionCode+1、打包到 dist/，不发不推
 ```
 
-产物命名 `动态温控·解容工具箱_v<版本>.zip`。改完先本地打包发用户测试。
+产物命名 `温控解容工具箱_v<版本>.zip`。改完先本地打包发用户测试。
 
 ## 测试与自验
 
@@ -51,8 +51,8 @@ python3 tools/release.py build [版本号]   # versionCode+1、打包到 dist/�
 ## 配置与凭据
 
 - 签名口令不写入仓库；`build_app.py` 从环境变量 `HYPEROS_KEYSTORE_PASSWORD` 读取（缺省 `android`），失败信息中会屏蔽口令。
-- 模块运行期配置与备份在设备上，不进仓库：`/data/adb/modules/HyperOS_XJ/config/`、`/data/adb/HyperOS_XJ_data/`。
-- 升级/重装时用户设置由 `config_backup.sh` 同步到 `/data/adb/HyperOS_XJ_data`，安装脚本 `customize.sh` 与 `thermal_core.sh` 启动时优先恢复。
+- 模块运行期配置与备份在设备上，不进仓库：`/data/adb/modules/MiWKJR/config/`、`/data/adb/MiWKJR_data/`。
+- 升级/重装时用户设置由 `config_backup.sh` 同步到 `/data/adb/MiWKJR_data`，安装脚本 `customize.sh` 与 `thermal_core.sh` 启动时优先恢复。
 
 ## 发布（须明确授权）
 

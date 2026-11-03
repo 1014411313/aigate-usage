@@ -1,10 +1,20 @@
 # 仓库协作规则
 
+## 开工第一步（强制，先于一切动作）
+
+任何会改文件的动作之前，回复或待办里的第一项必须是「分工决定」：
+
+1. 定级：A 小改（单文件 <50 行）/ B 常规（单模块）/ C 有风险（跨文件、发布链路、数据契约、权限）/ D 疑难。
+2. 写清「派给谁 + 档位 + 文件所有权」；不派时写明理由，且理由只能是：只读诊断、验收抽查、架构决策、不可逆操作、密钥，或改动小于派发开销（当场说明）。
+3. 没有这条决定，不得调用修改文件的工具。
+
+事实（容易误判）：`task` 省略 `agent` 参数会创建**继承本会话全部工具的默认通用子代理**，可写文件、可执行命令；「可用子代理」清单里的 Explore 只是只读代理之一，不代表没有可写代理。
+
 远程 `1014411313/aigate-usage`。**2026-11-03 起以统一版 App 为主项目**：
 
 ```
-app/                        控制端 App 源码（com.hyperos.xj）：WebView 界面 + NativeShell 白名单 Root API + LSPosed 背屏 Hook
-hyperos-thermal-module/     Root 模块（HyperOS_XJ）：温控/解容脚本、api 采样、模块管理器只读页、构建与发布工具
+app/                        控制端 App 源码（com.MiWKJR）：WebView 界面 + NativeShell 白名单 Root API + LSPosed 背屏 Hook
+hyperos-thermal-module/     Root 模块（MiWKJR）：温控/解容脚本、api 采样、模块管理器只读页、构建与发布工具
 docs/                       architecture.md（组件与数据流）、build-and-maintenance.md（构建/打包/发布）
 archive/                    已存档独立项目：aigate-usage、github-hosts-app、gpu_autoboost、perf-tuner、mcp-client
 health/                     个人文档，与项目无关
@@ -22,10 +32,15 @@ xiaomi-8Elite-charge-boost/ 独立 Git 仓库（嵌套），保持原位，勿�
 
 ## 分工（强制）
 
-- 老板只定目标、优先级与拍板；**副总（主代理）负责统筹、拆条线、派活、验收、汇报，不亲自写业务代码**。
+完整流程见 [docs/team-process.md](docs/team-process.md)（老板已确认 v1），要点：
+
+- 老板只定目标、优先级与拍板；**副总（主代理）负责拆解、定级、派单、验收、汇报，不亲自写业务代码**。
 - 主管＝子代理 standard/strong 档（出方案、拆子任务、评审）；员工＝子代理 light 档（搜索、机械修改、跑测试、打包核验）。
+- **任务四级定流水线**：A 小改→派 1 员工 + 副总抽查；B 常规→派 1 员工 + 副总抽查关键点；C 有风险（跨文件 / 发布链路 / 数据契约 / 权限）→主管出方案 + 主管 Review + 副总终审；D 疑难→副总只读定性 + 必要时 strong 档 + 副总终审。
+- **副总自己动手**仅限：只读诊断、验收抽查、架构决策、发布/推送/删除等不可逆操作、密钥；以及工作量小于派发开销的小事（需当场说明为什么没派）。
 - 子代理不能嵌套派子代理，全局最多 5 个并发；同一文件同一时间只允许一个代理写。
-- 派活必须写清：目标、已知上下文、输入输出、允许改动范围、验收标准、禁止事项。
+- 派活六要素：目标、已核实事实、输入输出、允许改动范围、验收标准、禁止事项（另加文件所有权）。
+- **省钱硬规则**：一次派完整；同一问题 2 次未果即停，不允许第 3 次；已核实事实不重查；档位就低；对老板不贴工作日志。
 - 保留在副总、不外派：架构取舍、跨条线接口、密钥与发布、破坏性操作、最终验收。
 
 ## 通用
@@ -93,19 +108,19 @@ xiaomi-8Elite-charge-boost/ 独立 Git 仓库（嵌套），保持原位，勿�
 - 用户提修改意见就改完重新出图，循环到用户点头为止；用户当次说「不用预览，直接打包」按当次放行，下一次 UI 改动仍要预览。
 - 截图已知坑：容器浏览器对大圆角 `backdrop-filter` 页面可能截出空白，此时截前给 body 加 `fx-lite` 并 inline 禁用 animation/backdropFilter（几何与 canvas 用 evaluate 验），但要在发图时说明「毛玻璃/流光实际观感预览图不还原，以真机为准」。
 
-## hyperos-thermal-module（HyperOS - 动态温控·解容）
+## hyperos-thermal-module（温控解容工具箱）
 
-模块 id `HyperOS_XJ`，二改整合版：动态温控 K2 + 电池解容工具箱 v3.9.6 + 公版 PPS + DTBO 刷入。
+模块 id `MiWKJR`，二改整合版：动态温控 K2 + 电池解容工具箱 v3.9.6 + 公版 PPS + DTBO 刷入。
 维护者：小米热炸了。原作者：Axiaojiux（动态温控）、听夜风1337（解容工具箱）。
 
 ### 目录
 
 ```
 src/                 模块源码（battery/ 为解容子模块，api/ 为 Root API 与只读采样，hyperosui/index.html 为控制台界面）
-tools/build_app.py   构建控制端 App：python3 tools/build_app.py（ECJ + d8 + aapt2 + 原证书签名，产物 build/HyperOSxj.apk）
+tools/build_app.py   构建控制端 App：python3 tools/build_app.py（ECJ + d8 + aapt2 + 原证书签名，产物 build/MiWKJR.apk）
 tools/pack.py        打包模块：python3 tools/pack.py [输出路径]
 tools/release.py     build 版本号 +1 并打包到 dist/（不发不推）；publish 更新 latest.json、只留最近 3 版、提交推送、校验 CDN
-dist/                发布包，命名「动态温控·解容工具箱_vN.zip」
+dist/                发布包，命名「温控解容工具箱_vN.zip」
 latest.json          版本清单
 upstream/            双上游同步基线（manifest.json + base/ 快照）
 ```
@@ -119,24 +134,16 @@ upstream/            双上游同步基线（manifest.json + base/ 快照）
   4. 有默认值/开关的，同步写进 `src/default_settings.json` 或 `src/battery/config/settings.conf`（带注释）。
 - 说明写「是什么 + 怎么用」，不要写成更新摘要；一个功能一行，太长就换行。
 
-### 三条发布线（强制，先判线再打包）
+### 发布线（强制：只维护统一版一条线）
 
-| 线 | 分支 | 包名 | 线上清单 |
-|---|---|---|---|
-| 原版正式版 | `main` | `动态温控·解容工具箱_vX.Y.Z.zip`（无后缀） | 进 `latest.json` |
-| 原版测试版 | `test/main` | `动态温控·解容工具箱_原版测试版_vX.Y.Z.zip` | 不进正式清单，包推送到本分支 |
-| 背屏测试版 | `test/rearscreen` | `动态温控·解容工具箱_背屏版_vX.Y.Z-betaN.zip` | 不进正式清单，包推送到本分支 |
-
-- **三条线都在远端**：正式版在 `main`，原版测试版在 `test/main`，背屏测试版在 `test/rearscreen`；
-  各分支的 `dist/` 里放自己带线别的包，下载链接按分支区分（`@main` / `@test/main` / `@test/rearscreen`）。
-- **当前基线**：原版正式版 = **v2.0.0（versionCode 124）**；原版测试版 = v2.0.1（vc 125）；背屏测试版 = 2.1.0-beta（`test/rearscreen` 分支）。
-  2026-11-03 起，`main` 工作树承载**统一版 2.1.0-unified**（module code140 / APK 2001，含控制端 App），本地包已发送、待真机验证，**未发布、未推送**。
-- 只有**原版正式版**允许 `tools/release.py publish`（改 `latest.json`、清理旧版、提交推送、校验 CDN）。
-- 测试线打包后**推送到自己的分支**（`git push origin test/main` / `test/rearscreen`），但**不动 `main` 的 `latest.json`**，也不触发 `release.py publish`。
-- 背屏版代码只留在 `test/rearscreen`，**不合入 `main`**（曾误合一次，已 reset 回 `d5cfb84`）。
-- 测试版改名发送时可直接复制 zip（内容不动），保持与线上包 sha256 可对比。
+- **只维护统一版**：分支 `main`，包名 `温控解容工具箱_统一测试版_vX.Y.Z-unified.zip`；真机验证通过后转正式命名 `温控解容工具箱_vX.Y.Z.zip` 进 `latest.json`。
+- 旧线于 2026-11-03 停止维护：`test/rearscreen`（背屏线）本地与**远端分支**及 `/root/rs_beta`、`/root/unified` 两个工作树已删除（远端 `git push origin --delete test/rearscreen` 已完成），备份在 `/root/repository-backups/2026-11-03/cleanup-2026-11-03/`。
+- `test/main` 冻结：不再发新包，保留备查，不新增提交。
+- **背屏只走统一版方案**：App `com.MiWKJR`（LSPosed legacy82）+ 作用域 `com.xiaomi.subscreencenter`，Hook `SubScreenLauncher` 贴 `CardOverlay`，数据走 `content://com.MiWKJR.rearsnapshot`。不再维护独立 `rearcard` 壳与 `am --display 1` 投屏方案。
+- **当前基线**：统一版 2.1.0-unified（module code 140 / APK versionCode 2001）；上一正式版 v2.0.0（code 124）仍在线。
+- 只有统一版允许 `tools/release.py publish`（改 `latest.json`、清理旧版、提交推送、校验 CDN）。
 - 发版本时文件名必须带线别，避免用户装错包。
-- **`main` 的 `dist/` 只允许放正式包命名（`动态温控·解容工具箱_vX.Y.Z.zip`）**，其它线别包与历史遗留命名一律不入库（`release.py publish` 的 stage 已按命名排除）。
+- **`main` 的 `dist/` 只允许放统一版测试包与正式包命名**，其它线别包与历史遗留命名一律不入库（`release.py publish` 的 stage 已按命名排除）。
 
 ### 发布流程
 

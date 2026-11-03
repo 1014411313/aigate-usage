@@ -72,7 +72,7 @@ if [ "${0##*/}" = job.sh ] && [ "${1:-}" = --get ]; then
   API_DIR=$(CDPATH= cd -- "${0%/*}" && pwd -P) || exit 1
   XJ_BAK=$(CDPATH= cd -- "$API_DIR/../../.." && pwd -P) || exit 1
   . "$API_DIR/config_io.sh"
-  MODDIR=/data/adb/modules/HyperOS_XJ
+  MODDIR=/data/adb/modules/MiWKJR
   WORK=$(mktemp -d "$JOBS/.query.XXXXXXXXXX") || exit 1
   trap cleanup EXIT
   trap 'exit 130' INT

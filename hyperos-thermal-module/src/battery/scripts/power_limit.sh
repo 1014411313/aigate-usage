@@ -1,7 +1,7 @@
 #!/system/bin/sh
 # power_limit.sh v2.7.13 - 固定充电模式（全速 / 40W MAX / 25W MAX / 10W MAX），机型参数表驱动
 # 用法: power_limit.sh status|set <inf|fast|mid|slow>|apply|restore
-XBT=/data/adb/modules/HyperOS_XJ/battery
+XBT=/data/adb/modules/MiWKJR/battery
 . $XBT/scripts/common.sh
 
 refresh_module_desc() {
@@ -47,7 +47,7 @@ case "$1" in
       case "$_p" in
         inf)
           if [ "$(cfg_get apl_enable 0)" = "1" ]; then
-            for _ap in $(timeout 5 pgrep -f 'HyperOS_XJ/battery/scripts/apl\.sh' 2>/dev/null); do
+            for _ap in $(timeout 5 pgrep -f 'MiWKJR/battery/scripts/apl\.sh' 2>/dev/null); do
               kill -TERM "$_ap" 2>/dev/null
             done
             rm -f "$XBT/state/apl_target_ma" "$XBT/state/apl_lock_until" "$XBT/state/apl_urgent" 2>/dev/null
@@ -55,7 +55,7 @@ case "$1" in
             log "power_limit: 切到全速，已启动 APL"
           fi ;;
         *)
-          for _ap in $(timeout 5 pgrep -f 'HyperOS_XJ/battery/scripts/apl\.sh' 2>/dev/null); do
+          for _ap in $(timeout 5 pgrep -f 'MiWKJR/battery/scripts/apl\.sh' 2>/dev/null); do
             kill -TERM "$_ap" 2>/dev/null
           done
           rm -f "$XBT/state/apl_target_ma" "$XBT/state/apl_urgent" 2>/dev/null

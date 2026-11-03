@@ -6,9 +6,9 @@ CONFDIR="$MODDIR/config"
 LOGDIR="$MODDIR/log"
 LOGFILE="$LOGDIR/core.log"
 BACKUP_DIR="$MODDIR/backup/thermal-config"
-BACKUP_MIRROR="/data/adb/HyperOS_XJ_backup/thermal-config"
+BACKUP_MIRROR="/data/adb/MiWKJR_backup/thermal-config"
 PROFILE_FILE="$MODDIR/profiles/default.conf"
-PKG_NAME="com.hyperos.xj"
+PKG_NAME="com.MiWKJR"
 
 LAST_RESTART=0
 FORCE=0
@@ -827,7 +827,7 @@ stop_charge_watch() {
         echo "内核旋钮   : wired_rm=$(cat /sys/class/xm_power/charger/charger_thermal/wired_thermal_remove 2>/dev/null) wireless_rm=$(cat /sys/class/xm_power/charger/charger_thermal/wireless_thermal_remove 2>/dev/null) ctrl=$(cat /sys/class/xm_power/charger/charger_thermal/wired_ctrl_limit 2>/dev/null) curr=$(cat /sys/class/xm_power/charger/charger_thermal/wired_chg_curr 2>/dev/null)"
         echo "无线节点   : die_temp=$(cat /sys/class/xm_power/wireless_master/wls_die_temp 2>/dev/null) rx_iout=$(cat /sys/class/xm_power/wireless_master/rx_iout 2>/dev/null) rx_vout=$(cat /sys/class/xm_power/wireless_master/rx_vout 2>/dev/null) wls_curr=$(cat /sys/class/power_supply/wireless/current_now 2>/dev/null)"
         echo "无线限流   : chg_curr=$(cat /sys/class/xm_power/charger/charger_thermal/wireless_chg_curr 2>/dev/null) quick_ctl=$(cat /sys/class/xm_power/charger/charger_thermal/wls_quick_chg_control_limit 2>/dev/null) mag_ctl=$(cat /sys/class/xm_power/charger/charger_thermal/wireless_mag_ctrl_limit 2>/dev/null)"
-        echo "功率档     : power_limit=$(grep -a '^power_limit=' /data/adb/modules/HyperOS_XJ/battery/config/settings.conf 2>/dev/null | cut -d= -f2) apl_enable=$(grep -a '^apl_enable=' /data/adb/modules/HyperOS_XJ/battery/config/settings.conf 2>/dev/null | cut -d= -f2)"
+        echo "功率档     : power_limit=$(grep -a '^power_limit=' /data/adb/modules/MiWKJR/battery/config/settings.conf 2>/dev/null | cut -d= -f2) apl_enable=$(grep -a '^apl_enable=' /data/adb/modules/MiWKJR/battery/config/settings.conf 2>/dev/null | cut -d= -f2)"
         echo "温控档位   : $(cat "$CONFDIR/current_mode" 2>/dev/null)"
         echo "--- 停充前 12 次采样（每 10s）---"
         cat "$CONFDIR/.chg_tail" 2>/dev/null
@@ -847,7 +847,7 @@ stop_charge_watch() {
 #   当前 PPS 开/4500mV 被旧备份覆盖成 PPS 关/4400mV）。
 #   安装迁移由 customize.sh 负责；这里只做失而复得的兑底，绝不拿旧备份覆盖现有值。
 restore_from_backup() {
-    local bak=/data/adb/HyperOS_XJ_data
+    local bak=/data/adb/MiWKJR_data
     [ -d "$bak" ] || return 0
     local cur="$MODDIR/battery/config/settings.conf"
     local bf="$bak/battery/config/settings.conf"
@@ -870,12 +870,12 @@ restore_from_backup() {
 #   旁路写下的 500mA 就永久留在节点上，表现为"关了旁路/关掉温控，功率还是上不来"。
 #   交还前先让执行快照和 inf 安顿标记失效，逼它按当前功率档重新安顿一次。
 release_charge_to_battery() {
-    local bs=/data/adb/modules/HyperOS_XJ/battery/state
+    local bs=/data/adb/modules/MiWKJR/battery/state
     rm -f "$CONFDIR/bypass_active" 2>/dev/null
     rm -f "$bs/inf_settled" "$bs/inf_settle_ts" "$bs/inf_selfcheck_ts" \
           "$bs/inf_settle_fail" "$bs/inf_node_capped" \
           "$bs/direct_applied" "$bs/power_mode_applied" 2>/dev/null
-    local _bk=/data/adb/modules/HyperOS_XJ/battery/scripts/charge_guard.sh
+    local _bk=/data/adb/modules/MiWKJR/battery/scripts/charge_guard.sh
     if [ -f "$_bk" ]; then
         ( setsid sh "$_bk" once >/dev/null 2>&1 < /dev/null & )
         log "已交还电池解容：执行状态已失效，按当前功率档重新安顿"

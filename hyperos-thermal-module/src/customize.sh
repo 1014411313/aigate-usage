@@ -1,7 +1,7 @@
 #!/system/bin/sh
 
 SKIPUNZIP=0
-MODDIR=${MODPATH:-/data/adb/modules/HyperOS_XJ}
+MODDIR=${MODPATH:-/data/adb/modules/MiWKJR}
 
 print() { ui_print "$@"; }
 
@@ -13,7 +13,7 @@ frame_mid() { print "------------------------------------------"; }
 clear
 
 frame_mid
-print " - HyperOS - 动态温控·解容 ｜ 电池解容 / PPS / DTBO"
+print " - 温控解容工具箱 ｜ 电池解容 / PPS / DTBO"
 frame_mid
 print " - 二改声明：本包为二改整合版本，非原作者官方发布"
 print " - 动态温控作者：Axiaojiux"
@@ -85,17 +85,27 @@ else
     print " - 已选择：[1] 默认配置"
 fi
 
-APK="$MODPATH/HyperOSxj.apk"
+APK="$MODPATH/MiWKJR.apk"
 
 frame_mid
-[ -s "$APK" ] || abort " [X] 缺少统一控制端 HyperOSxj.apk，请重新下载完整模块包"
+[ -s "$APK" ] || abort " [X] 缺少统一控制端 MiWKJR.apk，请重新下载完整模块包"
+
+# 换包名后新 APK 无法覆盖旧控制端，先卸载旧的；失败只提示，不中止安装。
+OLD_PKG=com.hyperos.xj
+if pm path "$OLD_PKG" >/dev/null 2>&1; then
+    if pm uninstall --user 0 "$OLD_PKG" >/dev/null 2>&1; then
+        print " - 已卸载旧控制端 $OLD_PKG"
+    else
+        print " [!] 旧控制端 $OLD_PKG 卸载失败，继续安装（可在系统设置中手动卸载）"
+    fi
+fi
 _APK_RESULT=$(pm install -r "$APK" 2>&1)
 _APK_RC=$?
 if [ "$_APK_RC" != "0" ] || ! printf '%s\n' "$_APK_RESULT" | grep -q '^Success'; then
     print " [X] 统一控制端覆盖安装失败：$_APK_RESULT"
     abort " [X] 已中止安装并保留原 App 数据。请检查签名或版本冲突，勿卸载旧 App 后重试。"
 fi
-print " [OK] 已安装统一控制端 com.hyperos.xj，保留原 App 数据"
+print " [OK] 已安装统一控制端 com.MiWKJR，保留原 App 数据"
 
 frame_mid
 
@@ -107,10 +117,43 @@ if [ -f "$MODPATH/config/core.pid" ]; then
     esac
 fi
 pkill -f 'thermal_core.sh' 2>/dev/null
-OLD_MOD=/data/adb/modules/HyperOS_XJ
-if [ -f "$OLD_MOD/thermal_core.sh" ] && [ "$OLD_MOD" != "$MODPATH" ]; then
+
+# ===== 旧模块 id 与旧数据迁移 =====
+# 仅用旧名做存在性判断，不做破坏性删除；旧模块目录交由用户在模块管理器中手动卸载。
+LEGACY_ID=HyperOS_XJ
+OLD_MOD="/data/adb/modules/$LEGACY_ID"
+if [ -d "$OLD_MOD" ] && [ "$OLD_MOD" != "$MODPATH" ]; then
     pkill -f "$OLD_MOD" 2>/dev/null
-    print " - 检测到旧版模块目录，已终止其进程"
+    frame_mid
+    print " [!] 检测到旧模块目录：$OLD_MOD"
+    print " - 请在模块管理器里卸载旧模块「$LEGACY_ID」后重启，避免新旧两套模块同时运行"
+    print " - 本安装不会自动删除旧模块目录，你的数据仍保存在其中"
+fi
+
+# 用户数据目录改名：仅在目标不存在时搬移，绝不覆盖新目录
+_OLD_DATA="/data/adb/${LEGACY_ID}_data"
+_NEW_DATA=/data/adb/MiWKJR_data
+if [ -d "$_OLD_DATA" ] && [ ! -d "$_NEW_DATA" ]; then
+    if mv "$_OLD_DATA" "$_NEW_DATA" 2>/dev/null; then
+        print " - 已将用户数据迁移到 $_NEW_DATA"
+    else
+        print " [!] 用户数据迁移失败，请手动将 $_OLD_DATA 重命名为 $_NEW_DATA"
+    fi
+elif [ -d "$_OLD_DATA" ] && [ -d "$_NEW_DATA" ]; then
+    print " [!] $_NEW_DATA 已存在，跳过旧用户数据迁移（未覆盖新目录）"
+fi
+
+# 温控原厂备份目录改名：规则同上
+_OLD_BAK="/data/adb/${LEGACY_ID}_backup"
+_NEW_BAK=/data/adb/MiWKJR_backup
+if [ -d "$_OLD_BAK" ] && [ ! -d "$_NEW_BAK" ]; then
+    if mv "$_OLD_BAK" "$_NEW_BAK" 2>/dev/null; then
+        print " - 已将原厂温控备份迁移到 $_NEW_BAK"
+    else
+        print " [!] 原厂温控备份迁移失败，请手动将 $_OLD_BAK 重命名为 $_NEW_BAK"
+    fi
+elif [ -d "$_OLD_BAK" ] && [ -d "$_NEW_BAK" ]; then
+    print " [!] $_NEW_BAK 已存在，跳过旧备份迁移（未覆盖新目录）"
 fi
 
 chmod 0755 "$MODPATH/thermal_core.sh" "$MODPATH/service.sh" \
@@ -123,7 +166,7 @@ for c in /data/vendor/thermal/config /data/vendor/thermal/thermal-config /data/v
 done
 
 BK_MOD="$MODPATH/backup/thermal-config"
-BK_MIR="/data/adb/HyperOS_XJ_backup/thermal-config"
+BK_MIR="/data/adb/MiWKJR_backup/thermal-config"
 
 frame_mid
 
@@ -261,8 +304,8 @@ if [ -n "$_LEGACY_ID" ] && [ "$LEGACY_DIR" != "$MODPATH" ] && [ -d "$LEGACY_DIR"
 fi
 # 模块目录外备份恢复：管理器原地更新会替换整个模块目录（含 config/ 与 battery/config/），
 # 旧目录可能已不存在，光靠 LEGACY_DIR 迁移会丢设置。thermal_core 运行时会把用户设置
-# 备份到 /data/adb/HyperOS_XJ_data，升级时优先从这里恢复。
-XJ_DATA=/data/adb/HyperOS_XJ_data
+# 备份到 /data/adb/MiWKJR_data，升级时优先从这里恢复。
+XJ_DATA=/data/adb/MiWKJR_data
 if [ -d "$XJ_DATA" ]; then
     _REST=0
     if [ ! -s "$CONFDIR/settings.json" ] || ! head -c 1 "$CONFDIR/settings.json" 2>/dev/null | grep -q '{'; then
@@ -463,7 +506,7 @@ if [ -d "$BATDIR" ]; then
     print " - 已启用 PSS 并重启 batteryantiaging（恢复健康度显示）"
 
     # ===== 功能开关选择（只在全新安装时问；升级沿用用户原设置） =====
-    _old_conf=/data/adb/modules/HyperOS_XJ/battery/config/settings.conf
+    _old_conf=/data/adb/modules/MiWKJR/battery/config/settings.conf
     _can_ask=1
     command -v getevent >/dev/null 2>&1 || _can_ask=0
 

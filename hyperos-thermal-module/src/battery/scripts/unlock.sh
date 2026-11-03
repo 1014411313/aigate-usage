@@ -1,7 +1,7 @@
 #!/system/bin/sh
 # 电池解容工具箱 - 解容总开关
 # 用法: unlock.sh status|on|off|sync|pss on|off|cycle [N|clear]
-XBT=/data/adb/modules/HyperOS_XJ/battery
+XBT=/data/adb/modules/MiWKJR/battery
 . $XBT/scripts/common.sh
 
 show_status() {
@@ -75,7 +75,7 @@ do_off() {
 
   echo "-> 3/5 停止守护进程..."
   # v1.0.42：先停看护，否则它 60 秒后会把刚停掉的 charge_guard 又拉起来
-  for _wp in $(timeout 5 pgrep -f 'HyperOS_XJ/battery/scripts/guard_watchdog\.sh' 2>/dev/null); do
+  for _wp in $(timeout 5 pgrep -f 'MiWKJR/battery/scripts/guard_watchdog\.sh' 2>/dev/null); do
     kill -TERM "$_wp" 2>/dev/null
   done
   sh $XBT/scripts/fv_guard.sh stop

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>动态温控·解容 · 运行状态</title>
+<title>温控解容工具箱 · 运行状态</title>
 <style>
 :root{color-scheme:dark;--bg:#090c12;--panel:#111722;--line:#273244;--text:#edf2fa;--muted:#98a5b8;--amber:#f5a524;--green:#4fd18b;--red:#ff707a;--blue:#7fc4ff;font-family:system-ui,-apple-system,"Noto Sans SC",sans-serif}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);min-height:100vh;padding:20px 16px 36px}.wrap{max-width:980px;margin:auto}header{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:8px 0 22px;border-bottom:1px solid var(--line)}h1{font-size:20px;margin:0;font-weight:650}.sub{color:var(--muted);font-size:12px;margin-top:5px}.state{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px}.dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 10px #4fd18b66}.dot.bad{background:var(--red);box-shadow:0 0 10px #ff707a66}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:18px}.metric{background:var(--panel);border:1px solid var(--line);padding:13px 14px;min-height:88px}.label{font-size:11px;color:var(--muted)}.value{font-variant-numeric:tabular-nums;font-size:23px;margin-top:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.value small{font-size:12px;color:var(--muted);padding-left:4px}.section{margin-top:18px;border-top:1px solid var(--line);padding-top:15px}.section h2{font-size:13px;color:#cad4e2;font-weight:600;margin:0 0 10px}.rows{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px 22px}.row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #1d2634;font-size:12px}.row span:first-child{color:var(--muted)}.row span:last-child{text-align:right;overflow-wrap:anywhere}.tone{color:var(--amber)!important}.error{display:none;margin-top:16px;padding:12px;border:1px solid #64353c;color:#ffadb2;background:#241317;font-size:12px}.error.show{display:block}.foot{color:var(--muted);font-size:11px;margin-top:18px}.refresh{color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}@media(max-width:680px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.rows{grid-template-columns:1fr}body{padding:15px 12px 28px}}
@@ -11,7 +11,7 @@
 </head>
 <body>
 <div class="wrap">
-<header><div><h1>动态温控·解容</h1><div class="sub">模块运行状态 · 只读</div></div><div class="state"><i class="dot" id="dot"></i><span id="fresh">连接中</span></div></header>
+<header><div><h1>温控解容工具箱</h1><div class="sub">模块运行状态 · 只读</div></div><div class="state"><i class="dot" id="dot"></i><span id="fresh">连接中</span></div></header>
 <section class="grid">
 <div class="metric"><div class="label">电量</div><div class="value" id="soc">--<small>%</small></div></div>
 <div class="metric"><div class="label">充电状态</div><div class="value" id="status">--</div></div>
@@ -41,7 +41,7 @@
     if(!window.ksu||typeof ksu.exec!=='function')return reject(new Error('管理器未提供 Root 读取通道'));
     const cb='status_'+Date.now(), timer=setTimeout(()=>{delete window[cb];reject(new Error('读取超时，请检查管理器授权'))},8000);
     window[cb]=(code,out,err)=>{clearTimeout(timer);delete window[cb];code===0?resolve(out):reject(new Error(err||'读取失败'))};
-    ksu.exec('cat /data/adb/modules/HyperOS_XJ/run/snapshot.json','{}',cb);
+    ksu.exec('cat /data/adb/modules/MiWKJR/run/snapshot.json','{}',cb);
   })}
   async function poll(){if(busy||document.hidden)return;busy=true;try{apply(JSON.parse(await readStatus()))}catch(e){const box=document.getElementById('error');box.textContent='运行状态暂不可读：'+e.message;box.classList.add('show');document.getElementById('dot').classList.add('bad');set('fresh','读取失败')}finally{busy=false}}
   set('version','2.1.0-unified');set('hook','请在控制 App 查看心跳');poll();setInterval(poll,1500);

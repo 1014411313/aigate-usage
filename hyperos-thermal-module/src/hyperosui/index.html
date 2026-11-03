@@ -6,7 +6,7 @@
 <!-- 管理器拦截此请求返回内置 insets.css（--window-inset-* 变量）；拿不到时回退 0，无副作用 -->
 
 <link rel="stylesheet" href="https://mui.kernelsu.org/internal/insets.css">
-<title>HyperOS - 动态温控·解容</title>
+<title>温控解容工具箱</title>
 <style>
 :root {
   
@@ -2087,7 +2087,7 @@ body.ui-hidden .tabbar::after,
 <div id="snapshotState" class="card" role="status" hidden></div>
 <div class="page active" id="page-console">
   <div class="topbar">
-    <h1>HyperOS - 动态温控·解容</h1>
+    <h1>温控解容工具箱</h1>
     <div class="subtitle">心之所向的你 是否也于我同频</div>
   </div>
 
@@ -3202,7 +3202,7 @@ body.ui-hidden .tabbar::after,
 <div class="page" id="page-about">
   <div class="topbar">
     <h1>关于</h1>
-    <div class="subtitle">HyperOS - 动态温控·解容</div>
+    <div class="subtitle">温控解容工具箱</div>
   </div>
 
 
@@ -3211,7 +3211,7 @@ body.ui-hidden .tabbar::after,
       <div class="author-avatar" oncontextmenu="return false"><span>热</span></div>
       <div class="author-info">
         <div class="author-name">小米热炸了</div>
-        <div class="author-role">HyperOS - 动态温控·解容 维护者</div>
+        <div class="author-role">温控解容工具箱 维护者</div>
       </div>
       <div class="update-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></div>
     </div>
@@ -3274,7 +3274,7 @@ body.ui-hidden .tabbar::after,
     </div>
     <div class="pref" style="cursor:default">
       <div class="pref-body"><div class="pref-title">模块路径</div></div>
-      <div class="pref-right about-right" id="modPathVal" style="word-break:break-all;text-align:right">/data/adb/modules/HyperOS_XJ</div>
+      <div class="pref-right about-right" id="modPathVal" style="word-break:break-all;text-align:right">/data/adb/modules/MiWKJR</div>
     </div>
   </div>
 
@@ -3625,7 +3625,7 @@ body.ui-hidden .tabbar::after,
 
 <div class="notice-mask" id="noticeMask">
   <div class="notice-card" id="noticeCard">
-    <div class="notice-title">欢迎使用 动态温控·解容</div>
+    <div class="notice-title">欢迎使用 温控解容工具箱</div>
     <div class="notice-body">使用说明（按页面看）
 · 背屏卡片：在电池页开启，在外观页选择四项数据、主题、色调与字号，预览后保存。
 
@@ -3693,7 +3693,7 @@ body.ui-hidden .tabbar::after,
 var __kexecMode = typeof window.xjApi === 'function' ? 'NativeShell.request' : 'none';
 var __kexecProbe = __kexecMode === 'none' ? '安全桥未连接' : '固定 API 安全桥';
 
-const MODDIR='/data/adb/modules/HyperOS_XJ';
+const MODDIR='/data/adb/modules/MiWKJR';
 
 function logOp(action){
   try{
@@ -5211,7 +5211,7 @@ function buildBackupJson(){
     try { data[k] = localStorage.getItem(k); } catch(e){}
   });
   return JSON.stringify({
-    _meta: { app: 'HyperOS_XJ_UI', version: 1, time: Date.now(), count: keys.length },
+    _meta: { app: 'MiWKJR_UI', version: 1, time: Date.now(), count: keys.length },
     data
   }, null, 2);
 }
@@ -5234,7 +5234,7 @@ function onBackupPathChange(v){
 function makeBackupFilename(){
   const now = new Date();
   const pad = n => String(n).padStart(2, '0');
-  return `HyperOS_XJ_备份_${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.json`;
+  return `MiWKJR_备份_${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.json`;
 }
 function fallbackCopyText(text){
   const ta = document.createElement('textarea');
@@ -7638,7 +7638,7 @@ async function doDiagnose(){
   try { out.scrollTop = out.scrollHeight; } catch(e){}
 }
 function confirmUninstallModule(){
-  const ov = _mkModal('卸载模块', '将执行 uninstall.sh：\n\n· 停止温控核心进程\n· 还原原厂温控配置与充电电流\n· 卸载配套 APK（com.hyperos.xj，本页面将随之关闭）\n\n此操作不可撤销，确定继续吗？');
+  const ov = _mkModal('卸载模块', '将执行 uninstall.sh：\n\n· 停止温控核心进程\n· 还原原厂温控配置与充电电流\n· 卸载配套 APK（com.MiWKJR，本页面将随之关闭）\n\n此操作不可撤销，确定继续吗？');
   document.body.appendChild(ov);
   ov.__out.style.minHeight = '0';
   ov.__out.style.flex = '0 0 auto';
@@ -7702,7 +7702,7 @@ async function viewLog(){
 
 async function exportLog(){
   try {
-    const result = await apiJson('logs.export', {directory:'/sdcard/Download/HyperOS_XJ_Log'});
+    const result = await apiJson('logs.export', {directory:'/sdcard/Download/MiWKJR_Log'});
     toast('日志已导出：' + result.path);
   } catch(e){ toast('导出失败：' + e.message); }
 }
@@ -8963,8 +8963,14 @@ safeInit('load', load);
 safeInit('refreshStatus', refreshStatus);
 setInterval(function(){
   if (document.hidden) return;
-  if (window.__xjSnapshot) {
-    try { validateSnapshot(window.__xjSnapshot); } catch(e){ showSnapshotError(e); }
+  if (bkShouldRefresh()) {
+    if (window.__xjSnapshot) {
+      try { validateSnapshot(window.__xjSnapshot); } catch(e){ showSnapshotError(e); }
+    }
+  } else if (window.__snapshotError && Date.now() >= (window.__bkRecoverAt || 0)) {
+    /* 非数据页不刷新数据，旧快照必然过期，不能拿它判定；只在已报错时低频重试取数，成功由 applyNativeSnapshot 清除横幅 */
+    window.__bkRecoverAt = Date.now() + 5000;
+    try { refreshStatus(); } catch(e){}
   }
   refreshRearHealth();
 }, 1000);
