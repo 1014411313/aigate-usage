@@ -2,7 +2,7 @@
   "meta": {
     "module_id": "HyperOS_XJ",
     "name": "HyperOS - 动态温控·解容",
-    "current_version": "2.1.0-unified（module id MiWKJR / code 140 / APK 2001；显示名「温控解容工具箱」，App 包名 com.MiWKJR；待真机验证，未发布）",
+    "current_version": "2.1.0（正式版，module id MiWKJR / code 141 / APK 2001；2026-11-03 发布，latest.json 已指向）",
     "updated": "2026-11-03",
     "maintainer": "小米热炸了（酷安 517965）",
     "upstream": {
@@ -69,7 +69,8 @@
     "bug-012/bug-013 已结案（2026-11-03）：bug-012「温控页/关于页等非数据页停几秒提示快照已过期」主因是 index.html 全局 1 秒定时器拿旧快照做 5 秒新鲜度校验，而 bkShouldRefresh 只覆盖主页/电池页；已改为仅数据页校验 + 非数据页错误态每 5 秒自愈（main 工作树，Firefox 四场景验证通过，未打包）。证据链：17:28:36 温控页截图报过期，64 秒后诊断包 provider_health 17:30:07 为 ok:true，采样实际正常。次生隐患（snapshotd 时间戳取早、service.sh 抢锁式拉起）已写入 bugs.json 的 related_findings，尚未修。bug-013 机型显示不一致已确认是两台机器，cancelled 结案。",
     "背屏线 beta16（code141，/root/rs_beta）：卡片光环中心数字对齐主页——.pw 字距 -2→-4px、中心功率 toFixed(2) 带符号 → Math.abs(pw).toFixed(1) 去符号（原「+5.12」文本宽达环内径 83%，现与主页同比例）；已重跑 build_rearcard.py 重建 APK。ZIP 195 项 / 6303200 字节 / sha256 28d69ad9…，包已发聊天；终审：APK 与源同 sha、card.html 含新两行、webroot/index.html 除构建日期外与源一致、脚本全 0755。未推送、未发布，等真机复测",
     "背屏线 beta15（code140）已构建（/root/rs_beta，未提交、未推送、包未发送）：bug-009/010/011 已修——新增 src/rearcard/（com.hyperosxj.rearcard 普通 WebView 壳）+ tools/build_rearcard.py，rearscreen.sh 改装 rearcard.apk、写 rear.json、am --display 1 投屏；bkSh 超时 12→30 秒、自检复查 32 秒；guard 不再把主屏息屏判失败、焦点连续 3 次才算；外观页/使用说明/欢迎页补「自带卡片不需要 LSPosed，第三方 ETA 卡片需在 LSPosed 只勾 com.xiaomi.subscreencenter」。包：dist/动态温控·解容工具箱_背屏版_v2.1.0-beta15.zip（189 项、6303096 字节、sha256 ac0cdd59...，已按主页光环参数重做卡片），预览图在 .aicode/tmp/ui_preview/2026-11-03/06、07（旧）、08（新光环）。",
-    "2026-11-03 改名与包名迁移完成：模块 id HyperOS_XJ→MiWKJR、显示名与 App 名→温控解容工具箱、App 包名 com.hyperos.xj→com.MiWKJR、APK→MiWKJR.apk；install 脚本新增旧数据/旧备份迁移与旧控制端卸载。统一包 dist/温控解容工具箱_统一测试版_v2.1.0-unified.zip（195 项 / 6000607 字节 / sha256 13d66ee8…）。未真机安装验证，未发布。"
+    "2026-11-03 改名与包名迁移完成：模块 id HyperOS_XJ→MiWKJR、显示名与 App 名→温控解容工具箱、App 包名 com.hyperos.xj→com.MiWKJR、APK→MiWKJR.apk；install 脚本新增旧数据/旧备份迁移与旧控制端卸载。统一包 dist/温控解容工具箱_统一测试版_v2.1.0-unified.zip（195 项 / 6000607 字节 / sha256 13d66ee8…）。未真机安装验证，未发布。",
+    "2026-11-03 发布 v2.1.0（code141）：dist/温控解容工具箱_v2.1.0.zip（195 项 / 6000877 字节 / sha256 349995d5…），latest.json 已更新，cdn.jsdelivr.net、testingcf、raw 三源均 200。仍未真机安装验证。"
   ],
   "audit": {
     "date": "2026-11-01",
